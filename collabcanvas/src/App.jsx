@@ -1,31 +1,40 @@
-import { useState } from 'react'
-import './App.css'
+import { useState } from 'react';
+import useAuth from './hooks/useAuth';
+import Login from './components/Auth/Login';
+import SignUp from './components/Auth/SignUp';
+import Canvas from './components/Canvas/Canvas';
+import AppLayout from './components/Layout/AppLayout';
+import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const { user, loading, logout } = useAuth();
+  const [showSignUp, setShowSignUp] = useState(false);
 
+  // Show loading spinner while checking authentication
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  // Show authentication forms if user is not logged in
+  if (!user) {
+    return showSignUp ? (
+      <SignUp onSwitchToLogin={() => setShowSignUp(false)} />
+    ) : (
+      <Login onSwitchToSignup={() => setShowSignUp(true)} />
+    );
+  }
+
+  // Show main app if user is authenticated
   return (
-    <>
-      <div>
-        <h1>🎨 CollabCanvas</h1>
-        <h2>Real-Time Collaborative Canvas MVP</h2>
-      </div>
-      <div className="card">
-        <p>
-          <strong>Status:</strong> Deployment pipeline is working! ✅
-        </p>
-        <button onClick={() => setCount((count) => count + 1)}>
-          Test Counter: {count}
-        </button>
-        <p style={{ marginTop: '20px' }}>
-          Firebase configured and ready for authentication.
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Project setup complete. Ready for PR#2: Authentication System.
-      </p>
-    </>
-  )
+    <AppLayout user={user} onLogout={logout}>
+      <Canvas />
+    </AppLayout>
+  );
 }
 
-export default App
+export default App;

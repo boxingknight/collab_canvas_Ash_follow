@@ -101,35 +101,35 @@ collabcanvas/
 **Goal:** Implement user login/signup with Firebase Auth
 
 ### Tasks:
-- [ ] Set up Firebase Authentication service
+- [x] Set up Firebase Authentication service
   - **Files:** `src/services/auth.js`
   - **Action:** Create login, signup, logout, getCurrentUser functions
   
-- [ ] Create authentication hook
+- [x] Create authentication hook
   - **Files:** `src/hooks/useAuth.js`
   - **Action:** Hook to manage auth state, listen to auth changes
   
-- [ ] Build Login component
+- [x] Build Login component
   - **Files:** `src/components/Auth/Login.jsx`
   - **Action:** Email/password form, error handling, loading states
   
-- [ ] Build SignUp component
+- [x] Build SignUp component
   - **Files:** `src/components/Auth/SignUp.jsx`
   - **Action:** Registration form with display name, validation
   
-- [ ] Create protected route logic
+- [x] Create protected route logic
   - **Files:** `src/App.jsx`
   - **Action:** Redirect unauthenticated users to login
   
-- [ ] Add auth state persistence
+- [x] Add auth state persistence
   - **Files:** `src/services/firebase.js`
   - **Action:** Configure Firebase persistence settings
   
-- [ ] Style auth components
+- [x] Style auth components
   - **Files:** `src/index.css`, `Login.jsx`, `SignUp.jsx`
   - **Action:** Basic styling for forms, center layout
   
-- [ ] Test authentication flow
+- [x] Test authentication flow
   - **Action:** Create account, logout, login, refresh page
 
 **Acceptance Criteria:**

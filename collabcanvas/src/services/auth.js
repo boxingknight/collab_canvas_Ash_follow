@@ -1,21 +1,68 @@
+import { 
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  updateProfile
+} from 'firebase/auth';
 import { auth } from './firebase';
 
-// TODO: Implement authentication service functions
-
-export async function login(email, password) {
-  // Login logic will go here
-}
-
+/**
+ * Sign up a new user with email, password, and display name
+ * @param {string} email - User's email
+ * @param {string} password - User's password
+ * @param {string} displayName - User's display name
+ * @returns {Promise<Object>} User credentials
+ */
 export async function signup(email, password, displayName) {
-  // Signup logic will go here
+  try {
+    // Create user account
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    
+    // Update user profile with display name
+    await updateProfile(userCredential.user, {
+      displayName: displayName
+    });
+    
+    return userCredential;
+  } catch (error) {
+    console.error('Error signing up:', error);
+    throw error;
+  }
 }
 
+/**
+ * Sign in an existing user with email and password
+ * @param {string} email - User's email
+ * @param {string} password - User's password
+ * @returns {Promise<Object>} User credentials
+ */
+export async function login(email, password) {
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    return userCredential;
+  } catch (error) {
+    console.error('Error logging in:', error);
+    throw error;
+  }
+}
+
+/**
+ * Sign out the current user
+ * @returns {Promise<void>}
+ */
 export async function logout() {
-  // Logout logic will go here
+  try {
+    await signOut(auth);
+  } catch (error) {
+    console.error('Error logging out:', error);
+    throw error;
+  }
 }
 
+/**
+ * Get the current authenticated user
+ * @returns {Object|null} Current user or null
+ */
 export function getCurrentUser() {
-  // Get current user logic will go here
-  return null;
+  return auth.currentUser;
 }
-
