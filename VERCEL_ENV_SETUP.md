@@ -13,14 +13,18 @@ Your Firebase environment variables need to be added to Vercel for the deployed 
 
 ### Variables to Add:
 
-| Variable Name | Value |
-|--------------|-------|
-| `VITE_FIREBASE_API_KEY` | `AIzaSyBEB0cYx65bUajFt1vrbolFDq4G6PAt0ps` |
-| `VITE_FIREBASE_AUTH_DOMAIN` | `collabcanvas-2ba10.firebaseapp.com` |
-| `VITE_FIREBASE_PROJECT_ID` | `collabcanvas-2ba10` |
-| `VITE_FIREBASE_STORAGE_BUCKET` | `collabcanvas-2ba10.firebasestorage.app` |
-| `VITE_FIREBASE_MESSAGING_SENDER_ID` | `495849289861` |
-| `VITE_FIREBASE_APP_ID` | `1:495849289861:web:53830b46cbf962492a91ec` |
+Copy the values from your local `.env.local` file:
+
+| Variable Name | Value Source |
+|--------------|--------------|
+| `VITE_FIREBASE_API_KEY` | From `.env.local` |
+| `VITE_FIREBASE_AUTH_DOMAIN` | From `.env.local` |
+| `VITE_FIREBASE_PROJECT_ID` | From `.env.local` |
+| `VITE_FIREBASE_STORAGE_BUCKET` | From `.env.local` |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | From `.env.local` |
+| `VITE_FIREBASE_APP_ID` | From `.env.local` |
+
+**Note:** Your `.env.local` file is in `collabcanvas/.env.local` and is gitignored for security.
 
 ### After Adding Variables:
 
@@ -47,4 +51,9 @@ git push
 **Why this is needed:**
 - `.env.local` only works on your local machine
 - Vercel needs these variables configured in its dashboard to access Firebase in production
+
+**Security Note:**
+- Never commit actual Firebase credentials to git
+- Always use environment variables for sensitive configuration
+- Firebase security relies on Firestore security rules, not on keeping API keys secret
 
