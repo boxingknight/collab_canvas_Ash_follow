@@ -85,39 +85,64 @@ export async function deleteShape(shapeId) {
  */
 export function subscribeToShapes(callback) {
   try {
+    console.log('📡 Attempting to subscribe to shapes collection...');
+    console.log('📡 Database instance:', db);
+    console.log('📡 Collection name:', SHAPES_COLLECTION);
+    
     // Query all shapes (no orderBy to avoid index requirement)
     // Shapes will be ordered by document ID by default
     const shapesCollection = collection(db, SHAPES_COLLECTION);
+    console.log('📡 Collection reference created:', shapesCollection);
     
     // Set up real-time listener
-    const unsubscribe = onSnapshot(shapesCollection, (snapshot) => {
-      const shapes = [];
-      
-      snapshot.forEach((doc) => {
-        shapes.push({
-          id: doc.id,
-          ...doc.data()
+    const unsubscribe = onSnapshot(
+      shapesCollection, 
+      {
+        // Add includeMetadataChanges to get more details
+        includeMetadataChanges: false
+      },
+      (snapshot) => {
+        console.log('✅ onSnapshot SUCCESS! Received snapshot with', snapshot.size, 'documents');
+        console.log('✅ Snapshot metadata:', snapshot.metadata);
+        
+        const shapes = [];
+        
+        snapshot.forEach((doc) => {
+          console.log('📄 Document:', doc.id, doc.data());
+          shapes.push({
+            id: doc.id,
+            ...doc.data()
+          });
         });
-      });
-      
-      // Sort by createdAt client-side if available
-      shapes.sort((a, b) => {
-        if (!a.createdAt || !b.createdAt) return 0;
-        return a.createdAt.toMillis() - b.createdAt.toMillis();
-      });
-      
-      console.log('Shapes updated from Firestore:', shapes.length);
-      callback(shapes);
-    }, (error) => {
-      console.error('Error listening to shapes:', error);
-      console.error('Full error details:', error.code, error.message);
-      // Call callback with empty array on error
-      callback([]);
-    });
+        
+        // Sort by createdAt client-side if available
+        shapes.sort((a, b) => {
+          if (!a.createdAt || !b.createdAt) return 0;
+          return a.createdAt.toMillis() - b.createdAt.toMillis();
+        });
+        
+        console.log('Shapes updated from Firestore:', shapes.length);
+        callback(shapes);
+      }, 
+      (error) => {
+        console.error('❌ onSnapshot ERROR!');
+        console.error('❌ Error code:', error.code);
+        console.error('❌ Error message:', error.message);
+        console.error('❌ Error name:', error.name);
+        console.error('❌ Full error object:', JSON.stringify(error, null, 2));
+        console.error('❌ Error stack:', error.stack);
+        
+        // Call callback with empty array on error
+        callback([]);
+      }
+    );
     
+    console.log('📡 Subscription established, unsubscribe function created');
     return unsubscribe;
   } catch (error) {
-    console.error('Error subscribing to shapes:', error);
+    console.error('❌ EXCEPTION in subscribeToShapes:');
+    console.error('❌ Error:', error);
+    console.error('❌ Stack:', error.stack);
     throw error;
   }
 }
