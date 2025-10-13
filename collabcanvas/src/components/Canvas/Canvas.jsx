@@ -17,6 +17,9 @@ function Canvas() {
   // Shape creation state
   const [isDrawing, setIsDrawing] = useState(false);
   const [newShape, setNewShape] = useState(null);
+  
+  // Shape dragging state
+  const [isDraggingShape, setIsDraggingShape] = useState(false);
 
   // Generate grid lines
   const gridSize = 100; // Grid cell size
@@ -179,9 +182,20 @@ function Canvas() {
     selectShape(shapeId);
   }
 
+  // Handle shape drag start
+  function handleShapeDragStart() {
+    setIsDraggingShape(true);
+  }
+
+  // Handle shape drag move
+  function handleShapeDragMove() {
+    // Keep flag set during dragging
+  }
+
   // Handle shape drag end
   function handleShapeDragEnd(data) {
     updateShape(data.id, { x: data.x, y: data.y });
+    setIsDraggingShape(false);
   }
 
   // Handle stage click (deselect)
@@ -197,7 +211,7 @@ function Canvas() {
         ref={stageRef}
         width={stageSize.width}
         height={stageSize.height}
-        draggable={!isDrawing}
+        draggable={!isDrawing && !isDraggingShape}
         x={position.x}
         y={position.y}
         scaleX={scale}
@@ -315,6 +329,8 @@ function Canvas() {
               shape={shape}
               isSelected={shape.id === selectedShapeId}
               onSelect={() => handleShapeSelect(shape.id)}
+              onDragStart={handleShapeDragStart}
+              onDragMove={handleShapeDragMove}
               onDragEnd={handleShapeDragEnd}
             />
           ))}

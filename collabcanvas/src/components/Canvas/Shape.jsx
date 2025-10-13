@@ -1,7 +1,7 @@
 import { Rect, Transformer } from 'react-konva';
 import { useRef, useEffect } from 'react';
 
-function Shape({ shape, isSelected, onSelect, onDragEnd }) {
+function Shape({ shape, isSelected, onSelect, onDragEnd, onDragStart, onDragMove }) {
   const shapeRef = useRef(null);
   const transformerRef = useRef(null);
 
@@ -13,7 +13,27 @@ function Shape({ shape, isSelected, onSelect, onDragEnd }) {
     }
   }, [isSelected]);
 
+  function handleClick(e) {
+    // Stop event propagation to prevent stage click
+    e.cancelBubble = true;
+    onSelect();
+  }
+
+  function handleDragStart(e) {
+    // Stop event propagation to prevent stage dragging
+    e.cancelBubble = true;
+    if (onDragStart) onDragStart();
+  }
+
+  function handleDragMove(e) {
+    // Stop event propagation during drag
+    e.cancelBubble = true;
+    if (onDragMove) onDragMove();
+  }
+
   function handleDragEnd(e) {
+    // Stop event propagation
+    e.cancelBubble = true;
     onDragEnd({
       id: shape.id,
       x: e.target.x(),
@@ -32,8 +52,10 @@ function Shape({ shape, isSelected, onSelect, onDragEnd }) {
         height={shape.height}
         fill={shape.color}
         draggable
-        onClick={onSelect}
-        onTap={onSelect}
+        onClick={handleClick}
+        onTap={handleClick}
+        onDragStart={handleDragStart}
+        onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
         stroke={isSelected ? '#646cff' : undefined}
         strokeWidth={isSelected ? 3 : 0}
