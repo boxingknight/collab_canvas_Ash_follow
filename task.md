@@ -57,7 +57,7 @@ collabcanvas/
   - **Files:** `package.json`, `vite.config.js`, `index.html`
   - **Action:** Run `npm create vite@latest collabcanvas -- --template react`
   
-- [ ] Install core dependencies
+- [x] Install core dependencies
   - **Files:** `package.json`
   - **Action:** Install react, react-dom, react-konva, konva, firebase
   
