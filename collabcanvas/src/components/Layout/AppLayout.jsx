@@ -11,6 +11,8 @@ function AppLayout({ children, user, onLogout }) {
           <h1 className="app-title">🎨 CollabCanvas</h1>
           <div className="user-info">
             <span className="user-name">👤 {user?.displayName || user?.email}</span>
+            {/* User presence avatars */}
+            <UserList users={onlineUsers} currentUser={user} />
             <button onClick={onLogout} className="btn-logout">
               Logout
             </button>
@@ -19,8 +21,6 @@ function AppLayout({ children, user, onLogout }) {
       </header>
       <main className="app-main">
         {children}
-        {/* User presence list */}
-        <UserList users={onlineUsers} currentUser={user} />
       </main>
     </div>
   );

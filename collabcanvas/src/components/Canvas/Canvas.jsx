@@ -477,40 +477,19 @@ function Canvas() {
         </Layer>
       </Stage>
 
-      {/* Stats Display */}
+      {/* Shape Counter */}
       <div style={{
         position: 'absolute',
         top: '10px',
         right: '10px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px'
+        background: 'rgba(0, 0, 0, 0.8)',
+        color: '#fff',
+        padding: '10px 15px',
+        borderRadius: '8px',
+        fontSize: '14px',
+        fontWeight: 'bold'
       }}>
-        {/* Shape Counter */}
-        <div style={{
-          background: 'rgba(0, 0, 0, 0.8)',
-          color: '#fff',
-          padding: '10px 15px',
-          borderRadius: '8px',
-          fontSize: '14px',
-          fontWeight: 'bold'
-        }}>
-          📊 Shapes: {shapes.length}
-        </div>
-        
-        {/* Active Users Counter */}
-        {remoteCursors.length > 0 && (
-          <div style={{
-            background: 'rgba(0, 0, 0, 0.8)',
-            color: '#4ade80',
-            padding: '10px 15px',
-            borderRadius: '8px',
-            fontSize: '14px',
-            fontWeight: 'bold'
-          }}>
-            👥 Online: {remoteCursors.length + 1}
-          </div>
-        )}
+        📊 Shapes: {shapes.length}
       </div>
 
       {/* Mode Toggle */}

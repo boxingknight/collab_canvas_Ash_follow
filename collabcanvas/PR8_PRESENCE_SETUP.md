@@ -9,13 +9,14 @@
 - `subscribeToPresence()` - Real-time listener for all online users
 
 ### 2. **UserList Component** (`src/components/Presence/UserList.jsx`)
-- Beautiful collapsible user list in bottom-right corner
-- Shows all online users with status indicators
-- Color-coded dots matching cursor colors
-- Highlights current user with special styling
-- Displays user names and emails
-- Pulsing animation on status indicators
-- Expandable/collapsible with user count badge
+- **Compact avatar stack in header** next to user name
+- Small circles with user initials (2-letter avatars)
+- Overlapping avatars for space efficiency
+- Hover to see full user list with details
+- Color-coded avatars matching cursor colors
+- Current user highlighted with white border
+- Shows "+X more" indicator if > 5 users
+- Dropdown shows names, emails, and status
 
 ### 3. **usePresence Hook** (`src/hooks/usePresence.js`)
 - Manages presence state
@@ -25,9 +26,10 @@
 - Subscribes to real-time presence updates
 
 ### 4. **AppLayout Integration**
-- UserList added to main layout
-- Automatically appears in bottom-right
-- Non-intrusive, collapsible design
+- UserList added to header (next to user name)
+- Compact avatar stack design
+- Non-intrusive, hover-to-expand design
+- Removed "Online: X" counter from canvas
 
 ---
 
@@ -61,23 +63,26 @@ match /presence/{userId} {
 
 1. **Open 2-3 browser windows** (or use incognito mode)
 2. **Login with different accounts** in each window
-3. **Check the UserList** in bottom-right corner
-4. **Verify all users appear** with correct names and status
+3. **Check the header** - you'll see overlapping avatar circles
+4. **Hover over the avatars** to see the full user list
+5. **Verify all users appear** with correct names and status
 
 ### **Expected Behavior**
 
-✅ **User List Display**
-- List appears in bottom-right corner
-- Shows count badge (e.g., "3 users")
-- Collapsible by clicking header
-- Scrollable if many users
+✅ **Avatar Stack in Header**
+- Appears in header next to user name
+- Shows up to 5 overlapping avatar circles
+- Each avatar shows 2-letter initials
+- "+X more" indicator if > 5 users
+- Avatars slightly lift on hover
 
-✅ **User Status**
-- Green pulsing dot for online users
-- Color matches their cursor color
-- User name displayed
-- Email shown below name
-- Current user highlighted with blue border
+✅ **Hover Dropdown**
+- Full user list appears on hover
+- Shows avatars, names, and emails
+- Pulsing colored status indicators
+- Current user highlighted with blue background
+- Count badge shows total users
+- Scrollable if many users
 
 ✅ **Real-Time Updates**
 - Users appear immediately when they join
@@ -94,12 +99,14 @@ match /presence/{userId} {
 ## 🎨 Features
 
 ### **Visual Design**
-- Dark translucent background with blur effect
-- Color-coded status indicators (match cursor colors)
-- Pulsing animation on online indicators
-- Collapsible to save screen space
-- "You" label for current user
-- Special highlight for current user
+- Compact overlapping avatar circles in header
+- 2-letter initials on colored backgrounds
+- Colors match user's cursor color
+- Current user has white border
+- Hover reveals full dropdown with details
+- Dark translucent dropdown with blur effect
+- Pulsing status indicators in dropdown
+- "(You)" label for current user in dropdown
 
 ### **Heartbeat System**
 - Updates lastSeen every 30 seconds

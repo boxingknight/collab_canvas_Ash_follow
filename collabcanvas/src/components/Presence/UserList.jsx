@@ -1,12 +1,12 @@
 import { useState } from 'react';
 
 /**
- * UserList component - displays list of online users
+ * UserList component - displays avatars of online users in header
  * @param {Array} users - Array of online user objects
  * @param {Object} currentUser - Current logged-in user
  */
 function UserList({ users, currentUser }) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isHovered, setIsHovered] = useState(false);
 
   // Helper to get user color (same logic as RemoteCursor)
   function getUserColor(userId) {
@@ -21,6 +21,16 @@ function UserList({ users, currentUser }) {
     return colors[Math.abs(hash) % colors.length];
   }
 
+  // Helper to get user initials
+  function getUserInitials(userName) {
+    if (!userName) return '?';
+    const parts = userName.split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return userName.substring(0, 2).toUpperCase();
+  }
+
   // Helper to format user name
   function formatUserName(user) {
     if (user.userId === currentUser?.uid) {
@@ -29,92 +39,156 @@ function UserList({ users, currentUser }) {
     return user.userName;
   }
 
+  // Include all users (including current user if not in list)
+  const allUsers = [...users];
+  const currentUserExists = users.some(u => u.userId === currentUser?.uid);
+  if (currentUser && !currentUserExists) {
+    allUsers.unshift({
+      userId: currentUser.uid,
+      userName: currentUser.displayName || currentUser.email || 'You',
+      userEmail: currentUser.email,
+      status: 'online'
+    });
+  }
+
   return (
-    <div style={{
-      position: 'absolute',
-      bottom: '20px',
-      right: '20px',
-      background: 'rgba(0, 0, 0, 0.85)',
-      borderRadius: '12px',
-      border: '2px solid rgba(255, 255, 255, 0.1)',
-      minWidth: '220px',
-      maxWidth: '300px',
-      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-      zIndex: 1000,
-      backdropFilter: 'blur(10px)'
-    }}>
-      {/* Header */}
-      <div 
-        onClick={() => setIsExpanded(!isExpanded)}
-        style={{
-          padding: '12px 16px',
-          borderBottom: isExpanded ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          userSelect: 'none'
-        }}
-      >
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          <span style={{ fontSize: '18px' }}>👥</span>
-          <span style={{
-            color: '#fff',
-            fontSize: '14px',
-            fontWeight: 'bold'
-          }}>
-            Online Users
-          </span>
-        </div>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          <span style={{
-            background: '#4ade80',
-            color: '#000',
-            padding: '2px 8px',
-            borderRadius: '10px',
-            fontSize: '12px',
-            fontWeight: 'bold'
-          }}>
-            {users.length}
-          </span>
-          <span style={{
-            color: '#888',
-            fontSize: '12px',
-            transition: 'transform 0.2s',
-            transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)'
-          }}>
-            ▼
-          </span>
-        </div>
+    <div 
+      style={{
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        marginLeft: '16px'
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Avatar Stack */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        position: 'relative',
+        paddingRight: '8px'
+      }}>
+        {allUsers.slice(0, 5).map((user, index) => {
+          const userColor = getUserColor(user.userId);
+          const isCurrentUser = user.userId === currentUser?.uid;
+          
+          return (
+            <div
+              key={user.userId}
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                background: userColor,
+                border: isCurrentUser ? '2px solid #fff' : '2px solid #1a1a1a',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                color: '#fff',
+                marginLeft: index > 0 ? '-12px' : '0',
+                position: 'relative',
+                zIndex: allUsers.length - index,
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+                transition: 'transform 0.2s',
+                transform: isHovered ? 'translateY(-2px)' : 'translateY(0)'
+              }}
+              title={formatUserName(user)}
+            >
+              {getUserInitials(user.userName)}
+            </div>
+          );
+        })}
+        
+        {/* Show "+X more" indicator if there are more than 5 users */}
+        {allUsers.length > 5 && (
+          <div
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              background: '#333',
+              border: '2px solid #1a1a1a',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              color: '#fff',
+              marginLeft: '-12px',
+              position: 'relative',
+              zIndex: 0,
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+            }}
+          >
+            +{allUsers.length - 5}
+          </div>
+        )}
       </div>
 
-      {/* User List */}
-      {isExpanded && (
+      {/* Hover Dropdown - Full User List */}
+      {isHovered && (
         <div style={{
-          padding: '8px',
-          maxHeight: '300px',
-          overflowY: 'auto'
+          position: 'absolute',
+          top: '100%',
+          right: '0',
+          marginTop: '8px',
+          background: 'rgba(0, 0, 0, 0.95)',
+          borderRadius: '12px',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          minWidth: '240px',
+          maxWidth: '320px',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6)',
+          zIndex: 10000,
+          backdropFilter: 'blur(10px)',
+          overflow: 'hidden'
         }}>
-          {users.length === 0 ? (
+          {/* Header */}
+          <div style={{
+            padding: '12px 16px',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
             <div style={{
-              padding: '16px',
-              textAlign: 'center',
-              color: '#888',
-              fontSize: '13px'
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
             }}>
-              No users online
+              <span style={{ fontSize: '16px' }}>👥</span>
+              <span style={{
+                color: '#fff',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}>
+                Online Users
+              </span>
             </div>
-          ) : (
-            users.map((user) => {
-              const isCurrentUser = user.userId === currentUser?.uid;
+            <span style={{
+              background: '#4ade80',
+              color: '#000',
+              padding: '2px 8px',
+              borderRadius: '10px',
+              fontSize: '12px',
+              fontWeight: 'bold'
+            }}>
+              {allUsers.length}
+            </span>
+          </div>
+
+          {/* User List */}
+          <div style={{
+            padding: '8px',
+            maxHeight: '300px',
+            overflowY: 'auto'
+          }}>
+            {allUsers.map((user) => {
+              const isCurrentUserInList = user.userId === currentUser?.uid;
               const userColor = getUserColor(user.userId);
               
               return (
@@ -126,22 +200,29 @@ function UserList({ users, currentUser }) {
                     gap: '10px',
                     padding: '8px 10px',
                     borderRadius: '8px',
-                    background: isCurrentUser ? 'rgba(100, 108, 255, 0.15)' : 'transparent',
-                    border: isCurrentUser ? '1px solid rgba(100, 108, 255, 0.3)' : '1px solid transparent',
+                    background: isCurrentUserInList ? 'rgba(100, 108, 255, 0.15)' : 'transparent',
+                    border: isCurrentUserInList ? '1px solid rgba(100, 108, 255, 0.3)' : '1px solid transparent',
                     marginBottom: '4px',
                     transition: 'all 0.2s'
                   }}
                 >
-                  {/* Status indicator */}
+                  {/* Avatar */}
                   <div style={{
-                    width: '8px',
-                    height: '8px',
+                    width: '32px',
+                    height: '32px',
                     borderRadius: '50%',
                     background: userColor,
-                    boxShadow: `0 0 8px ${userColor}`,
-                    flexShrink: 0,
-                    animation: 'pulse 2s infinite'
-                  }} />
+                    border: '2px solid rgba(255, 255, 255, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    color: '#fff',
+                    flexShrink: 0
+                  }}>
+                    {getUserInitials(user.userName)}
+                  </div>
                   
                   {/* User info */}
                   <div style={{
@@ -151,7 +232,7 @@ function UserList({ users, currentUser }) {
                     <div style={{
                       color: '#fff',
                       fontSize: '13px',
-                      fontWeight: isCurrentUser ? 'bold' : 'normal',
+                      fontWeight: isCurrentUserInList ? 'bold' : 'normal',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap'
@@ -170,10 +251,21 @@ function UserList({ users, currentUser }) {
                       </div>
                     )}
                   </div>
+
+                  {/* Status indicator */}
+                  <div style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: userColor,
+                    boxShadow: `0 0 8px ${userColor}`,
+                    flexShrink: 0,
+                    animation: 'pulse 2s infinite'
+                  }} />
                 </div>
               );
-            })
-          )}
+            })}
+          </div>
         </div>
       )}
 
