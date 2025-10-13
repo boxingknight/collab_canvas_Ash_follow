@@ -1,0 +1,19 @@
+{
+  "name": "collab_canvas_ash_follow",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/boxingknight/collab_canvas_Ash_follow.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/boxingknight/collab_canvas_Ash_follow/issues"
+  },
+  "homepage": "https://github.com/boxingknight/collab_canvas_Ash_follow#readme"
+}
