@@ -238,6 +238,14 @@ body {
   flex: 1;
   display: flex;
   overflow: hidden;
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.app-main > * {
+  width: 100%;
+  height: 100%;
 }
 
 /* Responsive Design */

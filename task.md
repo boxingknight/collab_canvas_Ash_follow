@@ -148,35 +148,35 @@ collabcanvas/
 **Goal:** Create working Konva canvas with smooth pan and zoom
 
 ### Tasks:
-- [ ] Create Canvas component structure
+- [x] Create Canvas component structure
   - **Files:** `src/components/Canvas/Canvas.jsx`
   - **Action:** Set up Konva Stage and Layer components
   
-- [ ] Implement pan functionality
+- [x] Implement pan functionality
   - **Files:** `src/components/Canvas/Canvas.jsx`
   - **Action:** Handle drag on stage for panning
   
-- [ ] Implement zoom functionality
+- [x] Implement zoom functionality
   - **Files:** `src/components/Canvas/Canvas.jsx`
   - **Action:** Handle wheel event for zoom, constrain zoom limits
   
-- [ ] Create canvas hook for state management
+- [x] Create canvas hook for state management
   - **Files:** `src/hooks/useCanvas.js`
   - **Action:** Manage viewport state (position, scale)
   
-- [ ] Set up canvas dimensions and workspace
+- [x] Set up canvas dimensions and workspace
   - **Files:** `src/utils/constants.js`, `src/components/Canvas/Canvas.jsx`
   - **Action:** Define large canvas size (e.g., 5000x5000)
   
-- [ ] Add canvas styling and layout
+- [x] Add canvas styling and layout
   - **Files:** `src/components/Layout/AppLayout.jsx`, `src/index.css`
   - **Action:** Full-screen canvas, remove default margins
   
-- [ ] Implement FPS monitoring (dev mode)
+- [x] Implement FPS monitoring (dev mode)
   - **Files:** `src/utils/helpers.js`, `src/components/Canvas/Canvas.jsx`
   - **Action:** Add FPS counter to verify 60fps performance
   
-- [ ] Test performance
+- [x] Test performance
   - **Action:** Test pan/zoom smoothness, verify 60fps
 
 **Acceptance Criteria:**
