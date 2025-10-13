@@ -12,12 +12,26 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
+// Log config (without sensitive data) for debugging
+console.log('Firebase Config:', {
+  projectId: firebaseConfig.projectId,
+  authDomain: firebaseConfig.authDomain,
+  hasApiKey: !!firebaseConfig.apiKey,
+  hasAppId: !!firebaseConfig.appId
+});
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
 // Initialize Firebase services
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+
+console.log('Firebase initialized:', {
+  appName: app.name,
+  firestoreInitialized: !!db,
+  authInitialized: !!auth
+});
 
 // Set auth persistence to LOCAL (persists even when browser is closed)
 setPersistence(auth, browserLocalPersistence).catch((error) => {
