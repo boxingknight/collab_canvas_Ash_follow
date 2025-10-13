@@ -202,7 +202,7 @@ function Canvas() {
   }
 
   // Handle shape creation - mouse up
-  function handleMouseUp() {
+  async function handleMouseUp() {
     if (!isDrawing || !newShape) return;
 
     // Only add shape if it has meaningful size
@@ -216,7 +216,18 @@ function Canvas() {
         color: newShape.color
       };
       
-      addShape(normalizedShape);
+      console.log('🎨 Canvas: About to add shape to Firestore:', normalizedShape);
+      
+      try {
+        const result = await addShape(normalizedShape);
+        console.log('🎨 Canvas: Shape added successfully!', result);
+      } catch (error) {
+        console.error('🎨 Canvas: FAILED to add shape!');
+        console.error('🎨 Error:', error);
+        console.error('🎨 Error message:', error.message);
+        console.error('🎨 Error code:', error.code);
+        alert(`Failed to create shape: ${error.message}`);
+      }
     }
 
     setIsDrawing(false);
