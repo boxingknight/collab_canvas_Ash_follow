@@ -14,6 +14,9 @@ function Canvas() {
   const [fps, setFps] = useState(60);
   const fpsCounterRef = useRef(null);
   
+  // Canvas mode: 'neutral' (pan) or 'draw' (create shapes)
+  const [mode, setMode] = useState('neutral');
+  
   // Shape creation state
   const [isDrawing, setIsDrawing] = useState(false);
   const [newShape, setNewShape] = useState(null);
@@ -122,8 +125,8 @@ function Canvas() {
 
   // Handle shape creation - mouse down
   function handleMouseDown(e) {
-    // Only create shapes when clicking on the stage (empty canvas)
-    if (e.target === e.target.getStage()) {
+    // Only create shapes in 'draw' mode and when clicking on the stage (empty canvas)
+    if (mode === 'draw' && e.target === e.target.getStage()) {
       const stage = stageRef.current;
       const pos = stage.getRelativePointerPosition();
       
@@ -211,7 +214,7 @@ function Canvas() {
         ref={stageRef}
         width={stageSize.width}
         height={stageSize.height}
-        draggable={!isDrawing && !isDraggingShape}
+        draggable={mode === 'neutral' && !isDraggingShape}
         x={position.x}
         y={position.y}
         scaleX={scale}
@@ -222,7 +225,12 @@ function Canvas() {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onClick={handleStageClick}
-        style={{ cursor: isDrawing ? 'crosshair' : 'grab' }}
+        style={{ 
+          cursor: isDrawing ? 'crosshair' 
+                : mode === 'draw' ? 'crosshair' 
+                : isDraggingShape ? 'grabbing'
+                : 'grab' 
+        }}
       >
         <Layer>
           {/* Canvas background */}
@@ -332,6 +340,7 @@ function Canvas() {
               onDragStart={handleShapeDragStart}
               onDragMove={handleShapeDragMove}
               onDragEnd={handleShapeDragEnd}
+              isDraggable={mode === 'neutral'}
             />
           ))}
           
@@ -350,10 +359,64 @@ function Canvas() {
         </Layer>
       </Stage>
 
-      {/* Position and Zoom Indicator */}
+      {/* Mode Toggle */}
       <div style={{
         position: 'absolute',
         top: '10px',
+        left: '10px',
+        display: 'flex',
+        gap: '8px',
+        zIndex: 1000
+      }}>
+        <button
+          onClick={() => setMode('neutral')}
+          style={{
+            padding: '10px 16px',
+            background: mode === 'neutral' ? 'linear-gradient(135deg, #646cff 0%, #535bf2 100%)' : 'rgba(0, 0, 0, 0.7)',
+            color: 'white',
+            border: mode === 'neutral' ? '2px solid #646cff' : '1px solid rgba(255, 255, 255, 0.2)',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: mode === 'neutral' ? 'bold' : 'normal',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            transition: 'all 0.2s',
+            boxShadow: mode === 'neutral' ? '0 4px 12px rgba(100, 108, 255, 0.4)' : 'none'
+          }}
+        >
+          <span style={{ fontSize: '18px' }}>✋</span>
+          <span>Neutral</span>
+        </button>
+        
+        <button
+          onClick={() => setMode('draw')}
+          style={{
+            padding: '10px 16px',
+            background: mode === 'draw' ? 'linear-gradient(135deg, #646cff 0%, #535bf2 100%)' : 'rgba(0, 0, 0, 0.7)',
+            color: 'white',
+            border: mode === 'draw' ? '2px solid #646cff' : '1px solid rgba(255, 255, 255, 0.2)',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: mode === 'draw' ? 'bold' : 'normal',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            transition: 'all 0.2s',
+            boxShadow: mode === 'draw' ? '0 4px 12px rgba(100, 108, 255, 0.4)' : 'none'
+          }}
+        >
+          <span style={{ fontSize: '18px' }}>🔲</span>
+          <span>Draw</span>
+        </button>
+      </div>
+
+      {/* Position and Zoom Indicator */}
+      <div style={{
+        position: 'absolute',
+        top: '70px',
         left: '10px',
         background: 'rgba(0, 0, 0, 0.8)',
         color: 'white',
@@ -403,16 +466,19 @@ function Canvas() {
         fontSize: '14px',
         border: '1px solid rgba(255, 255, 255, 0.2)',
         zIndex: 1000,
-        textAlign: 'center'
+        textAlign: 'center',
+        maxWidth: '500px'
       }}>
-        <strong>🎨 Collaborative Canvas</strong>
+        <strong>🎨 Mode: {mode === 'neutral' ? '✋ Neutral' : '🔲 Draw'}</strong>
         <br />
         <span style={{ fontSize: '12px', opacity: 0.9 }}>
-          Click & drag on empty space to create rectangles • Click shape to select • Drag shape to move
+          {mode === 'neutral' 
+            ? 'Drag canvas to pan • Click shapes to select & move • Scroll to zoom'
+            : 'Click & drag on empty space to create rectangles • Scroll to zoom'}
         </span>
         <br />
         <span style={{ fontSize: '11px', opacity: 0.7 }}>
-          Drag to pan • Scroll to zoom • Shapes: {shapes.length}
+          Shapes: {shapes.length} • Switch modes using buttons above
         </span>
       </div>
     </div>

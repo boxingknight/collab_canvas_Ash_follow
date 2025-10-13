@@ -1,7 +1,7 @@
 import { Rect, Transformer } from 'react-konva';
 import { useRef, useEffect } from 'react';
 
-function Shape({ shape, isSelected, onSelect, onDragEnd, onDragStart, onDragMove }) {
+function Shape({ shape, isSelected, onSelect, onDragEnd, onDragStart, onDragMove, isDraggable = true }) {
   const shapeRef = useRef(null);
   const transformerRef = useRef(null);
 
@@ -51,7 +51,7 @@ function Shape({ shape, isSelected, onSelect, onDragEnd, onDragStart, onDragMove
         width={shape.width}
         height={shape.height}
         fill={shape.color}
-        draggable
+        draggable={isDraggable}
         onClick={handleClick}
         onTap={handleClick}
         onDragStart={handleDragStart}
