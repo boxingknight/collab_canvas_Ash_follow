@@ -257,6 +257,12 @@ function Canvas() {
     }
   }
 
+  // DEBUG: Log shapes being rendered
+  console.log('🎨 Canvas rendering with shapes:', {
+    count: shapes.length,
+    shapes: shapes.map(s => ({ id: s.id, x: s.x, y: s.y, width: s.width, height: s.height }))
+  });
+
   // Show loading indicator while shapes are loading from Firestore
   if (isLoading) {
     return (
@@ -402,19 +408,22 @@ function Canvas() {
           />
           
           {/* Render existing shapes */}
-          {shapes.map((shape) => (
-            <Shape
-              key={shape.id}
-              shape={shape}
-              isSelected={shape.id === selectedShapeId}
-              onSelect={() => handleShapeSelect(shape.id)}
-              onDragStart={handleShapeDragStart}
-              onDragMove={handleShapeDragMove}
-              onDragEnd={handleShapeDragEnd}
-              isDraggable={mode === 'move'}
-              isInteractive={mode !== 'draw'}
-            />
-          ))}
+          {shapes.map((shape) => {
+            console.log('Rendering shape:', shape.id, { x: shape.x, y: shape.y, width: shape.width, height: shape.height, color: shape.color });
+            return (
+              <Shape
+                key={shape.id}
+                shape={shape}
+                isSelected={shape.id === selectedShapeId}
+                onSelect={() => handleShapeSelect(shape.id)}
+                onDragStart={handleShapeDragStart}
+                onDragMove={handleShapeDragMove}
+                onDragEnd={handleShapeDragEnd}
+                isDraggable={mode === 'move'}
+                isInteractive={mode !== 'draw'}
+              />
+            );
+          })}
           
           {/* Render shape being drawn */}
           {isDrawing && newShape && (
@@ -430,6 +439,21 @@ function Canvas() {
           )}
         </Layer>
       </Stage>
+
+      {/* Shape Counter (DEBUG) */}
+      <div style={{
+        position: 'absolute',
+        top: '10px',
+        right: '10px',
+        background: 'rgba(0, 0, 0, 0.8)',
+        color: '#fff',
+        padding: '10px 15px',
+        borderRadius: '8px',
+        fontSize: '14px',
+        fontWeight: 'bold'
+      }}>
+        📊 Shapes: {shapes.length}
+      </div>
 
       {/* Mode Toggle */}
       <div style={{
