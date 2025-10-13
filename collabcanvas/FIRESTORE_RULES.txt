@@ -1,0 +1,35 @@
+/* 
+ * Firestore Security Rules for CollabCanvas
+ * 
+ * Instructions:
+ * 1. Go to Firebase Console: https://console.firebase.google.com
+ * 2. Select your project: collabcanvas-2ba10
+ * 3. Navigate to: Firestore Database > Rules
+ * 4. Copy and paste the rules below
+ * 5. Click "Publish"
+ */
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Shapes collection
+    match /shapes/{shapeId} {
+      // Allow authenticated users to read all shapes
+      allow read: if request.auth != null;
+      
+      // Allow authenticated users to create shapes
+      // Ensure createdBy matches the user's UID
+      allow create: if request.auth != null 
+                    && request.resource.data.createdBy == request.auth.uid;
+      
+      // Allow users to update any shape (collaborative editing)
+      allow update: if request.auth != null;
+      
+      // Allow users to delete their own shapes only
+      allow delete: if request.auth != null 
+                    && resource.data.createdBy == request.auth.uid;
+    }
+  }
+}
+

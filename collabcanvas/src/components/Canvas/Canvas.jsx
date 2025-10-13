@@ -2,14 +2,16 @@ import { useRef, useEffect, useState } from 'react';
 import { Stage, Layer, Line, Text, Rect, Circle } from 'react-konva';
 import useCanvas from '../../hooks/useCanvas';
 import useShapes from '../../hooks/useShapes';
+import useAuth from '../../hooks/useAuth';
 import Shape from './Shape';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, SHAPE_COLORS } from '../../utils/constants';
 import { createFPSCounter, getRandomColor } from '../../utils/helpers';
 
 function Canvas() {
   const stageRef = useRef(null);
+  const { user } = useAuth();
   const { position, scale, updatePosition, updateScale } = useCanvas();
-  const { shapes, selectedShapeId, addShape, updateShape, selectShape, deselectShape } = useShapes();
+  const { shapes, selectedShapeId, isLoading, addShape, updateShape, selectShape, deselectShape } = useShapes(user);
   const [stageSize, setStageSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [fps, setFps] = useState(60);
   const fpsCounterRef = useRef(null);
@@ -253,6 +255,26 @@ function Canvas() {
     if (e.target === e.target.getStage()) {
       deselectShape();
     }
+  }
+
+  // Show loading indicator while shapes are loading from Firestore
+  if (isLoading) {
+    return (
+      <div style={{ 
+        width: '100%', 
+        height: '100%', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        background: '#1a1a1a',
+        color: '#fff'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div className="loading-spinner" style={{ margin: '0 auto 20px' }}></div>
+          <p>Loading canvas...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

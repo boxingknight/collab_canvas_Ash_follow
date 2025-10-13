@@ -188,7 +188,7 @@ collabcanvas/
 
 ---
 
-## PR #4: Shape Creation & Local Manipulation 🔲
+## PR #4: Shape Creation & Local Manipulation ✅
 
 **Branch:** `feat/shape-creation`
 
