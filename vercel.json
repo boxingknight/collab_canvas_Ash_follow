@@ -1,0 +1,7 @@
+{
+  "buildCommand": "cd collabcanvas && npm run build",
+  "devCommand": "cd collabcanvas && npm run dev",
+  "installCommand": "cd collabcanvas && npm install",
+  "outputDirectory": "collabcanvas/dist"
+}
+
