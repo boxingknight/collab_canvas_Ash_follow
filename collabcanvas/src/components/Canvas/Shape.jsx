@@ -16,19 +16,18 @@ function Shape({ shape, isSelected, onSelect, onDragEnd, onDragStart, onDragMove
   function handleClick(e) {
     // CRITICAL: Stop ALL event propagation
     e.cancelBubble = true;
-    e.evt?.stopPropagation?.();
+    if (e.evt) {
+      e.evt.stopPropagation();
+    }
     onSelect();
   }
 
   function handleDragStart(e) {
     // CRITICAL: Stop ALL event propagation to prevent stage dragging
     e.cancelBubble = true;
-    e.evt?.stopPropagation?.();
-    
-    // Also stop drag on parent (Stage)
-    const stage = e.target.getStage();
-    if (stage) {
-      stage.stopDrag();
+    if (e.evt) {
+      e.evt.stopPropagation();
+      e.evt.preventDefault();
     }
     
     if (onDragStart) onDragStart();
@@ -37,14 +36,18 @@ function Shape({ shape, isSelected, onSelect, onDragEnd, onDragStart, onDragMove
   function handleDragMove(e) {
     // CRITICAL: Stop event propagation during drag
     e.cancelBubble = true;
-    e.evt?.stopPropagation?.();
+    if (e.evt) {
+      e.evt.stopPropagation();
+    }
     if (onDragMove) onDragMove();
   }
 
   function handleDragEnd(e) {
     // CRITICAL: Stop event propagation
     e.cancelBubble = true;
-    e.evt?.stopPropagation?.();
+    if (e.evt) {
+      e.evt.stopPropagation();
+    }
     onDragEnd({
       id: shape.id,
       x: e.target.x(),
