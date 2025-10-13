@@ -1,10 +1,12 @@
 import { useState, useCallback, useEffect } from 'react';
 import { 
-  addShape as addShapeToDatabase, 
-  updateShape as updateShapeInDatabase,
-  deleteShape as deleteShapeFromDatabase,
+  addShape as addShapeToFirestore, 
+  updateShape as updateShapeInFirestore,
+  deleteShape as deleteShapeFromFirestore,
   subscribeToShapes 
-} from '../services/realtimedb';
+} from '../services/shapes';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../services/firebase';
 
 /**
  * Custom hook to manage shape state with Firestore persistence
@@ -24,24 +26,45 @@ function useShapes(user) {
       return;
     }
 
-    console.log('📡 Subscribing to Realtime Database shapes...');
+    console.log('Subscribing to Firestore shapes...');
+    
+    // CRITICAL TEST: Try a simple one-time read first
+    async function testFirestoreAccess() {
+      try {
+        console.log('🧪 TESTING: Attempting simple getDocs() call...');
+        const shapesCollection = collection(db, 'shapes');
+        const querySnapshot = await getDocs(shapesCollection);
+        console.log('🧪 TEST SUCCESS! getDocs returned', querySnapshot.size, 'documents');
+        querySnapshot.forEach((doc) => {
+          console.log('🧪 Document ID:', doc.id, 'Data:', doc.data());
+        });
+      } catch (error) {
+        console.error('🧪 TEST FAILED! getDocs error:');
+        console.error('🧪 Error code:', error.code);
+        console.error('🧪 Error message:', error.message);
+        console.error('🧪 Full error:', error);
+      }
+    }
+    
+    // Run the test
+    testFirestoreAccess();
     
     // Set up real-time listener
     const unsubscribe = subscribeToShapes((updatedShapes) => {
-      console.log('✅ Shapes received from Realtime Database:', updatedShapes.length);
+      console.log('Shapes received from Firestore:', updatedShapes.length);
       setShapes(updatedShapes);
       setIsLoading(false);
     });
 
     // Cleanup: unsubscribe when component unmounts or user changes
     return () => {
-      console.log('Unsubscribing from Realtime Database shapes');
+      console.log('Unsubscribing from Firestore shapes');
       unsubscribe();
     };
   }, [user]);
 
   /**
-   * Add a new shape (local + Realtime Database)
+   * Add a new shape (local + Firestore)
    * @param {Object} shape - Shape object without ID
    */
   const addShape = useCallback(async (shape) => {
@@ -51,15 +74,15 @@ function useShapes(user) {
     }
 
     try {
-      // Add to Realtime Database (real-time listener will update local state)
-      const shapeKey = await addShapeToDatabase(shape);
+      // Add to Firestore (real-time listener will update local state)
+      const firestoreId = await addShapeToFirestore(shape, user.uid);
       
-      console.log('Shape added, Realtime DB key:', shapeKey);
+      console.log('Shape added, Firestore ID:', firestoreId);
       
-      // Return shape with key for immediate UI feedback if needed
+      // Return shape with Firestore ID for immediate UI feedback if needed
       return {
         ...shape,
-        id: shapeKey,
+        id: firestoreId,
         createdBy: user.uid
       };
     } catch (error) {
@@ -69,7 +92,7 @@ function useShapes(user) {
   }, [user]);
 
   /**
-   * Update an existing shape (local + Realtime Database)
+   * Update an existing shape (local + Firestore)
    * @param {string} id - Shape ID
    * @param {Object} updates - Properties to update
    */
@@ -87,16 +110,16 @@ function useShapes(user) {
         )
       );
 
-      // Update in Realtime Database (real-time listener will sync if there are conflicts)
-      await updateShapeInDatabase(id, updates);
+      // Update in Firestore (real-time listener will sync if there are conflicts)
+      await updateShapeInFirestore(id, updates);
     } catch (error) {
       console.error('Failed to update shape:', error);
-      // Real-time listener will revert to database state if update fails
+      // Real-time listener will revert to Firestore state if update fails
     }
   }, [user]);
 
   /**
-   * Delete a shape (local + Realtime Database)
+   * Delete a shape (local + Firestore)
    * @param {string} id - Shape ID
    */
   const deleteShape = useCallback(async (id) => {
@@ -112,8 +135,8 @@ function useShapes(user) {
         setSelectedShapeId(null);
       }
 
-      // Delete from Realtime Database
-      await deleteShapeFromDatabase(id);
+      // Delete from Firestore
+      await deleteShapeFromFirestore(id);
     } catch (error) {
       console.error('Failed to delete shape:', error);
       // Real-time listener will restore shape if delete fails

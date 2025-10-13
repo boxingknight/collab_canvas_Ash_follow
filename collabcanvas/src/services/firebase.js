@@ -1,6 +1,5 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { getDatabase } from 'firebase/database';
 import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 
 // CRITICAL DEBUG: Log all environment variables
@@ -41,13 +40,11 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize Firebase services
 export const db = getFirestore(app);
-export const rtdb = getDatabase(app);  // Realtime Database
 export const auth = getAuth(app);
 
 console.log('Firebase initialized:', {
   appName: app.name,
   firestoreInitialized: !!db,
-  realtimeDatabaseInitialized: !!rtdb,
   authInitialized: !!auth
 });
 
