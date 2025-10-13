@@ -1,7 +1,7 @@
 import { Rect, Transformer } from 'react-konva';
 import { useRef, useEffect } from 'react';
 
-function Shape({ shape, isSelected, onSelect, onDragEnd, onDragStart, onDragMove, isDraggable = true }) {
+function Shape({ shape, isSelected, onSelect, onDragEnd, onDragStart, onDragMove, isDraggable = true, isInteractive = true }) {
   const shapeRef = useRef(null);
   const transformerRef = useRef(null);
 
@@ -52,8 +52,9 @@ function Shape({ shape, isSelected, onSelect, onDragEnd, onDragStart, onDragMove
         height={shape.height}
         fill={shape.color}
         draggable={isDraggable}
-        onClick={handleClick}
-        onTap={handleClick}
+        listening={isInteractive}
+        onClick={isInteractive ? handleClick : undefined}
+        onTap={isInteractive ? handleClick : undefined}
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
@@ -62,6 +63,7 @@ function Shape({ shape, isSelected, onSelect, onDragEnd, onDragStart, onDragMove
         shadowColor={isSelected ? '#646cff' : undefined}
         shadowBlur={isSelected ? 10 : 0}
         shadowOpacity={isSelected ? 0.5 : 0}
+        opacity={isInteractive ? 1 : 0.7}
       />
       {isSelected && (
         <Transformer

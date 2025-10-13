@@ -14,8 +14,8 @@ function Canvas() {
   const [fps, setFps] = useState(60);
   const fpsCounterRef = useRef(null);
   
-  // Canvas mode: 'neutral' (pan) or 'draw' (create shapes)
-  const [mode, setMode] = useState('neutral');
+  // Canvas mode: 'pan', 'move', or 'draw'
+  const [mode, setMode] = useState('pan');
   
   // Shape creation state
   const [isDrawing, setIsDrawing] = useState(false);
@@ -73,6 +73,35 @@ function Canvas() {
       return () => cancelAnimationFrame(animationId);
     }
   }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    function handleKeyPress(e) {
+      // Don't trigger if user is typing in an input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      
+      switch(e.key.toLowerCase()) {
+        case 'v':
+          setMode('pan');
+          break;
+        case 'm':
+          setMode('move');
+          break;
+        case 'd':
+          setMode('draw');
+          break;
+        case 'escape':
+          setMode('pan');
+          deselectShape();
+          break;
+        default:
+          break;
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [deselectShape]);
 
   // Handle window resize
   useEffect(() => {
@@ -183,6 +212,10 @@ function Canvas() {
   // Handle shape selection
   function handleShapeSelect(shapeId) {
     selectShape(shapeId);
+    // Auto-switch to move mode when clicking a shape
+    if (mode !== 'move') {
+      setMode('move');
+    }
   }
 
   // Handle shape drag start
@@ -214,7 +247,7 @@ function Canvas() {
         ref={stageRef}
         width={stageSize.width}
         height={stageSize.height}
-        draggable={mode === 'neutral' && !isDraggingShape}
+        draggable={mode === 'pan' && !isDraggingShape}
         x={position.x}
         y={position.y}
         scaleX={scale}
@@ -227,7 +260,8 @@ function Canvas() {
         onClick={handleStageClick}
         style={{ 
           cursor: isDrawing ? 'crosshair' 
-                : mode === 'draw' ? 'crosshair' 
+                : mode === 'draw' ? 'crosshair'
+                : mode === 'move' ? 'move'
                 : isDraggingShape ? 'grabbing'
                 : 'grab' 
         }}
@@ -340,7 +374,8 @@ function Canvas() {
               onDragStart={handleShapeDragStart}
               onDragMove={handleShapeDragMove}
               onDragEnd={handleShapeDragEnd}
-              isDraggable={mode === 'neutral'}
+              isDraggable={mode === 'move'}
+              isInteractive={mode !== 'draw'}
             />
           ))}
           
@@ -369,34 +404,59 @@ function Canvas() {
         zIndex: 1000
       }}>
         <button
-          onClick={() => setMode('neutral')}
+          onClick={() => setMode('pan')}
+          title="Pan Mode (V) - Drag canvas to pan, click shapes to select"
           style={{
             padding: '10px 16px',
-            background: mode === 'neutral' ? 'linear-gradient(135deg, #646cff 0%, #535bf2 100%)' : 'rgba(0, 0, 0, 0.7)',
+            background: mode === 'pan' ? 'linear-gradient(135deg, #646cff 0%, #535bf2 100%)' : 'rgba(0, 0, 0, 0.7)',
             color: 'white',
-            border: mode === 'neutral' ? '2px solid #646cff' : '1px solid rgba(255, 255, 255, 0.2)',
+            border: mode === 'pan' ? '2px solid #646cff' : '1px solid rgba(255, 255, 255, 0.2)',
             borderRadius: '8px',
             cursor: 'pointer',
             fontSize: '14px',
-            fontWeight: mode === 'neutral' ? 'bold' : 'normal',
+            fontWeight: mode === 'pan' ? 'bold' : 'normal',
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
             transition: 'all 0.2s',
-            boxShadow: mode === 'neutral' ? '0 4px 12px rgba(100, 108, 255, 0.4)' : 'none'
+            boxShadow: mode === 'pan' ? '0 4px 12px rgba(100, 108, 255, 0.4)' : 'none'
           }}
         >
           <span style={{ fontSize: '18px' }}>✋</span>
-          <span>Neutral</span>
+          <span>Pan (V)</span>
+        </button>
+        
+        <button
+          onClick={() => setMode('move')}
+          title="Move Mode (M) - Drag shapes to move them"
+          style={{
+            padding: '10px 16px',
+            background: mode === 'move' ? 'linear-gradient(135deg, #4ade80 0%, #22c55e 100%)' : 'rgba(0, 0, 0, 0.7)',
+            color: 'white',
+            border: mode === 'move' ? '2px solid #4ade80' : '1px solid rgba(255, 255, 255, 0.2)',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: mode === 'move' ? 'bold' : 'normal',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            transition: 'all 0.2s',
+            boxShadow: mode === 'move' ? '0 4px 12px rgba(74, 222, 128, 0.4)' : 'none'
+          }}
+        >
+          <span style={{ fontSize: '18px' }}>🔄</span>
+          <span>Move (M)</span>
         </button>
         
         <button
           onClick={() => setMode('draw')}
+          title="Draw Mode (D) - Click and drag to create rectangles"
           style={{
             padding: '10px 16px',
-            background: mode === 'draw' ? 'linear-gradient(135deg, #646cff 0%, #535bf2 100%)' : 'rgba(0, 0, 0, 0.7)',
+            background: mode === 'draw' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'rgba(0, 0, 0, 0.7)',
             color: 'white',
-            border: mode === 'draw' ? '2px solid #646cff' : '1px solid rgba(255, 255, 255, 0.2)',
+            border: mode === 'draw' ? '2px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.2)',
             borderRadius: '8px',
             cursor: 'pointer',
             fontSize: '14px',
@@ -405,31 +465,31 @@ function Canvas() {
             alignItems: 'center',
             gap: '6px',
             transition: 'all 0.2s',
-            boxShadow: mode === 'draw' ? '0 4px 12px rgba(100, 108, 255, 0.4)' : 'none'
+            boxShadow: mode === 'draw' ? '0 4px 12px rgba(245, 158, 11, 0.4)' : 'none'
           }}
         >
           <span style={{ fontSize: '18px' }}>🔲</span>
-          <span>Draw</span>
+          <span>Draw (D)</span>
         </button>
       </div>
 
       {/* Position and Zoom Indicator */}
       <div style={{
         position: 'absolute',
-        top: '70px',
+        top: '65px',
         left: '10px',
         background: 'rgba(0, 0, 0, 0.8)',
         color: 'white',
         padding: '10px 14px',
         borderRadius: '6px',
-        fontSize: '13px',
+        fontSize: '12px',
         fontFamily: 'monospace',
         border: '1px solid rgba(255, 255, 255, 0.2)',
         zIndex: 1000,
-        lineHeight: '1.6'
+        lineHeight: '1.5'
       }}>
-        <div>X: <span style={{ color: '#4ade80' }}>{Math.round(position.x)}</span> px</div>
-        <div>Y: <span style={{ color: '#fbbf24' }}>{Math.round(position.y)}</span> px</div>
+        <div>X: <span style={{ color: '#4ade80' }}>{Math.round(position.x)}</span></div>
+        <div>Y: <span style={{ color: '#fbbf24' }}>{Math.round(position.y)}</span></div>
         <div>Zoom: <span style={{ color: '#646cff' }}>{(scale * 100).toFixed(0)}%</span></div>
       </div>
 
@@ -459,26 +519,30 @@ function Canvas() {
         bottom: '20px',
         left: '50%',
         transform: 'translateX(-50%)',
-        background: 'rgba(0, 0, 0, 0.8)',
+        background: 'rgba(0, 0, 0, 0.85)',
         color: 'white',
-        padding: '12px 20px',
+        padding: '14px 24px',
         borderRadius: '8px',
         fontSize: '14px',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
+        border: '2px solid ' + (mode === 'pan' ? '#646cff' : mode === 'move' ? '#4ade80' : '#f59e0b'),
         zIndex: 1000,
         textAlign: 'center',
-        maxWidth: '500px'
+        maxWidth: '550px'
       }}>
-        <strong>🎨 Mode: {mode === 'neutral' ? '✋ Neutral' : '🔲 Draw'}</strong>
+        <strong style={{ fontSize: '16px' }}>
+          {mode === 'pan' ? '✋ Pan Mode' : mode === 'move' ? '🔄 Move Mode' : '🔲 Draw Mode'}
+        </strong>
         <br />
-        <span style={{ fontSize: '12px', opacity: 0.9 }}>
-          {mode === 'neutral' 
-            ? 'Drag canvas to pan • Click shapes to select & move • Scroll to zoom'
-            : 'Click & drag on empty space to create rectangles • Scroll to zoom'}
+        <span style={{ fontSize: '13px', opacity: 0.95, lineHeight: '1.6' }}>
+          {mode === 'pan' 
+            ? 'Drag canvas to pan • Click shapes to select (auto-switches to Move) • Scroll to zoom'
+            : mode === 'move'
+            ? 'Drag selected shapes to move • Click other shapes to select • Canvas will NOT pan'
+            : 'Click & drag on empty space to create rectangles • Canvas will NOT pan'}
         </span>
         <br />
-        <span style={{ fontSize: '11px', opacity: 0.7 }}>
-          Shapes: {shapes.length} • Switch modes using buttons above
+        <span style={{ fontSize: '11px', opacity: 0.75, marginTop: '4px', display: 'block' }}>
+          Shapes: {shapes.length} {selectedShapeId ? '• 1 selected' : ''} • Keyboard: V (Pan) • M (Move) • D (Draw) • Esc (Pan + Deselect)
         </span>
       </div>
     </div>
