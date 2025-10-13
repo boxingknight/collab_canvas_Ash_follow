@@ -61,10 +61,10 @@ collabcanvas/
   - **Files:** `package.json`
   - **Action:** Install react, react-dom, react-konva, konva, firebase
   
-- [ ] Create Firebase project in console
+- [x] Create Firebase project in console
   - **Action:** Create project, enable Firestore, enable Authentication
   
-- [ ] Configure Firebase in app
+- [x] Configure Firebase in app
   - **Files:** `src/services/firebase.js`, `.env.local`, `.gitignore`
   - **Action:** Add Firebase config, initialize Firebase app
   
