@@ -14,26 +14,37 @@ function Shape({ shape, isSelected, onSelect, onDragEnd, onDragStart, onDragMove
   }, [isSelected]);
 
   function handleClick(e) {
-    // Stop event propagation to prevent stage click
+    // CRITICAL: Stop ALL event propagation
     e.cancelBubble = true;
+    e.evt?.stopPropagation?.();
     onSelect();
   }
 
   function handleDragStart(e) {
-    // Stop event propagation to prevent stage dragging
+    // CRITICAL: Stop ALL event propagation to prevent stage dragging
     e.cancelBubble = true;
+    e.evt?.stopPropagation?.();
+    
+    // Also stop drag on parent (Stage)
+    const stage = e.target.getStage();
+    if (stage) {
+      stage.stopDrag();
+    }
+    
     if (onDragStart) onDragStart();
   }
 
   function handleDragMove(e) {
-    // Stop event propagation during drag
+    // CRITICAL: Stop event propagation during drag
     e.cancelBubble = true;
+    e.evt?.stopPropagation?.();
     if (onDragMove) onDragMove();
   }
 
   function handleDragEnd(e) {
-    // Stop event propagation
+    // CRITICAL: Stop event propagation
     e.cancelBubble = true;
+    e.evt?.stopPropagation?.();
     onDragEnd({
       id: shape.id,
       x: e.target.x(),

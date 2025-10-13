@@ -117,7 +117,19 @@ function Canvas() {
   }, []);
 
   // Handle pan (drag)
+  function handleDragStart(e) {
+    // CRITICAL: Only allow Stage drag in pan mode
+    if (mode !== 'pan') {
+      e.target.stopDrag();
+      return;
+    }
+  }
+
   function handleDragEnd(e) {
+    // CRITICAL: Only update position in pan mode
+    if (mode !== 'pan') {
+      return;
+    }
     updatePosition({
       x: e.target.x(),
       y: e.target.y()
@@ -247,11 +259,12 @@ function Canvas() {
         ref={stageRef}
         width={stageSize.width}
         height={stageSize.height}
-        draggable={mode === 'pan' && !isDraggingShape}
+        draggable={mode === 'pan'}
         x={position.x}
         y={position.y}
         scaleX={scale}
         scaleY={scale}
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
