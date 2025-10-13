@@ -30,6 +30,34 @@ service cloud.firestore {
       allow delete: if request.auth != null 
                     && resource.data.createdBy == request.auth.uid;
     }
+    
+    // Cursors collection (for multiplayer cursor tracking)
+    match /cursors/{userId} {
+      // Allow authenticated users to read all cursors
+      allow read: if request.auth != null;
+      
+      // Allow users to write/update only their own cursor
+      allow write: if request.auth != null 
+                   && request.auth.uid == userId;
+      
+      // Allow users to delete only their own cursor
+      allow delete: if request.auth != null 
+                    && request.auth.uid == userId;
+    }
+    
+    // Presence collection (for online user tracking)
+    match /presence/{userId} {
+      // Allow authenticated users to read all presence data
+      allow read: if request.auth != null;
+      
+      // Allow users to write/update only their own presence
+      allow write: if request.auth != null 
+                   && request.auth.uid == userId;
+      
+      // Allow users to delete only their own presence
+      allow delete: if request.auth != null 
+                    && request.auth.uid == userId;
+    }
   }
 }
 

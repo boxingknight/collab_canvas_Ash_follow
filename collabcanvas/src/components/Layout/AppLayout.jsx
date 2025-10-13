@@ -1,4 +1,9 @@
+import usePresence from '../../hooks/usePresence';
+import UserList from '../Presence/UserList';
+
 function AppLayout({ children, user, onLogout }) {
+  const { onlineUsers } = usePresence(user);
+
   return (
     <div className="app-layout">
       <header className="app-header">
@@ -14,6 +19,8 @@ function AppLayout({ children, user, onLogout }) {
       </header>
       <main className="app-main">
         {children}
+        {/* User presence list */}
+        <UserList users={onlineUsers} currentUser={user} />
       </main>
     </div>
   );

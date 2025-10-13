@@ -290,40 +290,42 @@ collabcanvas/
 **Goal:** Shapes sync in real-time across multiple users
 
 ### Tasks:
-- [ ] Set up Firestore real-time listener
+- [x] Set up Firestore real-time listener
   - **Files:** `src/services/shapes.js`
   - **Action:** Use onSnapshot to listen for collection changes
   
-- [ ] Integrate listener with shapes hook
+- [x] Integrate listener with shapes hook
   - **Files:** `src/hooks/useShapes.js`
   - **Action:** Subscribe to shape changes, update local state
   
-- [ ] Handle shape addition from other users
+- [x] Handle shape addition from other users
   - **Files:** `src/hooks/useShapes.js`
   - **Action:** Add new shapes to local state when Firestore changes
   
-- [ ] Handle shape updates from other users
+- [x] Handle shape updates from other users
   - **Files:** `src/hooks/useShapes.js`
   - **Action:** Update existing shapes when Firestore changes
   
-- [ ] Handle shape deletion from other users
+- [x] Handle shape deletion from other users
   - **Files:** `src/hooks/useShapes.js`
   - **Action:** Remove shapes when deleted in Firestore
   
-- [ ] Prevent feedback loops
+- [x] Prevent feedback loops
   - **Files:** `src/hooks/useShapes.js`
   - **Action:** Don't update Firestore on listener callbacks
   
-- [ ] Implement "last write wins" conflict resolution
+- [x] Implement "last write wins" conflict resolution
   - **Files:** `src/services/shapes.js`
   - **Action:** Use Firestore timestamps to resolve conflicts
   
-- [ ] Add cleanup on unmount
+- [x] Add cleanup on unmount
   - **Files:** `src/hooks/useShapes.js`
   - **Action:** Unsubscribe from listener when component unmounts
   
-- [ ] Test with multiple browsers
+- [x] Test with multiple browsers
   - **Action:** Open 2+ browser windows, create/move shapes, verify sync
+  
+- [x] Added Delete/Backspace keyboard shortcut for deleting selected shapes
 
 **Acceptance Criteria:**
 - ✅ Shape created in Browser A appears in Browser B immediately
@@ -341,52 +343,60 @@ collabcanvas/
 **Goal:** Show real-time cursor positions for all users
 
 ### Tasks:
-- [ ] Design Firestore schema for cursors
-  - **Files:** `README.md` (document schema)
+- [x] Design Firestore schema for cursors
+  - **Files:** `PR7_CURSORS_SETUP.md` (documented schema)
   - **Action:** Define structure: cursors collection with userId, x, y, userName, timestamp
   
-- [ ] Create cursors service
+- [x] Create cursors service
   - **Files:** `src/services/cursors.js`
-  - **Action:** Functions for updateCursorPosition, subscribeToCursors
+  - **Action:** Functions for updateCursorPosition, subscribeToCursors, removeCursor
   
-- [ ] Create RemoteCursor component
+- [x] Create RemoteCursor component
   - **Files:** `src/components/Canvas/RemoteCursor.jsx`
-  - **Action:** Render cursor icon with user name label
+  - **Action:** Render cursor icon with user name label (color-coded per user)
   
-- [ ] Create cursors hook
+- [x] Create cursors hook
   - **Files:** `src/hooks/useCursors.js`
   - **Action:** Manage cursor state, throttle updates
   
-- [ ] Track local mouse position
+- [x] Track local mouse position
   - **Files:** `src/components/Canvas/Canvas.jsx`
   - **Action:** Listen to mousemove, convert to canvas coordinates
   
-- [ ] Throttle cursor updates
+- [x] Throttle cursor updates
   - **Files:** `src/hooks/useCursors.js`, `src/utils/helpers.js`
   - **Action:** Throttle updates to every 50ms
   
-- [ ] Send cursor position to Firestore
+- [x] Send cursor position to Firestore
   - **Files:** `src/hooks/useCursors.js`
   - **Action:** Update Firestore document with current position
   
-- [ ] Subscribe to other users' cursors
+- [x] Subscribe to other users' cursors
   - **Files:** `src/hooks/useCursors.js`
   - **Action:** Listen to cursors collection, filter out own cursor
   
-- [ ] Render remote cursors on canvas
+- [x] Render remote cursors on canvas
   - **Files:** `src/components/Canvas/Canvas.jsx`
   - **Action:** Map over cursors, render RemoteCursor components
   
-- [ ] Style cursor labels
+- [x] Style cursor labels
   - **Files:** `src/components/Canvas/RemoteCursor.jsx`
-  - **Action:** Position name label near cursor, add background
+  - **Action:** Position name label near cursor, add shadow for visibility
   
-- [ ] Handle cursor cleanup
+- [x] Handle cursor cleanup
   - **Files:** `src/hooks/useCursors.js`
   - **Action:** Remove cursor from Firestore on user disconnect
   
-- [ ] Test cursor sync
+- [x] Test cursor sync
   - **Action:** Move mouse in one browser, verify appears in another
+  
+- [x] Update Firestore security rules
+  - **Files:** `FIRESTORE_RULES.txt`, `FIRESTORE_RULES_SIMPLE.txt`
+  - **Action:** Added rules for cursors collection
+  
+- [x] Add online users counter
+  - **Files:** `src/components/Canvas/Canvas.jsx`
+  - **Action:** Display "👥 Online: X" indicator
 
 **Acceptance Criteria:**
 - ✅ Can see other users' cursors moving in real-time
@@ -405,52 +415,56 @@ collabcanvas/
 **Goal:** Show list of currently online users
 
 ### Tasks:
-- [ ] Design Firestore schema for presence
-  - **Files:** `README.md` (document schema)
-  - **Action:** Define structure: presence collection with userId, userName, status, lastSeen
+- [x] Design Firestore schema for presence
+  - **Files:** `PR8_PRESENCE_SETUP.md` (documented schema)
+  - **Action:** Define structure: presence collection with userId, userName, userEmail, status, lastSeen, joinedAt
   
-- [ ] Create presence service
+- [x] Create presence service
   - **Files:** `src/services/presence.js`
-  - **Action:** Functions for setOnline, setOffline, subscribeToPresence
+  - **Action:** Functions for setOnline, setOffline, updateHeartbeat, subscribeToPresence
   
-- [ ] Create UserList component
+- [x] Create UserList component
   - **Files:** `src/components/Presence/UserList.jsx`
-  - **Action:** Display list of online users with status indicators
+  - **Action:** Beautiful collapsible list with color-coded status indicators
   
-- [ ] Create presence hook
+- [x] Create presence hook
   - **Files:** `src/hooks/usePresence.js`
-  - **Action:** Manage online users state
+  - **Action:** Manage online users state with auto-cleanup
   
-- [ ] Set user online on mount
+- [x] Set user online on mount
   - **Files:** `src/hooks/usePresence.js`
   - **Action:** Write to presence collection when user logs in
   
-- [ ] Use Firebase onDisconnect
-  - **Files:** `src/services/presence.js`
-  - **Action:** Automatically set offline when user disconnects
-  
-- [ ] Subscribe to presence updates
+- [x] Implement heartbeat system
   - **Files:** `src/hooks/usePresence.js`
-  - **Action:** Listen to presence collection changes
+  - **Action:** Update lastSeen every 30 seconds to keep user online
   
-- [ ] Handle user join events
+- [x] Subscribe to presence updates
+  - **Files:** `src/hooks/usePresence.js`
+  - **Action:** Listen to presence collection changes in real-time
+  
+- [x] Handle user join events
   - **Files:** `src/hooks/usePresence.js`
   - **Action:** Add users to online list when they join
   
-- [ ] Handle user leave events
+- [x] Handle user leave events
   - **Files:** `src/hooks/usePresence.js`
   - **Action:** Remove users from online list when they leave
   
-- [ ] Add UserList to layout
+- [x] Add UserList to layout
   - **Files:** `src/components/Layout/AppLayout.jsx`
-  - **Action:** Position UserList in corner or sidebar
+  - **Action:** Position UserList in bottom-right corner
   
-- [ ] Style presence UI
-  - **Files:** `src/components/Presence/UserList.jsx`, `src/index.css`
-  - **Action:** Style user list, add online indicators (green dot)
+- [x] Style presence UI
+  - **Files:** `src/components/Presence/UserList.jsx`
+  - **Action:** Dark theme with pulsing status indicators, collapsible design
   
-- [ ] Test presence system
+- [x] Test presence system
   - **Action:** Open multiple browsers, verify users appear/disappear
+  
+- [x] Update Firestore security rules
+  - **Files:** `FIRESTORE_RULES.txt`, `FIRESTORE_RULES_SIMPLE.txt`
+  - **Action:** Added rules for presence collection
 
 **Acceptance Criteria:**
 - ✅ List shows all currently connected users

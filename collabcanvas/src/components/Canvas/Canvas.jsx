@@ -2,8 +2,10 @@ import { useRef, useEffect, useState } from 'react';
 import { Stage, Layer, Line, Text, Rect, Circle } from 'react-konva';
 import useCanvas from '../../hooks/useCanvas';
 import useShapes from '../../hooks/useShapes';
+import useCursors from '../../hooks/useCursors';
 import useAuth from '../../hooks/useAuth';
 import Shape from './Shape';
+import RemoteCursor from './RemoteCursor';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, SHAPE_COLORS } from '../../utils/constants';
 import { createFPSCounter, getRandomColor } from '../../utils/helpers';
 
@@ -11,7 +13,8 @@ function Canvas() {
   const stageRef = useRef(null);
   const { user } = useAuth();
   const { position, scale, updatePosition, updateScale } = useCanvas();
-  const { shapes, selectedShapeId, isLoading, addShape, updateShape, selectShape, deselectShape } = useShapes(user);
+  const { shapes, selectedShapeId, isLoading, addShape, updateShape, deleteShape, selectShape, deselectShape } = useShapes(user);
+  const { remoteCursors, updateMyCursor } = useCursors(user);
   const [stageSize, setStageSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [fps, setFps] = useState(60);
   const fpsCounterRef = useRef(null);
@@ -96,6 +99,15 @@ function Canvas() {
           setMode('pan');
           deselectShape();
           break;
+        case 'delete':
+        case 'backspace':
+          // Delete selected shape
+          if (selectedShapeId) {
+            e.preventDefault(); // Prevent browser back navigation on Backspace
+            deleteShape(selectedShapeId);
+            console.log('🗑️ Deleted shape:', selectedShapeId);
+          }
+          break;
         default:
           break;
       }
@@ -103,7 +115,7 @@ function Canvas() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [deselectShape]);
+  }, [deselectShape, selectedShapeId, deleteShape]);
 
   // Handle window resize
   useEffect(() => {
@@ -189,10 +201,16 @@ function Canvas() {
 
   // Handle shape creation - mouse move
   function handleMouseMove(e) {
-    if (!isDrawing || !newShape) return;
-
     const stage = stageRef.current;
     const pos = stage.getRelativePointerPosition();
+    
+    // Always update cursor position for multiplayer cursors
+    if (pos && user) {
+      updateMyCursor(pos.x, pos.y);
+    }
+    
+    // Handle shape drawing
+    if (!isDrawing || !newShape) return;
     
     setNewShape({
       ...newShape,
@@ -448,22 +466,51 @@ function Canvas() {
               listening={false}
             />
           )}
+          
+          {/* Render remote cursors from other users */}
+          {remoteCursors.map((cursor) => (
+            <RemoteCursor
+              key={cursor.id}
+              cursor={cursor}
+            />
+          ))}
         </Layer>
       </Stage>
 
-      {/* Shape Counter (DEBUG) */}
+      {/* Stats Display */}
       <div style={{
         position: 'absolute',
         top: '10px',
         right: '10px',
-        background: 'rgba(0, 0, 0, 0.8)',
-        color: '#fff',
-        padding: '10px 15px',
-        borderRadius: '8px',
-        fontSize: '14px',
-        fontWeight: 'bold'
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px'
       }}>
-        📊 Shapes: {shapes.length}
+        {/* Shape Counter */}
+        <div style={{
+          background: 'rgba(0, 0, 0, 0.8)',
+          color: '#fff',
+          padding: '10px 15px',
+          borderRadius: '8px',
+          fontSize: '14px',
+          fontWeight: 'bold'
+        }}>
+          📊 Shapes: {shapes.length}
+        </div>
+        
+        {/* Active Users Counter */}
+        {remoteCursors.length > 0 && (
+          <div style={{
+            background: 'rgba(0, 0, 0, 0.8)',
+            color: '#4ade80',
+            padding: '10px 15px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: 'bold'
+          }}>
+            👥 Online: {remoteCursors.length + 1}
+          </div>
+        )}
       </div>
 
       {/* Mode Toggle */}
@@ -614,7 +661,7 @@ function Canvas() {
         </span>
         <br />
         <span style={{ fontSize: '11px', opacity: 0.75, marginTop: '4px', display: 'block' }}>
-          Shapes: {shapes.length} {selectedShapeId ? '• 1 selected' : ''} • Keyboard: V (Pan) • M (Move) • D (Draw) • Esc (Pan + Deselect)
+          Shapes: {shapes.length} {selectedShapeId ? '• 1 selected' : ''} • Keyboard: V (Pan) • M (Move) • D (Draw) • Esc (Pan + Deselect) • Del/Backspace (Delete)
         </span>
       </div>
     </div>

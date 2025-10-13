@@ -26,6 +26,26 @@ service cloud.firestore {
       // Allow authenticated users to delete any shape (for MVP simplicity)
       allow delete: if request.auth != null;
     }
+    
+    // Cursors collection (for multiplayer cursor tracking)
+    match /cursors/{userId} {
+      // Allow authenticated users to read all cursors
+      allow read: if request.auth != null;
+      
+      // Allow users to write/update/delete only their own cursor
+      allow write: if request.auth != null 
+                   && request.auth.uid == userId;
+    }
+    
+    // Presence collection (for online user tracking)
+    match /presence/{userId} {
+      // Allow authenticated users to read all presence data
+      allow read: if request.auth != null;
+      
+      // Allow users to write/update/delete only their own presence
+      allow write: if request.auth != null 
+                   && request.auth.uid == userId;
+    }
   }
 }
 
