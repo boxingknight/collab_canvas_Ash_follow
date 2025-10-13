@@ -80,10 +80,10 @@ collabcanvas/
   - **Files:** `.gitignore`, `README.md`
   - **Action:** Create repo, add .env to gitignore, write basic README
   
-- [ ] Set up Vercel deployment
+- [x] Set up Vercel deployment
   - **Action:** Connect GitHub repo to Vercel, configure build settings
   
-- [ ] Test deployment pipeline
+- [x] Test deployment pipeline
   - **Action:** Push to main, verify app deploys successfully
 
 **Acceptance Criteria:**
