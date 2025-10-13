@@ -3,6 +3,8 @@ import UserList from '../Presence/UserList';
 
 function AppLayout({ children, user, onLogout }) {
   const { onlineUsers } = usePresence(user);
+  
+  console.log('👥 AppLayout onlineUsers:', onlineUsers.length, onlineUsers);
 
   return (
     <div className="app-layout">

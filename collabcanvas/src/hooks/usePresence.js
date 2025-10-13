@@ -34,6 +34,7 @@ function usePresence(user) {
 
     // Subscribe to presence updates
     const unsubscribe = subscribeToPresence((users) => {
+      console.log('👥 usePresence received users:', users.length, users.map(u => u.userName));
       setOnlineUsers(users);
     });
 
