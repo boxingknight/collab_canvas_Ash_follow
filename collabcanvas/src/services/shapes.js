@@ -19,6 +19,8 @@ const SHAPES_COLLECTION = 'shapes';
  */
 export async function addShape(shapeData, userId) {
   try {
+    console.log('Adding shape to Firestore:', { shapeData, userId });
+    
     const docRef = await addDoc(collection(db, SHAPES_COLLECTION), {
       x: shapeData.x,
       y: shapeData.y,
@@ -30,10 +32,10 @@ export async function addShape(shapeData, userId) {
       updatedAt: serverTimestamp()
     });
     
-    console.log('Shape added to Firestore:', docRef.id);
+    console.log('✅ Shape added to Firestore successfully:', docRef.id);
     return docRef.id;
   } catch (error) {
-    console.error('Error adding shape:', error);
+    console.error('❌ Error adding shape:', error.code, error.message);
     throw error;
   }
 }

@@ -1,0 +1,31 @@
+/* 
+ * COPY THESE EXACT RULES TO FIREBASE CONSOLE
+ * 
+ * Go to: Firebase Console → Firestore Database → Rules
+ * Replace ALL existing rules with these
+ * Click "Publish"
+ */
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Shapes collection
+    match /shapes/{shapeId} {
+      // Allow authenticated users to read all shapes
+      allow read: if request.auth != null;
+      
+      // Allow authenticated users to create shapes
+      // Ensure createdBy matches the user's UID
+      allow create: if request.auth != null 
+                    && request.resource.data.createdBy == request.auth.uid;
+      
+      // Allow authenticated users to update any shape (collaborative editing)
+      allow update: if request.auth != null;
+      
+      // Allow authenticated users to delete any shape (for MVP simplicity)
+      allow delete: if request.auth != null;
+    }
+  }
+}
+
