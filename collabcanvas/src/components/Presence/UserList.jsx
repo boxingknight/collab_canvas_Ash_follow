@@ -47,9 +47,36 @@ function UserList({ users, currentUser }) {
     currentUserName: currentUser?.displayName || currentUser?.email
   });
 
-  // Use all users from presence - no need to add current user manually
-  // The presence system should already include current user
-  const allUsers = users;
+  // Always include current user plus all online users from presence
+  const allUsers = [];
+  
+  // Add current user first if we have one
+  if (currentUser) {
+    // Check if current user is already in the presence list
+    const currentUserInPresence = users.find(u => u.userId === currentUser.uid);
+    
+    if (currentUserInPresence) {
+      // Use the presence data for current user
+      allUsers.push(currentUserInPresence);
+    } else {
+      // Add current user manually if not in presence yet
+      allUsers.push({
+        userId: currentUser.uid,
+        userName: currentUser.displayName || currentUser.email || 'You',
+        userEmail: currentUser.email,
+        status: 'online'
+      });
+    }
+  }
+  
+  // Add all other users from presence (excluding current user to avoid duplicates)
+  users.forEach(user => {
+    if (user.userId !== currentUser?.uid) {
+      allUsers.push(user);
+    }
+  });
+  
+  console.log('👥 UserList allUsers after processing:', allUsers.length, allUsers.map(u => u.userName));
 
   return (
     <div 
