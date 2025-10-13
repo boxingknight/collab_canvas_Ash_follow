@@ -5,9 +5,7 @@ import {
   deleteDoc, 
   doc, 
   onSnapshot,
-  serverTimestamp,
-  query,
-  orderBy 
+  serverTimestamp
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -85,14 +83,12 @@ export async function deleteShape(shapeId) {
  */
 export function subscribeToShapes(callback) {
   try {
-    // Query shapes ordered by creation time
-    const q = query(
-      collection(db, SHAPES_COLLECTION),
-      orderBy('createdAt', 'asc')
-    );
+    // Query all shapes (no orderBy to avoid index requirement)
+    // Shapes will be ordered by document ID by default
+    const shapesCollection = collection(db, SHAPES_COLLECTION);
     
     // Set up real-time listener
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(shapesCollection, (snapshot) => {
       const shapes = [];
       
       snapshot.forEach((doc) => {
@@ -102,10 +98,17 @@ export function subscribeToShapes(callback) {
         });
       });
       
+      // Sort by createdAt client-side if available
+      shapes.sort((a, b) => {
+        if (!a.createdAt || !b.createdAt) return 0;
+        return a.createdAt.toMillis() - b.createdAt.toMillis();
+      });
+      
       console.log('Shapes updated from Firestore:', shapes.length);
       callback(shapes);
     }, (error) => {
       console.error('Error listening to shapes:', error);
+      console.error('Full error details:', error.code, error.message);
       // Call callback with empty array on error
       callback([]);
     });
