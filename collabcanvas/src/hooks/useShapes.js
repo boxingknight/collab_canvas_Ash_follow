@@ -5,6 +5,8 @@ import {
   deleteShape as deleteShapeFromFirestore,
   subscribeToShapes 
 } from '../services/shapes';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../services/firebase';
 
 /**
  * Custom hook to manage shape state with Firestore persistence
@@ -25,6 +27,27 @@ function useShapes(user) {
     }
 
     console.log('Subscribing to Firestore shapes...');
+    
+    // CRITICAL TEST: Try a simple one-time read first
+    async function testFirestoreAccess() {
+      try {
+        console.log('🧪 TESTING: Attempting simple getDocs() call...');
+        const shapesCollection = collection(db, 'shapes');
+        const querySnapshot = await getDocs(shapesCollection);
+        console.log('🧪 TEST SUCCESS! getDocs returned', querySnapshot.size, 'documents');
+        querySnapshot.forEach((doc) => {
+          console.log('🧪 Document ID:', doc.id, 'Data:', doc.data());
+        });
+      } catch (error) {
+        console.error('🧪 TEST FAILED! getDocs error:');
+        console.error('🧪 Error code:', error.code);
+        console.error('🧪 Error message:', error.message);
+        console.error('🧪 Full error:', error);
+      }
+    }
+    
+    // Run the test
+    testFirestoreAccess();
     
     // Set up real-time listener
     const unsubscribe = subscribeToShapes((updatedShapes) => {
