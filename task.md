@@ -68,15 +68,15 @@ collabcanvas/
   - **Files:** `src/services/firebase.js`, `.env.local`, `.gitignore`
   - **Action:** Add Firebase config, initialize Firebase app
   
-- [ ] Set up basic project structure
+- [x] Set up basic project structure
   - **Files:** Create all directories listed in file structure
   - **Action:** Create empty folders and placeholder files
   
-- [ ] Create constants file
+- [x] Create constants file
   - **Files:** `src/utils/constants.js`
   - **Action:** Define canvas dimensions, colors, performance targets
   
-- [ ] Initialize Git repository
+- [x] Initialize Git repository
   - **Files:** `.gitignore`, `README.md`
   - **Action:** Create repo, add .env to gitignore, write basic README
   
