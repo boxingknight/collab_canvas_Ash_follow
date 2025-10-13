@@ -1,0 +1,54 @@
+/*
+ * Firebase Realtime Database Security Rules
+ * 
+ * Instructions:
+ * 1. Go to Firebase Console: https://console.firebase.google.com
+ * 2. Select project: collabcanvas-2ba10
+ * 3. Click "Realtime Database" in left sidebar
+ * 4. Go to "Rules" tab
+ * 5. Copy and paste these rules
+ * 6. Click "Publish"
+ */
+
+{
+  "rules": {
+    "shapes": {
+      "$shapeId": {
+        // Allow authenticated users to read all shapes
+        ".read": "auth != null",
+        
+        // Allow authenticated users to write (create/update)
+        ".write": "auth != null",
+        
+        // Validate data structure
+        ".validate": "newData.hasChildren(['x', 'y', 'width', 'height', 'color', 'createdBy', 'createdAt', 'updatedAt'])",
+        
+        "x": {
+          ".validate": "newData.isNumber()"
+        },
+        "y": {
+          ".validate": "newData.isNumber()"
+        },
+        "width": {
+          ".validate": "newData.isNumber()"
+        },
+        "height": {
+          ".validate": "newData.isNumber()"
+        },
+        "color": {
+          ".validate": "newData.isString()"
+        },
+        "createdBy": {
+          ".validate": "newData.isString()"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber()"
+        },
+        "updatedAt": {
+          ".validate": "newData.isNumber()"
+        }
+      }
+    }
+  }
+}
+
