@@ -32,17 +32,41 @@ function useShapes(user) {
     async function testFirestoreAccess() {
       try {
         console.log('🧪 TESTING: Attempting simple getDocs() call...');
+        console.log('🧪 Current URL:', window.location.href);
+        console.log('🧪 Current hostname:', window.location.hostname);
+        console.log('🧪 User authenticated?', !!user);
+        console.log('🧪 User UID:', user?.uid);
+        console.log('🧪 User email:', user?.email);
+        
         const shapesCollection = collection(db, 'shapes');
+        console.log('🧪 Collection reference created');
+        
         const querySnapshot = await getDocs(shapesCollection);
-        console.log('🧪 TEST SUCCESS! getDocs returned', querySnapshot.size, 'documents');
+        console.log('🧪 ✅ TEST SUCCESS! getDocs returned', querySnapshot.size, 'documents');
+        
         querySnapshot.forEach((doc) => {
           console.log('🧪 Document ID:', doc.id, 'Data:', doc.data());
         });
       } catch (error) {
-        console.error('🧪 TEST FAILED! getDocs error:');
+        console.error('🧪 ❌ TEST FAILED! getDocs error:');
         console.error('🧪 Error code:', error.code);
         console.error('🧪 Error message:', error.message);
-        console.error('🧪 Full error:', error);
+        console.error('🧪 Error name:', error.name);
+        console.error('🧪 Error details:', {
+          code: error.code,
+          message: error.message,
+          name: error.name,
+          stack: error.stack
+        });
+        
+        // Check authentication specifically
+        if (error.code === 'permission-denied') {
+          console.error('🧪 PERMISSION DENIED! Possible causes:');
+          console.error('🧪 1. Domain not in Firebase Authorized domains');
+          console.error('🧪 2. Firestore rules blocking access');
+          console.error('🧪 3. User not properly authenticated');
+          console.error('🧪 Current domain:', window.location.hostname);
+        }
       }
     }
     
