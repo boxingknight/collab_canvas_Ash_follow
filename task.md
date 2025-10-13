@@ -243,30 +243,31 @@ collabcanvas/
 **Goal:** Save shapes to Firestore and load on mount
 
 ### Tasks:
-- [ ] Design Firestore schema for shapes
-  - **Files:** `README.md` (document schema)
+- [x] Design Firestore schema for shapes
+  - **Files:** `FIRESTORE_SCHEMA.md` (document schema)
   - **Action:** Define structure: shapes collection with id, x, y, width, height, color, createdBy, createdAt
   
-- [ ] Create shapes service
+- [x] Create shapes service
   - **Files:** `src/services/shapes.js`
   - **Action:** Functions for addShape, updateShape, deleteShape, subscribeToShapes
   
 - [ ] Set up Firestore security rules
   - **Action:** In Firebase Console, set read/write rules for authenticated users
+  - **Note:** Rules ready in `FIRESTORE_RULES.txt` - awaiting user to apply in console
   
-- [ ] Integrate shape creation with Firestore
+- [x] Integrate shape creation with Firestore
   - **Files:** `src/hooks/useShapes.js`
   - **Action:** On local shape creation, write to Firestore
   
-- [ ] Integrate shape updates with Firestore
+- [x] Integrate shape updates with Firestore
   - **Files:** `src/hooks/useShapes.js`
   - **Action:** On shape move, update Firestore document
   
-- [ ] Load existing shapes on mount
+- [x] Load existing shapes on mount
   - **Files:** `src/hooks/useShapes.js`
   - **Action:** Query Firestore on component mount, load into state
   
-- [ ] Add timestamp to shapes
+- [x] Add timestamp to shapes
   - **Files:** `src/services/shapes.js`
   - **Action:** Use Firebase serverTimestamp for conflict resolution
   
