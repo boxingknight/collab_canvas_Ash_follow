@@ -195,35 +195,35 @@ collabcanvas/
 **Goal:** Create and move rectangles locally (no sync yet)
 
 ### Tasks:
-- [ ] Create Shape component
+- [x] Create Shape component
   - **Files:** `src/components/Canvas/Shape.jsx`
   - **Action:** Konva Rect component with props for position, size, color
   
-- [ ] Implement shape creation on canvas
+- [x] Implement shape creation on canvas
   - **Files:** `src/components/Canvas/Canvas.jsx`
   - **Action:** Click-and-drag to create rectangle with size
   
-- [ ] Add local shape state management
+- [x] Add local shape state management
   - **Files:** `src/hooks/useShapes.js`
   - **Action:** useState to manage array of shapes with IDs
   
-- [ ] Implement shape selection
+- [x] Implement shape selection
   - **Files:** `src/components/Canvas/Shape.jsx`, `src/hooks/useShapes.js`
   - **Action:** Click to select, visual indicator (border/highlight)
   
-- [ ] Implement shape dragging
+- [x] Implement shape dragging
   - **Files:** `src/components/Canvas/Shape.jsx`
   - **Action:** Drag selected shape to move, update position
   
-- [ ] Add shape ID generation
+- [x] Add shape ID generation
   - **Files:** `src/utils/helpers.js`
   - **Action:** UUID or timestamp-based unique IDs
   
-- [ ] Handle deselection
+- [x] Handle deselection
   - **Files:** `src/components/Canvas/Canvas.jsx`
   - **Action:** Click on empty canvas to deselect
   
-- [ ] Test shape interactions
+- [x] Test shape interactions
   - **Action:** Create multiple shapes, select, move, deselect
 
 **Acceptance Criteria:**

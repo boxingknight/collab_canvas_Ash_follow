@@ -1,15 +1,22 @@
 import { useRef, useEffect, useState } from 'react';
 import { Stage, Layer, Line, Text, Rect, Circle } from 'react-konva';
 import useCanvas from '../../hooks/useCanvas';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../../utils/constants';
-import { createFPSCounter } from '../../utils/helpers';
+import useShapes from '../../hooks/useShapes';
+import Shape from './Shape';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, SHAPE_COLORS } from '../../utils/constants';
+import { createFPSCounter, getRandomColor } from '../../utils/helpers';
 
 function Canvas() {
   const stageRef = useRef(null);
   const { position, scale, updatePosition, updateScale } = useCanvas();
+  const { shapes, selectedShapeId, addShape, updateShape, selectShape, deselectShape } = useShapes();
   const [stageSize, setStageSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [fps, setFps] = useState(60);
   const fpsCounterRef = useRef(null);
+  
+  // Shape creation state
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [newShape, setNewShape] = useState(null);
 
   // Generate grid lines
   const gridSize = 100; // Grid cell size
@@ -110,20 +117,98 @@ function Canvas() {
     updatePosition(newPos);
   }
 
+  // Handle shape creation - mouse down
+  function handleMouseDown(e) {
+    // Only create shapes when clicking on the stage (empty canvas)
+    if (e.target === e.target.getStage()) {
+      const stage = stageRef.current;
+      const pos = stage.getRelativePointerPosition();
+      
+      setIsDrawing(true);
+      setNewShape({
+        x: pos.x,
+        y: pos.y,
+        width: 0,
+        height: 0,
+        color: getRandomColor(SHAPE_COLORS)
+      });
+      
+      // Deselect any selected shape
+      deselectShape();
+    }
+  }
+
+  // Handle shape creation - mouse move
+  function handleMouseMove(e) {
+    if (!isDrawing || !newShape) return;
+
+    const stage = stageRef.current;
+    const pos = stage.getRelativePointerPosition();
+    
+    setNewShape({
+      ...newShape,
+      width: pos.x - newShape.x,
+      height: pos.y - newShape.y
+    });
+  }
+
+  // Handle shape creation - mouse up
+  function handleMouseUp() {
+    if (!isDrawing || !newShape) return;
+
+    // Only add shape if it has meaningful size
+    if (Math.abs(newShape.width) > 5 && Math.abs(newShape.height) > 5) {
+      // Normalize negative dimensions
+      const normalizedShape = {
+        x: newShape.width < 0 ? newShape.x + newShape.width : newShape.x,
+        y: newShape.height < 0 ? newShape.y + newShape.height : newShape.y,
+        width: Math.abs(newShape.width),
+        height: Math.abs(newShape.height),
+        color: newShape.color
+      };
+      
+      addShape(normalizedShape);
+    }
+
+    setIsDrawing(false);
+    setNewShape(null);
+  }
+
+  // Handle shape selection
+  function handleShapeSelect(shapeId) {
+    selectShape(shapeId);
+  }
+
+  // Handle shape drag end
+  function handleShapeDragEnd(data) {
+    updateShape(data.id, { x: data.x, y: data.y });
+  }
+
+  // Handle stage click (deselect)
+  function handleStageClick(e) {
+    if (e.target === e.target.getStage()) {
+      deselectShape();
+    }
+  }
+
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <Stage
         ref={stageRef}
         width={stageSize.width}
         height={stageSize.height}
-        draggable
+        draggable={!isDrawing}
         x={position.x}
         y={position.y}
         scaleX={scale}
         scaleY={scale}
         onDragEnd={handleDragEnd}
         onWheel={handleWheel}
-        style={{ cursor: 'grab' }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onClick={handleStageClick}
+        style={{ cursor: isDrawing ? 'crosshair' : 'grab' }}
       >
         <Layer>
           {/* Canvas background */}
@@ -223,7 +308,29 @@ function Canvas() {
             listening={false}
           />
           
-          {/* Shapes will be added in PR#4 */}
+          {/* Render existing shapes */}
+          {shapes.map((shape) => (
+            <Shape
+              key={shape.id}
+              shape={shape}
+              isSelected={shape.id === selectedShapeId}
+              onSelect={() => handleShapeSelect(shape.id)}
+              onDragEnd={handleShapeDragEnd}
+            />
+          ))}
+          
+          {/* Render shape being drawn */}
+          {isDrawing && newShape && (
+            <Rect
+              x={newShape.x}
+              y={newShape.y}
+              width={newShape.width}
+              height={newShape.height}
+              fill={newShape.color}
+              opacity={0.6}
+              listening={false}
+            />
+          )}
         </Layer>
       </Stage>
 
@@ -282,16 +389,14 @@ function Canvas() {
         zIndex: 1000,
         textAlign: 'center'
       }}>
-        <strong>🎨 Interactive Canvas with Grid</strong>
+        <strong>🎨 Collaborative Canvas</strong>
         <br />
         <span style={{ fontSize: '12px', opacity: 0.9 }}>
-          <span style={{ color: '#646cff' }}>●</span> Origin • 
-          <span style={{ color: '#a78bfa' }}> ●</span> Center • 
-          Grid: 100px cells
+          Click & drag on empty space to create rectangles • Click shape to select • Drag shape to move
         </span>
         <br />
         <span style={{ fontSize: '11px', opacity: 0.7 }}>
-          Drag to pan • Scroll to zoom • Canvas: {CANVAS_WIDTH}x{CANVAS_HEIGHT}
+          Drag to pan • Scroll to zoom • Shapes: {shapes.length}
         </span>
       </div>
     </div>
