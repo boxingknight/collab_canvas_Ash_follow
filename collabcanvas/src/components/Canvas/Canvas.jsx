@@ -244,6 +244,8 @@ function Canvas() {
   function handleShapeDragEnd(data) {
     updateShape(data.id, { x: data.x, y: data.y });
     setIsDraggingShape(false);
+    // Auto-deselect after dragging for cleaner UX
+    deselectShape();
   }
 
   // Handle stage click (deselect)
