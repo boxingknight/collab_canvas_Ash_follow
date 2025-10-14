@@ -52,21 +52,22 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
     }
     
     if (isLine) {
-      // Lines drag from center, recalculate start and end from new center position
-      const oldCenterX = (shape.x + shape.endX) / 2;
-      const oldCenterY = (shape.y + shape.endY) / 2;
-      const newCenterX = e.target.x();
-      const newCenterY = e.target.y();
+      // FIX #1: With relative points + absolute positioning, dragging is simple
+      // The Line's x, y position is now its absolute start point
+      const newX = e.target.x();
+      const newY = e.target.y();
       
-      const deltaX = newCenterX - oldCenterX;
-      const deltaY = newCenterY - oldCenterY;
+      // Calculate the relative offset (length and direction of line)
+      const deltaX = shape.endX - shape.x;
+      const deltaY = shape.endY - shape.y;
       
+      // Apply the same relative offset to the new position
       onDragEnd({
         id: shape.id,
-        x: shape.x + deltaX,
-        y: shape.y + deltaY,
-        endX: shape.endX + deltaX,
-        endY: shape.endY + deltaY
+        x: newX,
+        y: newY,
+        endX: newX + deltaX,  // Maintain the same relative endpoint
+        endY: newY + deltaY
       });
     } else {
       // Get the current position from the dragged element
@@ -109,9 +110,18 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
 
   // Render line shapes
   if (isLine) {
-    const points = [shape.x, shape.y, shape.endX, shape.endY];
-    const centerX = (shape.x + shape.endX) / 2;
-    const centerY = (shape.y + shape.endY) / 2;
+    // FIX #1: Use RELATIVE points with ABSOLUTE positioning
+    // This prevents lines from changing length/angle when dragged
+    const points = [
+      0,                       // Start at origin (relative to x, y)
+      0,
+      shape.endX - shape.x,    // Relative endpoint
+      shape.endY - shape.y
+    ];
+    
+    // Calculate midpoint for lock icon (relative to line position)
+    const midX = (shape.endX - shape.x) / 2;
+    const midY = (shape.endY - shape.y) / 2;
     
     return (
       <>
@@ -119,7 +129,9 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
           <Line
             ref={shapeRef}
             id={shape.id}
-            points={points}
+            x={shape.x}              // Position absolutely
+            y={shape.y}              // Position absolutely
+            points={points}          // Points are relative to x, y
             stroke={shape.color}
             strokeWidth={shape.strokeWidth || DEFAULT_STROKE_WIDTH}
             hitStrokeWidth={DEFAULT_LINE_HIT_WIDTH}
@@ -139,11 +151,11 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
             shadowForStrokeEnabled={false}
           />
           
-          {/* Lock icon at midpoint */}
+          {/* Lock icon at midpoint (relative to line position) */}
           {isLockedByOther && (
             <Group
-              x={centerX - 15}
-              y={centerY - 35}
+              x={shape.x + midX - 15}
+              y={shape.y + midY - 35}
               listening={false}
             >
               <Rect
@@ -171,15 +183,82 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
           )}
         </Group>
         
-        {/* Transformer for selected lines */}
+        {/* FIX #2: Add endpoint anchor circles for line adjustment */}
         {isSelected && !isLockedByOther && (
-          <Transformer
-            ref={transformerRef}
-            enabledAnchors={[]}
-            rotateEnabled={false}
-            borderStroke="#646cff"
-            borderStrokeWidth={2}
-          />
+          <>
+            {/* Transformer (no anchors, just visual border) */}
+            <Transformer
+              ref={transformerRef}
+              enabledAnchors={[]}
+              rotateEnabled={false}
+              borderStroke="#646cff"
+              borderStrokeWidth={2}
+            />
+            
+            {/* Start point anchor */}
+            <Circle
+              x={shape.x}
+              y={shape.y}
+              radius={6}
+              fill="white"
+              stroke="#646cff"
+              strokeWidth={2}
+              draggable={true}
+              dragDistance={0}
+              onDragMove={(e) => {
+                e.cancelBubble = true;
+                if (e.evt) e.evt.stopPropagation();
+              }}
+              onDragEnd={(e) => {
+                e.cancelBubble = true;
+                if (e.evt) e.evt.stopPropagation();
+                
+                const newX = e.target.x();
+                const newY = e.target.y();
+                
+                // Update line start point, keep end fixed
+                onDragEnd({
+                  id: shape.id,
+                  x: newX,
+                  y: newY,
+                  endX: shape.endX,
+                  endY: shape.endY
+                });
+              }}
+            />
+            
+            {/* End point anchor */}
+            <Circle
+              x={shape.endX}
+              y={shape.endY}
+              radius={6}
+              fill="white"
+              stroke="#646cff"
+              strokeWidth={2}
+              draggable={true}
+              dragDistance={0}
+              onDragMove={(e) => {
+                e.cancelBubble = true;
+                if (e.evt) e.evt.stopPropagation();
+              }}
+              onDragEnd={(e) => {
+                e.cancelBubble = true;
+                if (e.evt) e.evt.stopPropagation();
+                
+                const newEndX = e.target.x();
+                const newEndY = e.target.y();
+                
+                // Update line end point, keep start fixed
+                onDragEnd({
+                  id: shape.id,
+                  x: shape.x,
+                  y: shape.y,
+                  endX: newEndX,
+                  endY: newEndY
+                });
+              }}
+            />
+          </>
         )}
       </>
     );
