@@ -93,6 +93,7 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
     id: shape.id,
     fill: shape.color,
     draggable: canDrag,
+    dragDistance: 3, // Require 3px movement before starting drag (prevents accidental drags on click)
     listening: canInteract,
     onClick: canInteract ? handleClick : undefined,
     onTap: canInteract ? handleClick : undefined,
