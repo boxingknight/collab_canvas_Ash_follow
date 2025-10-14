@@ -15,23 +15,36 @@ const SHAPES_COLLECTION = 'shapes';
 
 /**
  * Add a new shape to Firestore
- * @param {Object} shapeData - Shape data (x, y, width, height, color, type)
+ * @param {Object} shapeData - Shape data (x, y, width, height, color, type) or (x, y, endX, endY, color, strokeWidth, type) for lines
  * @param {string} userId - User ID from Firebase Auth
  * @returns {Promise<string>} Document ID of the created shape
  */
 export async function addShape(shapeData, userId) {
   try {
-    const docRef = await addDoc(collection(db, SHAPES_COLLECTION), {
+    // Base document fields (common to all shapes)
+    const baseDoc = {
       x: shapeData.x,
       y: shapeData.y,
-      width: shapeData.width,
-      height: shapeData.height,
       color: shapeData.color,
       type: shapeData.type || 'rectangle', // Default to rectangle for backward compatibility
       createdBy: userId,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
-    });
+    };
+    
+    // Add type-specific fields
+    if (shapeData.type === 'line') {
+      // Lines use endX, endY, strokeWidth
+      baseDoc.endX = shapeData.endX;
+      baseDoc.endY = shapeData.endY;
+      baseDoc.strokeWidth = shapeData.strokeWidth || 2;
+    } else {
+      // Rectangles and Circles use width, height
+      baseDoc.width = shapeData.width;
+      baseDoc.height = shapeData.height;
+    }
+    
+    const docRef = await addDoc(collection(db, SHAPES_COLLECTION), baseDoc);
     
     return docRef.id;
   } catch (error) {
@@ -60,17 +73,29 @@ export async function addShapesBatch(shapesData, userId) {
       
       batchShapes.forEach((shapeData) => {
         const newDocRef = doc(collection(db, SHAPES_COLLECTION));
-        batch.set(newDocRef, {
+        
+        // Base document fields
+        const baseDoc = {
           x: shapeData.x,
           y: shapeData.y,
-          width: shapeData.width,
-          height: shapeData.height,
           color: shapeData.color,
           type: shapeData.type || 'rectangle',
           createdBy: userId,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
-        });
+        };
+        
+        // Add type-specific fields
+        if (shapeData.type === 'line') {
+          baseDoc.endX = shapeData.endX;
+          baseDoc.endY = shapeData.endY;
+          baseDoc.strokeWidth = shapeData.strokeWidth || 2;
+        } else {
+          baseDoc.width = shapeData.width;
+          baseDoc.height = shapeData.height;
+        }
+        
+        batch.set(newDocRef, baseDoc);
         batchIds.push(newDocRef.id);
       });
       
