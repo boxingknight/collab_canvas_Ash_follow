@@ -57,18 +57,25 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
       const offsetX = e.target.x();
       const offsetY = e.target.y();
       
+      console.log('[LINE DRAG END] Offset:', offsetX, offsetY);
+      console.log('[LINE DRAG END] Old coords:', shape.x, shape.y, shape.endX, shape.endY);
+      
+      // Calculate new absolute coordinates
+      const newX = shape.x + offsetX;
+      const newY = shape.y + offsetY;
+      const newEndX = shape.endX + offsetX;
+      const newEndY = shape.endY + offsetY;
+      
+      console.log('[LINE DRAG END] New coords:', newX, newY, newEndX, newEndY);
+      
       // Apply offset to all coordinates (both start and end points)
       onDragEnd({
         id: shape.id,
-        x: shape.x + offsetX,
-        y: shape.y + offsetY,
-        endX: shape.endX + offsetX,
-        endY: shape.endY + offsetY
+        x: newX,
+        y: newY,
+        endX: newEndX,
+        endY: newEndY
       });
-      
-      // CRITICAL: Reset the Line's position to (0, 0) after we've saved the new coordinates
-      // This prevents accumulation of offsets on subsequent drags
-      e.target.position({ x: 0, y: 0 });
     } else {
       // Get the current position from the dragged element
       let newX = e.target.x();
@@ -194,6 +201,7 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
                   e.evt.stopPropagation();
                   e.evt.preventDefault();
                 }
+                console.log('[START ANCHOR] Drag started');
               }}
               onDragMove={(e) => {
                 e.cancelBubble = true;
@@ -205,6 +213,9 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
                 
                 const newX = e.target.x();
                 const newY = e.target.y();
+                
+                console.log('[START ANCHOR] Drag ended. New pos:', newX, newY);
+                console.log('[START ANCHOR] Keeping end at:', shape.endX, shape.endY);
                 
                 // Update line start point, keep end fixed
                 onDragEnd({
@@ -233,6 +244,7 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
                   e.evt.stopPropagation();
                   e.evt.preventDefault();
                 }
+                console.log('[END ANCHOR] Drag started');
               }}
               onDragMove={(e) => {
                 e.cancelBubble = true;
@@ -244,6 +256,9 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
                 
                 const newEndX = e.target.x();
                 const newEndY = e.target.y();
+                
+                console.log('[END ANCHOR] Drag ended. New pos:', newEndX, newEndY);
+                console.log('[END ANCHOR] Keeping start at:', shape.x, shape.y);
                 
                 // Update line end point, keep start fixed
                 onDragEnd({
