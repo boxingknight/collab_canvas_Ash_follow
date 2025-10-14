@@ -199,6 +199,7 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
           <>
             {/* Start point anchor */}
             <Circle
+              key={`start-${shape.id}-${shape.x}-${shape.y}`}
               x={shape.x}
               y={shape.y}
               radius={8}
@@ -235,8 +236,14 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
                 
                 console.log('[START ANCHOR] Drag ended. New pos:', newX, newY);
                 console.log('[START ANCHOR] Keeping end at:', shape.endX, shape.endY);
+                console.log('[START ANCHOR] Old start was:', shape.x, shape.y);
                 
-                // Save to Firestore - update line start point, keep end fixed
+                // Update line one more time before saving
+                if (lineRef.current) {
+                  lineRef.current.points([newX, newY, shape.endX, shape.endY]);
+                }
+                
+                // Save to Firestore - this will trigger re-render with new coordinates
                 onDragEnd({
                   id: shape.id,
                   x: newX,
@@ -244,15 +251,12 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
                   endX: shape.endX,
                   endY: shape.endY
                 });
-                
-                // CRITICAL: Reset anchor position to match new coordinates
-                // Without this, the anchor accumulates offset and snaps back
-                e.target.position({ x: newX, y: newY });
               }}
             />
             
             {/* End point anchor */}
             <Circle
+              key={`end-${shape.id}-${shape.endX}-${shape.endY}`}
               x={shape.endX}
               y={shape.endY}
               radius={8}
@@ -289,8 +293,14 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
                 
                 console.log('[END ANCHOR] Drag ended. New pos:', newEndX, newEndY);
                 console.log('[END ANCHOR] Keeping start at:', shape.x, shape.y);
+                console.log('[END ANCHOR] Old end was:', shape.endX, shape.endY);
                 
-                // Save to Firestore - update line end point, keep start fixed
+                // Update line one more time before saving
+                if (lineRef.current) {
+                  lineRef.current.points([shape.x, shape.y, newEndX, newEndY]);
+                }
+                
+                // Save to Firestore - this will trigger re-render with new coordinates
                 onDragEnd({
                   id: shape.id,
                   x: shape.x,
@@ -298,10 +308,6 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
                   endX: newEndX,
                   endY: newEndY
                 });
-                
-                // CRITICAL: Reset anchor position to match new coordinates
-                // Without this, the anchor accumulates offset and snaps back
-                e.target.position({ x: newEndX, y: newEndY });
               }}
             />
           </>
