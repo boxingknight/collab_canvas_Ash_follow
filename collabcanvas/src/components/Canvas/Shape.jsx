@@ -6,6 +6,7 @@ import { SHAPE_TYPES, DEFAULT_STROKE_WIDTH, DEFAULT_LINE_HIT_WIDTH } from '../..
 const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDragStart, onDragMove, isDraggable = true, isInteractive = true, isLockedByOther = false, currentUserId }) {
   const shapeRef = useRef(null);
   const transformerRef = useRef(null);
+  const lineRef = useRef(null);  // For direct line manipulation (used only for line shapes)
 
   // Attach transformer to shape when selected
   useEffect(() => {
@@ -52,24 +53,21 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
     }
     
     if (isLine) {
-      // Line is positioned at (shape.x, shape.y) with relative points
-      // After drag, e.target.x() and e.target.y() give us the NEW position
-      const newX = e.target.x();
-      const newY = e.target.y();
+      // For lines wrapped in a Group, dragging the Group applies an offset
+      // e.target.x() and e.target.y() give us the Group's offset from origin
+      const offsetX = e.target.x();
+      const offsetY = e.target.y();
       
-      // Calculate how much the start point moved
-      const deltaX = newX - shape.x;
-      const deltaY = newY - shape.y;
+      console.log('[LINE GROUP DRAG END] Group offset:', offsetX, offsetY);
+      console.log('[LINE GROUP DRAG END] Old coords:', shape.x, shape.y, shape.endX, shape.endY);
       
-      console.log('[LINE DRAG END] New start position:', newX, newY);
-      console.log('[LINE DRAG END] Delta:', deltaX, deltaY);
-      console.log('[LINE DRAG END] Old coords:', shape.x, shape.y, shape.endX, shape.endY);
+      // Apply offset to both start and end points
+      const newX = shape.x + offsetX;
+      const newY = shape.y + offsetY;
+      const newEndX = shape.endX + offsetX;
+      const newEndY = shape.endY + offsetY;
       
-      // Apply the same delta to the end point
-      const newEndX = shape.endX + deltaX;
-      const newEndY = shape.endY + deltaY;
-      
-      console.log('[LINE DRAG END] New coords:', newX, newY, newEndX, newEndY);
+      console.log('[LINE GROUP DRAG END] New coords:', newX, newY, newEndX, newEndY);
       
       // Update both start and end points
       onDragEnd({
@@ -79,6 +77,9 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
         endX: newEndX,
         endY: newEndY
       });
+      
+      // Reset Group position to origin for next drag
+      e.target.position({ x: 0, y: 0 });
     } else {
       // Get the current position from the dragged element
       let newX = e.target.x();
@@ -120,31 +121,23 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
 
   // Render line shapes
   if (isLine) {
-    // CORRECT KONVA PATTERN:
-    // - Position Line at start point (x, y)
-    // - Points are RELATIVE to that position [0, 0, deltaX, deltaY]
-    // - This makes dragging work naturally
-    const deltaX = shape.endX - shape.x;
-    const deltaY = shape.endY - shape.y;
-    const points = [0, 0, deltaX, deltaY];
+    // CORRECT KONVA PATTERN (from Konva examples):
+    // - Line uses ABSOLUTE points [x1, y1, x2, y2]
+    // - Line is NOT draggable itself
+    // - Anchors ARE draggable and update line points in real-time
+    // - To move the whole line, wrap in a draggable Group
+    const points = [shape.x, shape.y, shape.endX, shape.endY];
     
-    // Calculate midpoint for lock icon (in absolute coordinates)
+    // Calculate midpoint for lock icon
     const centerX = (shape.x + shape.endX) / 2;
     const centerY = (shape.y + shape.endY) / 2;
     
     return (
       <>
-        {/* Main line - draggable, positioned at start point */}
-        <Line
+        {/* Wrapper Group - draggable to move the whole line */}
+        <Group
           ref={shapeRef}
-          id={shape.id}
-          x={shape.x}
-          y={shape.y}
-          points={points}
-          stroke={shape.color}
-          strokeWidth={shape.strokeWidth || DEFAULT_STROKE_WIDTH}
-          hitStrokeWidth={DEFAULT_LINE_HIT_WIDTH}
-          draggable={canDrag}
+          draggable={canDrag && !isSelected}  // Only draggable when NOT selected (to avoid conflict with anchors)
           dragDistance={3}
           listening={canInteract}
           onClick={canInteract ? handleClick : undefined}
@@ -152,46 +145,56 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
           onDragStart={handleDragStart}
           onDragMove={handleDragMove}
           onDragEnd={handleDragEnd}
-          shadowColor={isSelected ? '#646cff' : undefined}
-          shadowBlur={isSelected ? 10 : 0}
-          shadowOpacity={isSelected ? 0.8 : 0}
-          opacity={isLockedByOther ? 0.6 : 1}
-          perfectDrawEnabled={false}
-          shadowForStrokeEnabled={false}
-        />
+        >
+          {/* Main line - NOT draggable, just visual */}
+          <Line
+            ref={lineRef}
+            id={shape.id}
+            points={points}
+            stroke={shape.color}
+            strokeWidth={shape.strokeWidth || DEFAULT_STROKE_WIDTH}
+            hitStrokeWidth={DEFAULT_LINE_HIT_WIDTH}
+            shadowColor={isSelected ? '#646cff' : undefined}
+            shadowBlur={isSelected ? 10 : 0}
+            shadowOpacity={isSelected ? 0.8 : 0}
+            opacity={isLockedByOther ? 0.6 : 1}
+            perfectDrawEnabled={false}
+            shadowForStrokeEnabled={false}
+          />
+          
+          {/* Lock icon at midpoint */}
+          {isLockedByOther && (
+            <Group
+              x={centerX - 15}
+              y={centerY - 35}
+              listening={false}
+            >
+              <Rect
+                x={0}
+                y={0}
+                width={30}
+                height={30}
+                fill="#ef4444"
+                cornerRadius={6}
+                shadowColor="black"
+                shadowBlur={4}
+                shadowOpacity={0.5}
+              />
+              <Text
+                x={0}
+                y={0}
+                width={30}
+                height={30}
+                text="🔒"
+                fontSize={18}
+                align="center"
+                verticalAlign="middle"
+              />
+            </Group>
+          )}
+        </Group>
         
-        {/* Lock icon at midpoint */}
-        {isLockedByOther && (
-          <Group
-            x={centerX - 15}
-            y={centerY - 35}
-            listening={false}
-          >
-            <Rect
-              x={0}
-              y={0}
-              width={30}
-              height={30}
-              fill="#ef4444"
-              cornerRadius={6}
-              shadowColor="black"
-              shadowBlur={4}
-              shadowOpacity={0.5}
-            />
-            <Text
-              x={0}
-              y={0}
-              width={30}
-              height={30}
-              text="🔒"
-              fontSize={18}
-              align="center"
-              verticalAlign="middle"
-            />
-          </Group>
-        )}
-        
-        {/* Endpoint anchor circles for line adjustment - NO TRANSFORMER */}
+        {/* Endpoint anchor circles - OUTSIDE the Group, update line in real-time */}
         {isSelected && !isLockedByOther && (
           <>
             {/* Start point anchor */}
@@ -215,6 +218,13 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
               onDragMove={(e) => {
                 e.cancelBubble = true;
                 if (e.evt) e.evt.stopPropagation();
+                
+                // Update line in real-time as anchor moves
+                const newX = e.target.x();
+                const newY = e.target.y();
+                if (lineRef.current) {
+                  lineRef.current.points([newX, newY, shape.endX, shape.endY]);
+                }
               }}
               onDragEnd={(e) => {
                 e.cancelBubble = true;
@@ -226,7 +236,7 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
                 console.log('[START ANCHOR] Drag ended. New pos:', newX, newY);
                 console.log('[START ANCHOR] Keeping end at:', shape.endX, shape.endY);
                 
-                // Update line start point, keep end fixed
+                // Save to Firestore - update line start point, keep end fixed
                 onDragEnd({
                   id: shape.id,
                   x: newX,
@@ -258,6 +268,13 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
               onDragMove={(e) => {
                 e.cancelBubble = true;
                 if (e.evt) e.evt.stopPropagation();
+                
+                // Update line in real-time as anchor moves
+                const newEndX = e.target.x();
+                const newEndY = e.target.y();
+                if (lineRef.current) {
+                  lineRef.current.points([shape.x, shape.y, newEndX, newEndY]);
+                }
               }}
               onDragEnd={(e) => {
                 e.cancelBubble = true;
@@ -269,7 +286,7 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
                 console.log('[END ANCHOR] Drag ended. New pos:', newEndX, newEndY);
                 console.log('[END ANCHOR] Keeping start at:', shape.x, shape.y);
                 
-                // Update line end point, keep start fixed
+                // Save to Firestore - update line end point, keep start fixed
                 onDragEnd({
                   id: shape.id,
                   x: shape.x,
