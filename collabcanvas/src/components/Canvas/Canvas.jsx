@@ -1154,7 +1154,7 @@ function Canvas() {
             }}
           />
           
-          {/* Textarea positioned over the text shape */}
+          {/* Textarea positioned over the text shape - styled to edit in place */}
           <textarea
             ref={textareaRef}
             value={editingText}
@@ -1175,20 +1175,24 @@ function Canvas() {
               top: `${textEditorPosition.y}px`,
               width: `${Math.max(textEditorPosition.width, 100)}px`,
               minHeight: `${Math.max(textEditorPosition.height, 30)}px`,
-              padding: '4px',
-              border: '2px solid #646cff',
-              borderRadius: '4px',
+              padding: '0',
+              margin: '0',
+              border: 'none',
+              borderRadius: '0',
               fontSize: `${textEditorPosition.fontSize || 16}px`,
               fontFamily: 'Arial, sans-serif',
+              fontWeight: 'normal',
               resize: 'none',
               outline: 'none',
-              background: 'rgba(255, 255, 255, 0.95)',
-              color: '#000',
+              background: 'transparent',
+              color: editingTextId ? (shapes.find(s => s.id === editingTextId)?.color || '#000') : '#000',
               zIndex: 2000,
               overflow: 'hidden',
               lineHeight: '1.2',
-              boxShadow: '0 4px 12px rgba(100, 108, 255, 0.4)',
-              cursor: 'text'
+              boxShadow: 'none',
+              cursor: 'text',
+              whiteSpace: 'pre-wrap',
+              wordWrap: 'break-word'
             }}
             placeholder="Type your text..."
           />
