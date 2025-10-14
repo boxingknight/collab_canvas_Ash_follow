@@ -13,6 +13,12 @@ function UserList({ users = [], currentUser }) {
 
   // Helper to get user color (same logic as RemoteCursor)
   function getUserColor(userId) {
+    // Safety check for undefined userId
+    if (!userId || typeof userId !== 'string') {
+      console.warn('getUserColor called with invalid userId:', userId);
+      return '#646cff'; // Return default color
+    }
+    
     const colors = [
       '#646cff', '#4ade80', '#f59e0b', '#ec4899', '#8b5cf6',
       '#06b6d4', '#f43f5e', '#84cc16', '#eab308', '#14b8a6'
@@ -74,12 +80,15 @@ function UserList({ users = [], currentUser }) {
   
   // Add all other users from presence (excluding current user to avoid duplicates)
   safeUsers.forEach(user => {
-    if (user.userId !== currentUser?.uid) {
+    // Only add valid users with required fields
+    if (user && user.userId && user.userId !== currentUser?.uid) {
       allUsers.push(user);
+    } else if (!user || !user.userId) {
+      console.warn('Skipping invalid user object:', user);
     }
   });
   
-  console.log('👥 UserList allUsers after processing:', allUsers.length, allUsers.map(u => u.userName));
+  console.log('👥 UserList allUsers after processing:', allUsers.length, allUsers.map(u => u?.userName || 'unknown'));
 
   // Don't render anything if no current user (not logged in yet)
   if (!currentUser) {
@@ -111,7 +120,7 @@ function UserList({ users = [], currentUser }) {
         position: 'relative',
         paddingRight: '8px'
       }}>
-        {allUsers.slice(0, 5).map((user, index) => {
+        {allUsers.slice(0, 5).filter(user => user && user.userId).map((user, index) => {
           const userColor = getUserColor(user.userId);
           const isCurrentUser = user.userId === currentUser?.uid;
           
@@ -229,7 +238,7 @@ function UserList({ users = [], currentUser }) {
             maxHeight: '300px',
             overflowY: 'auto'
           }}>
-            {allUsers.map((user) => {
+            {allUsers.filter(user => user && user.userId).map((user) => {
               const isCurrentUserInList = user.userId === currentUser?.uid;
               const userColor = getUserColor(user.userId);
               
