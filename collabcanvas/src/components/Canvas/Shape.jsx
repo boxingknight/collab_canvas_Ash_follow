@@ -137,7 +137,7 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
         {/* Wrapper Group - draggable to move the whole line */}
         <Group
           ref={shapeRef}
-          draggable={canDrag && !isSelected}  // Only draggable when NOT selected (to avoid conflict with anchors)
+          draggable={canDrag}  // Always draggable when canDrag is true
           dragDistance={3}
           listening={canInteract}
           onClick={canInteract ? handleClick : undefined}
@@ -244,6 +244,10 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
                   endX: shape.endX,
                   endY: shape.endY
                 });
+                
+                // CRITICAL: Reset anchor position to match new coordinates
+                // Without this, the anchor accumulates offset and snaps back
+                e.target.position({ x: newX, y: newY });
               }}
             />
             
@@ -294,6 +298,10 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
                   endX: newEndX,
                   endY: newEndY
                 });
+                
+                // CRITICAL: Reset anchor position to match new coordinates
+                // Without this, the anchor accumulates offset and snaps back
+                e.target.position({ x: newEndX, y: newEndY });
               }}
             />
           </>
