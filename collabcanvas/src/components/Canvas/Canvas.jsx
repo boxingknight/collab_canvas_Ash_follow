@@ -6,7 +6,7 @@ import useCursors from '../../hooks/useCursors';
 import useAuth from '../../hooks/useAuth';
 import Shape from './Shape';
 import RemoteCursor from './RemoteCursor';
-import { CANVAS_WIDTH, CANVAS_HEIGHT, SHAPE_COLORS, SHAPE_TYPES } from '../../utils/constants';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, SHAPE_COLORS, SHAPE_TYPES, DEFAULT_STROKE_WIDTH } from '../../utils/constants';
 import { createFPSCounter, getRandomColor } from '../../utils/helpers';
 
 function Canvas() {
@@ -200,15 +200,30 @@ function Canvas() {
       const stage = stageRef.current;
       const pos = stage.getRelativePointerPosition();
       
-      setIsDrawing(true);
-      setNewShape({
-        x: pos.x,
-        y: pos.y,
-        width: 0,
-        height: 0,
-        color: getRandomColor(SHAPE_COLORS),
-        type: shapeType
-      });
+      if (shapeType === SHAPE_TYPES.LINE) {
+        // Line creation starts with single point
+        setIsDrawing(true);
+        setNewShape({
+          x: pos.x,
+          y: pos.y,
+          endX: pos.x,  // Initially same as start
+          endY: pos.y,
+          color: getRandomColor(SHAPE_COLORS),
+          type: 'line',
+          strokeWidth: DEFAULT_STROKE_WIDTH
+        });
+      } else {
+        // Rectangle/Circle creation
+        setIsDrawing(true);
+        setNewShape({
+          x: pos.x,
+          y: pos.y,
+          width: 0,
+          height: 0,
+          color: getRandomColor(SHAPE_COLORS),
+          type: shapeType
+        });
+      }
       
       // Deselect any selected shape
       deselectShape();
@@ -228,34 +243,70 @@ function Canvas() {
     // Handle shape drawing
     if (!isDrawing || !newShape) return;
     
-    setNewShape({
-      ...newShape,
-      width: pos.x - newShape.x,
-      height: pos.y - newShape.y
-    });
+    if (newShape.type === 'line') {
+      // Update end point as mouse moves
+      setNewShape({
+        ...newShape,
+        endX: pos.x,
+        endY: pos.y
+      });
+    } else {
+      // Rectangle/Circle - update width/height
+      setNewShape({
+        ...newShape,
+        width: pos.x - newShape.x,
+        height: pos.y - newShape.y
+      });
+    }
   }
 
   // Handle shape creation - mouse up
   async function handleMouseUp() {
     if (!isDrawing || !newShape) return;
 
-    // Only add shape if it has meaningful size
-    if (Math.abs(newShape.width) > 5 && Math.abs(newShape.height) > 5) {
-      // Normalize negative dimensions
-      const normalizedShape = {
-        x: newShape.width < 0 ? newShape.x + newShape.width : newShape.x,
-        y: newShape.height < 0 ? newShape.y + newShape.height : newShape.y,
-        width: Math.abs(newShape.width),
-        height: Math.abs(newShape.height),
-        color: newShape.color,
-        type: newShape.type
-      };
+    if (newShape.type === 'line') {
+      // Calculate line length
+      const length = Math.sqrt(
+        Math.pow(newShape.endX - newShape.x, 2) +
+        Math.pow(newShape.endY - newShape.y, 2)
+      );
       
-      try {
-        await addShape(normalizedShape);
-      } catch (error) {
-        console.error('Failed to add shape:', error.message);
-        alert(`Failed to create shape: ${error.message}`);
+      // Only add line if it has meaningful length (>5px)
+      if (length > 5) {
+        try {
+          await addShape({
+            x: newShape.x,
+            y: newShape.y,
+            endX: newShape.endX,
+            endY: newShape.endY,
+            color: newShape.color,
+            strokeWidth: DEFAULT_STROKE_WIDTH,
+            type: 'line'
+          });
+        } catch (error) {
+          console.error('Failed to add line:', error.message);
+          alert(`Failed to create line: ${error.message}`);
+        }
+      }
+    } else {
+      // Only add shape if it has meaningful size
+      if (Math.abs(newShape.width) > 5 && Math.abs(newShape.height) > 5) {
+        // Normalize negative dimensions
+        const normalizedShape = {
+          x: newShape.width < 0 ? newShape.x + newShape.width : newShape.x,
+          y: newShape.height < 0 ? newShape.y + newShape.height : newShape.y,
+          width: Math.abs(newShape.width),
+          height: Math.abs(newShape.height),
+          color: newShape.color,
+          type: newShape.type
+        };
+        
+        try {
+          await addShape(normalizedShape);
+        } catch (error) {
+          console.error('Failed to add shape:', error.message);
+          alert(`Failed to create shape: ${error.message}`);
+        }
       }
     }
 
@@ -528,7 +579,15 @@ function Canvas() {
           
           {/* Render shape being drawn */}
           {isDrawing && newShape && (
-            newShape.type === SHAPE_TYPES.CIRCLE ? (
+            newShape.type === SHAPE_TYPES.LINE ? (
+              <Line
+                points={[newShape.x, newShape.y, newShape.endX, newShape.endY]}
+                stroke={newShape.color}
+                strokeWidth={DEFAULT_STROKE_WIDTH}
+                opacity={0.6}
+                listening={false}
+              />
+            ) : newShape.type === SHAPE_TYPES.CIRCLE ? (
               <Circle
                 x={newShape.x + newShape.width / 2}
                 y={newShape.y + newShape.height / 2}
@@ -696,6 +755,29 @@ function Canvas() {
             <span style={{ fontSize: '16px' }}>⚪</span>
             <span>Circle</span>
           </button>
+          
+          <button
+            onClick={() => setShapeType(SHAPE_TYPES.LINE)}
+            title="Draw Lines"
+            style={{
+              padding: '8px 14px',
+              background: shapeType === SHAPE_TYPES.LINE ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'rgba(0, 0, 0, 0.7)',
+              color: 'white',
+              border: shapeType === SHAPE_TYPES.LINE ? '2px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: shapeType === SHAPE_TYPES.LINE ? 'bold' : 'normal',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s',
+              boxShadow: shapeType === SHAPE_TYPES.LINE ? '0 4px 12px rgba(245, 158, 11, 0.4)' : 'none'
+            }}
+          >
+            <span style={{ fontSize: '16px' }}>📏</span>
+            <span>Line</span>
+          </button>
         </div>
       )}
 
@@ -861,7 +943,11 @@ function Canvas() {
         maxWidth: '550px'
       }}>
         <strong style={{ fontSize: '16px' }}>
-          {mode === 'pan' ? '✋ Pan Mode' : mode === 'move' ? '🔄 Move Mode' : (shapeType === SHAPE_TYPES.RECTANGLE ? '🔲 Draw Mode' : '⚪ Draw Mode')}
+          {mode === 'pan' ? '✋ Pan Mode' : mode === 'move' ? '🔄 Move Mode' : (
+            shapeType === SHAPE_TYPES.LINE ? '📏 Draw Mode' :
+            shapeType === SHAPE_TYPES.CIRCLE ? '⚪ Draw Mode' :
+            '🔲 Draw Mode'
+          )}
         </strong>
         <br />
         <span style={{ fontSize: '13px', opacity: 0.95, lineHeight: '1.6' }}>
@@ -869,7 +955,11 @@ function Canvas() {
             ? 'Drag canvas to pan • Click shapes to select (auto-switches to Move) • Scroll to zoom'
             : mode === 'move'
             ? 'Click to select • Drag selected shapes to move or resize • Click elsewhere to deselect'
-            : `Click & drag on empty space to create ${shapeType === SHAPE_TYPES.RECTANGLE ? 'rectangles' : 'circles'} • Canvas will NOT pan`}
+            : `Click & drag on empty space to create ${
+                shapeType === SHAPE_TYPES.LINE ? 'lines' :
+                shapeType === SHAPE_TYPES.CIRCLE ? 'circles' :
+                'rectangles'
+              } • Canvas will NOT pan`}
         </span>
         <br />
         <span style={{ fontSize: '11px', opacity: 0.75, marginTop: '4px', display: 'block' }}>
