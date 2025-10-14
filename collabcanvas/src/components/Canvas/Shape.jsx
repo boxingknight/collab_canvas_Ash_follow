@@ -52,23 +52,22 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
     }
     
     if (isLine) {
-      // FIX #1: With relative points + absolute positioning, dragging is simple
-      // The Line's x, y position is now its absolute start point
-      const newX = e.target.x();
-      const newY = e.target.y();
+      // For lines, the draggable element is a Group
+      // The Group was dragged, so e.target.x() and e.target.y() give the Group's offset
+      const groupX = e.target.x();
+      const groupY = e.target.y();
       
-      // Calculate the relative offset (length and direction of line)
-      const deltaX = shape.endX - shape.x;
-      const deltaY = shape.endY - shape.y;
-      
-      // Apply the same relative offset to the new position
+      // The line points are absolute, so we need to add the Group's offset to them
       onDragEnd({
         id: shape.id,
-        x: newX,
-        y: newY,
-        endX: newX + deltaX,  // Maintain the same relative endpoint
-        endY: newY + deltaY
+        x: shape.x + groupX,
+        y: shape.y + groupY,
+        endX: shape.endX + groupX,
+        endY: shape.endY + groupY
       });
+      
+      // Reset the Group's position to (0, 0) after updating coordinates
+      e.target.position({ x: 0, y: 0 });
     } else {
       // Get the current position from the dragged element
       let newX = e.target.x();
@@ -110,39 +109,39 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
 
   // Render line shapes
   if (isLine) {
-    // FIX #1: Use RELATIVE points with ABSOLUTE positioning
-    // This prevents lines from changing length/angle when dragged
-    const points = [
-      0,                       // Start at origin (relative to x, y)
-      0,
-      shape.endX - shape.x,    // Relative endpoint
-      shape.endY - shape.y
-    ];
+    // CORRECT APPROACH: Use absolute points in a draggable Group
+    // This prevents any visual glitches during dragging
+    const points = [shape.x, shape.y, shape.endX, shape.endY];
     
-    // Calculate midpoint for lock icon (relative to line position)
-    const midX = (shape.endX - shape.x) / 2;
-    const midY = (shape.endY - shape.y) / 2;
+    // Calculate midpoint for lock icon and bounds
+    const centerX = (shape.x + shape.endX) / 2;
+    const centerY = (shape.y + shape.endY) / 2;
+    
+    // Calculate bounds for the Group (needed for proper hit detection)
+    const minX = Math.min(shape.x, shape.endX);
+    const minY = Math.min(shape.y, shape.endY);
+    const maxX = Math.max(shape.x, shape.endX);
+    const maxY = Math.max(shape.y, shape.endY);
     
     return (
       <>
-        <Group>
+        <Group
+          ref={shapeRef}
+          draggable={canDrag}
+          dragDistance={3}
+          listening={canInteract}
+          onClick={canInteract ? handleClick : undefined}
+          onTap={canInteract ? handleClick : undefined}
+          onDragStart={handleDragStart}
+          onDragMove={handleDragMove}
+          onDragEnd={handleDragEnd}
+        >
           <Line
-            ref={shapeRef}
             id={shape.id}
-            x={shape.x}              // Position absolutely
-            y={shape.y}              // Position absolutely
-            points={points}          // Points are relative to x, y
+            points={points}  // Use absolute coordinates
             stroke={shape.color}
             strokeWidth={shape.strokeWidth || DEFAULT_STROKE_WIDTH}
             hitStrokeWidth={DEFAULT_LINE_HIT_WIDTH}
-            draggable={canDrag}
-            dragDistance={3}
-            listening={canInteract}
-            onClick={canInteract ? handleClick : undefined}
-            onTap={canInteract ? handleClick : undefined}
-            onDragStart={handleDragStart}
-            onDragMove={handleDragMove}
-            onDragEnd={handleDragEnd}
             shadowColor={isSelected ? '#646cff' : undefined}
             shadowBlur={isSelected ? 10 : 0}
             shadowOpacity={isSelected ? 0.8 : 0}
@@ -151,11 +150,11 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
             shadowForStrokeEnabled={false}
           />
           
-          {/* Lock icon at midpoint (relative to line position) */}
+          {/* Lock icon at midpoint */}
           {isLockedByOther && (
             <Group
-              x={shape.x + midX - 15}
-              y={shape.y + midY - 35}
+              x={centerX - 15}
+              y={centerY - 35}
               listening={false}
             >
               <Rect
@@ -183,7 +182,7 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
           )}
         </Group>
         
-        {/* FIX #2: Add endpoint anchor circles for line adjustment */}
+        {/* Endpoint anchor circles for line adjustment */}
         {isSelected && !isLockedByOther && (
           <>
             {/* Transformer (no anchors, just visual border) */}
@@ -199,12 +198,19 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
             <Circle
               x={shape.x}
               y={shape.y}
-              radius={6}
+              radius={8}
               fill="white"
               stroke="#646cff"
               strokeWidth={2}
               draggable={true}
-              dragDistance={0}
+              listening={true}
+              onDragStart={(e) => {
+                e.cancelBubble = true;
+                if (e.evt) {
+                  e.evt.stopPropagation();
+                  e.evt.preventDefault();
+                }
+              }}
               onDragMove={(e) => {
                 e.cancelBubble = true;
                 if (e.evt) e.evt.stopPropagation();
@@ -231,12 +237,19 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
             <Circle
               x={shape.endX}
               y={shape.endY}
-              radius={6}
+              radius={8}
               fill="white"
               stroke="#646cff"
               strokeWidth={2}
               draggable={true}
-              dragDistance={0}
+              listening={true}
+              onDragStart={(e) => {
+                e.cancelBubble = true;
+                if (e.evt) {
+                  e.evt.stopPropagation();
+                  e.evt.preventDefault();
+                }
+              }}
               onDragMove={(e) => {
                 e.cancelBubble = true;
                 if (e.evt) e.evt.stopPropagation();
