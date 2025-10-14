@@ -11,6 +11,7 @@ import { createFPSCounter, getRandomColor } from '../../utils/helpers';
 
 function Canvas() {
   const stageRef = useRef(null);
+  const staticLayerRef = useRef(null); // For caching static grid/background
   const { user } = useAuth();
   const { position, scale, updatePosition, updateScale } = useCanvas();
   const { shapes, selectedShapeId, isLoading, addShape, updateShape, deleteShape, selectShape, deselectShape } = useShapes(user);
@@ -79,6 +80,15 @@ function Canvas() {
     }
   }, []);
 
+  // Enable caching on static layer for performance
+  // Grid and background don't change, so we can cache them
+  useEffect(() => {
+    if (staticLayerRef.current) {
+      staticLayerRef.current.cache();
+      staticLayerRef.current.getLayer().batchDraw();
+    }
+  }, []);
+
   // Keyboard shortcuts
   useEffect(() => {
     function handleKeyPress(e) {
@@ -105,7 +115,6 @@ function Canvas() {
           if (selectedShapeId) {
             e.preventDefault(); // Prevent browser back navigation on Backspace
             deleteShape(selectedShapeId);
-            console.log('🗑️ Deleted shape:', selectedShapeId);
           }
           break;
         default:
@@ -234,16 +243,10 @@ function Canvas() {
         color: newShape.color
       };
       
-      console.log('🎨 Canvas: About to add shape to Firestore:', normalizedShape);
-      
       try {
-        const result = await addShape(normalizedShape);
-        console.log('🎨 Canvas: Shape added successfully!', result);
+        await addShape(normalizedShape);
       } catch (error) {
-        console.error('🎨 Canvas: FAILED to add shape!');
-        console.error('🎨 Error:', error);
-        console.error('🎨 Error message:', error.message);
-        console.error('🎨 Error code:', error.code);
+        console.error('Failed to add shape:', error.message);
         alert(`Failed to create shape: ${error.message}`);
       }
     }
@@ -285,12 +288,6 @@ function Canvas() {
       deselectShape();
     }
   }
-
-  // DEBUG: Log shapes being rendered
-  console.log('🎨 Canvas rendering with shapes:', {
-    count: shapes.length,
-    shapes: shapes.map(s => ({ id: s.id, x: s.x, y: s.y, width: s.width, height: s.height }))
-  });
 
   // Show loading indicator while shapes are loading from Firestore
   if (isLoading) {
@@ -338,7 +335,8 @@ function Canvas() {
                 : 'grab' 
         }}
       >
-        <Layer>
+        {/* Static Layer - Background, grid, markers (cached for performance) */}
+        <Layer ref={staticLayerRef} listening={false}>
           {/* Canvas background */}
           <Rect
             x={0}
@@ -435,24 +433,24 @@ function Canvas() {
             fontStyle="bold"
             listening={false}
           />
-          
+        </Layer>
+
+        {/* Dynamic Layer - Shapes, cursors, and interactive elements */}
+        <Layer>
           {/* Render existing shapes */}
-          {shapes.map((shape) => {
-            console.log('Rendering shape:', shape.id, { x: shape.x, y: shape.y, width: shape.width, height: shape.height, color: shape.color });
-            return (
-              <Shape
-                key={shape.id}
-                shape={shape}
-                isSelected={shape.id === selectedShapeId}
-                onSelect={() => handleShapeSelect(shape.id)}
-                onDragStart={handleShapeDragStart}
-                onDragMove={handleShapeDragMove}
-                onDragEnd={handleShapeDragEnd}
-                isDraggable={mode === 'move'}
-                isInteractive={mode !== 'draw'}
-              />
-            );
-          })}
+          {shapes.map((shape) => (
+            <Shape
+              key={shape.id}
+              shape={shape}
+              isSelected={shape.id === selectedShapeId}
+              onSelect={() => handleShapeSelect(shape.id)}
+              onDragStart={handleShapeDragStart}
+              onDragMove={handleShapeDragMove}
+              onDragEnd={handleShapeDragEnd}
+              isDraggable={mode === 'move'}
+              isInteractive={mode !== 'draw'}
+            />
+          ))}
           
           {/* Render shape being drawn */}
           {isDrawing && newShape && (

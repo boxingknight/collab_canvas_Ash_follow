@@ -28,10 +28,8 @@ export async function setOnline(userId, userName, userEmail) {
       lastSeen: serverTimestamp(),
       joinedAt: serverTimestamp()
     });
-    
-    console.log('✅ User set to online:', userName);
   } catch (error) {
-    console.error('❌ Error setting user online:', error);
+    console.error('Error setting user online:', error.message);
     throw error;
   }
 }
@@ -45,10 +43,8 @@ export async function setOffline(userId) {
   try {
     const presenceRef = doc(db, PRESENCE_COLLECTION, userId);
     await deleteDoc(presenceRef);
-    
-    console.log('✅ User set to offline:', userId);
   } catch (error) {
-    console.error('❌ Error setting user offline:', error);
+    console.error('Error setting user offline:', error.message);
     // Don't throw - offline should fail silently
   }
 }
@@ -65,7 +61,7 @@ export async function updateHeartbeat(userId) {
       lastSeen: serverTimestamp()
     }, { merge: true });
   } catch (error) {
-    console.error('❌ Error updating heartbeat:', error);
+    console.error('Error updating heartbeat:', error.message);
     // Don't throw - heartbeat should fail silently
   }
 }
@@ -77,8 +73,6 @@ export async function updateHeartbeat(userId) {
  */
 export function subscribeToPresence(callback) {
   try {
-    console.log('👥 Subscribing to presence collection...');
-    
     const presenceCollection = collection(db, PRESENCE_COLLECTION);
     
     const unsubscribe = onSnapshot(
@@ -100,18 +94,17 @@ export function subscribeToPresence(callback) {
           return a.joinedAt.toMillis() - b.joinedAt.toMillis();
         });
         
-        console.log('👥 Online users updated:', onlineUsers.length);
         callback(onlineUsers);
       },
       (error) => {
-        console.error('❌ Error subscribing to presence:', error);
+        console.error('Error subscribing to presence:', error.message);
         callback([]);
       }
     );
     
     return unsubscribe;
   } catch (error) {
-    console.error('❌ Exception in subscribeToPresence:', error);
+    console.error('Exception in subscribeToPresence:', error.message);
     throw error;
   }
 }

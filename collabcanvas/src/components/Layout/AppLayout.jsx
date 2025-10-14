@@ -6,7 +6,6 @@ function AppLayout({ children, user, onLogout }) {
   
   // Safety check for undefined onlineUsers
   const safeOnlineUsers = onlineUsers || [];
-  console.log('👥 AppLayout onlineUsers:', safeOnlineUsers.length, safeOnlineUsers);
 
   return (
     <div className="app-layout">

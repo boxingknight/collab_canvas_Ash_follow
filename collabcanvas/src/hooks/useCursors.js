@@ -41,15 +41,12 @@ function useCursors(user) {
       return;
     }
 
-    console.log('📍 Subscribing to remote cursors...');
-    
     const unsubscribe = subscribeToCursors(user.uid, (cursors) => {
       setRemoteCursors(cursors);
     });
 
     // Cleanup: remove own cursor on unmount
     return () => {
-      console.log('📍 Cleaning up cursor subscription and removing cursor');
       unsubscribe();
       removeCursor(user.uid);
     };

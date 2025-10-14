@@ -44,9 +44,8 @@ export async function removeCursor(userId) {
   try {
     const cursorRef = doc(db, CURSORS_COLLECTION, userId);
     await deleteDoc(cursorRef);
-    console.log('Cursor removed for user:', userId);
   } catch (error) {
-    console.error('Error removing cursor:', error);
+    console.error('Error removing cursor:', error.message);
   }
 }
 
@@ -80,14 +79,14 @@ export function subscribeToCursors(currentUserId, callback) {
         callback(cursors);
       },
       (error) => {
-        console.error('Error subscribing to cursors:', error);
+        console.error('Error subscribing to cursors:', error.message);
         callback([]);
       }
     );
     
     return unsubscribe;
   } catch (error) {
-    console.error('Exception in subscribeToCursors:', error);
+    console.error('Exception in subscribeToCursors:', error.message);
     throw error;
   }
 }

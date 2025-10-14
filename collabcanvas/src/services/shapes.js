@@ -19,8 +19,6 @@ const SHAPES_COLLECTION = 'shapes';
  */
 export async function addShape(shapeData, userId) {
   try {
-    console.log('Adding shape to Firestore:', { shapeData, userId });
-    
     const docRef = await addDoc(collection(db, SHAPES_COLLECTION), {
       x: shapeData.x,
       y: shapeData.y,
@@ -32,10 +30,9 @@ export async function addShape(shapeData, userId) {
       updatedAt: serverTimestamp()
     });
     
-    console.log('✅ Shape added to Firestore successfully:', docRef.id);
     return docRef.id;
   } catch (error) {
-    console.error('❌ Error adding shape:', error.code, error.message);
+    console.error('Error adding shape:', error.message);
     throw error;
   }
 }
@@ -53,10 +50,8 @@ export async function updateShape(shapeId, updates) {
       ...updates,
       updatedAt: serverTimestamp()
     });
-    
-    console.log('Shape updated in Firestore:', shapeId);
   } catch (error) {
-    console.error('Error updating shape:', error);
+    console.error('Error updating shape:', error.message);
     throw error;
   }
 }
@@ -70,10 +65,8 @@ export async function deleteShape(shapeId) {
   try {
     const shapeRef = doc(db, SHAPES_COLLECTION, shapeId);
     await deleteDoc(shapeRef);
-    
-    console.log('Shape deleted from Firestore:', shapeId);
   } catch (error) {
-    console.error('Error deleting shape:', error);
+    console.error('Error deleting shape:', error.message);
     throw error;
   }
 }
@@ -85,30 +78,14 @@ export async function deleteShape(shapeId) {
  */
 export function subscribeToShapes(callback) {
   try {
-    console.log('📡 Attempting to subscribe to shapes collection...');
-    console.log('📡 Database instance:', db);
-    console.log('📡 Collection name:', SHAPES_COLLECTION);
-    
-    // Query all shapes (no orderBy to avoid index requirement)
-    // Shapes will be ordered by document ID by default
     const shapesCollection = collection(db, SHAPES_COLLECTION);
-    console.log('📡 Collection reference created:', shapesCollection);
     
-    // Set up real-time listener
     const unsubscribe = onSnapshot(
-      shapesCollection, 
-      {
-        // Add includeMetadataChanges to get more details
-        includeMetadataChanges: false
-      },
+      shapesCollection,
       (snapshot) => {
-        console.log('✅ onSnapshot SUCCESS! Received snapshot with', snapshot.size, 'documents');
-        console.log('✅ Snapshot metadata:', snapshot.metadata);
-        
         const shapes = [];
         
         snapshot.forEach((doc) => {
-          console.log('📄 Document:', doc.id, doc.data());
           shapes.push({
             id: doc.id,
             ...doc.data()
@@ -121,28 +98,17 @@ export function subscribeToShapes(callback) {
           return a.createdAt.toMillis() - b.createdAt.toMillis();
         });
         
-        console.log('Shapes updated from Firestore:', shapes.length);
         callback(shapes);
       }, 
       (error) => {
-        console.error('❌ onSnapshot ERROR!');
-        console.error('❌ Error code:', error.code);
-        console.error('❌ Error message:', error.message);
-        console.error('❌ Error name:', error.name);
-        console.error('❌ Full error object:', JSON.stringify(error, null, 2));
-        console.error('❌ Error stack:', error.stack);
-        
-        // Call callback with empty array on error
+        console.error('Firestore subscription error:', error.message);
         callback([]);
       }
     );
     
-    console.log('📡 Subscription established, unsubscribe function created');
     return unsubscribe;
   } catch (error) {
-    console.error('❌ EXCEPTION in subscribeToShapes:');
-    console.error('❌ Error:', error);
-    console.error('❌ Stack:', error.stack);
+    console.error('Error subscribing to shapes:', error.message);
     throw error;
   }
 }

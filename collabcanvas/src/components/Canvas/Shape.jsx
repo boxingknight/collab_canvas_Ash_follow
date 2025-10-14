@@ -1,7 +1,8 @@
 import { Rect, Transformer } from 'react-konva';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, memo } from 'react';
 
-function Shape({ shape, isSelected, onSelect, onDragEnd, onDragStart, onDragMove, isDraggable = true, isInteractive = true }) {
+// Memoized Shape component to prevent unnecessary re-renders
+const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDragStart, onDragMove, isDraggable = true, isInteractive = true }) {
   const shapeRef = useRef(null);
   const transformerRef = useRef(null);
 
@@ -92,6 +93,20 @@ function Shape({ shape, isSelected, onSelect, onDragEnd, onDragStart, onDragMove
       )}
     </>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison function for React.memo
+  // Only re-render if these props change
+  return (
+    prevProps.shape.id === nextProps.shape.id &&
+    prevProps.shape.x === nextProps.shape.x &&
+    prevProps.shape.y === nextProps.shape.y &&
+    prevProps.shape.width === nextProps.shape.width &&
+    prevProps.shape.height === nextProps.shape.height &&
+    prevProps.shape.color === nextProps.shape.color &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.isDraggable === nextProps.isDraggable &&
+    prevProps.isInteractive === nextProps.isInteractive
+  );
+});
 
 export default Shape;

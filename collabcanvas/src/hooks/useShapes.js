@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { 
   addShape as addShapeToFirestore, 
   updateShape as updateShapeInFirestore,
@@ -7,6 +7,7 @@ import {
 } from '../services/shapes';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../services/firebase';
+import { debounce } from '../utils/helpers';
 
 /**
  * Custom hook to manage shape state with Firestore persistence
@@ -17,6 +18,9 @@ function useShapes(user) {
   const [shapes, setShapes] = useState([]);
   const [selectedShapeId, setSelectedShapeId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Debounced Firestore update to reduce write operations during drag
+  const debouncedFirestoreUpdateRef = useRef(null);
 
   // Subscribe to Firestore shapes on mount
   useEffect(() => {
@@ -26,63 +30,12 @@ function useShapes(user) {
       return;
     }
 
-    console.log('Subscribing to Firestore shapes...');
-    
-    // CRITICAL TEST: Try a simple one-time read first
-    async function testFirestoreAccess() {
-      try {
-        console.log('🧪 TESTING: Attempting simple getDocs() call...');
-        console.log('🧪 Current URL:', window.location.href);
-        console.log('🧪 Current hostname:', window.location.hostname);
-        console.log('🧪 User authenticated?', !!user);
-        console.log('🧪 User UID:', user?.uid);
-        console.log('🧪 User email:', user?.email);
-        
-        const shapesCollection = collection(db, 'shapes');
-        console.log('🧪 Collection reference created');
-        
-        const querySnapshot = await getDocs(shapesCollection);
-        console.log('🧪 ✅ TEST SUCCESS! getDocs returned', querySnapshot.size, 'documents');
-        
-        querySnapshot.forEach((doc) => {
-          console.log('🧪 Document ID:', doc.id, 'Data:', doc.data());
-        });
-      } catch (error) {
-        console.error('🧪 ❌ TEST FAILED! getDocs error:');
-        console.error('🧪 Error code:', error.code);
-        console.error('🧪 Error message:', error.message);
-        console.error('🧪 Error name:', error.name);
-        console.error('🧪 Error details:', {
-          code: error.code,
-          message: error.message,
-          name: error.name,
-          stack: error.stack
-        });
-        
-        // Check authentication specifically
-        if (error.code === 'permission-denied') {
-          console.error('🧪 PERMISSION DENIED! Possible causes:');
-          console.error('🧪 1. Domain not in Firebase Authorized domains');
-          console.error('🧪 2. Firestore rules blocking access');
-          console.error('🧪 3. User not properly authenticated');
-          console.error('🧪 Current domain:', window.location.hostname);
-        }
-      }
-    }
-    
-    // Run the test
-    testFirestoreAccess();
-    
-    // Set up real-time listener
     const unsubscribe = subscribeToShapes((updatedShapes) => {
-      console.log('Shapes received from Firestore:', updatedShapes.length);
       setShapes(updatedShapes);
       setIsLoading(false);
     });
 
-    // Cleanup: unsubscribe when component unmounts or user changes
     return () => {
-      console.log('Unsubscribing from Firestore shapes');
       unsubscribe();
     };
   }, [user]);
@@ -101,8 +54,6 @@ function useShapes(user) {
       // Add to Firestore (real-time listener will update local state)
       const firestoreId = await addShapeToFirestore(shape, user.uid);
       
-      console.log('Shape added, Firestore ID:', firestoreId);
-      
       // Return shape with Firestore ID for immediate UI feedback if needed
       return {
         ...shape,
@@ -110,7 +61,7 @@ function useShapes(user) {
         createdBy: user.uid
       };
     } catch (error) {
-      console.error('Failed to add shape:', error);
+      console.error('Failed to add shape:', error.message);
       return null;
     }
   }, [user]);
@@ -127,17 +78,27 @@ function useShapes(user) {
     }
 
     try {
-      // Optimistic update: update local state immediately
+      // Optimistic update: update local state immediately for responsive UI
       setShapes((prev) =>
         prev.map((shape) =>
           shape.id === id ? { ...shape, ...updates } : shape
         )
       );
 
-      // Update in Firestore (real-time listener will sync if there are conflicts)
-      await updateShapeInFirestore(id, updates);
+      // Debounce Firestore writes to reduce write operations during dragging
+      // This prevents excessive writes while maintaining eventual consistency
+      if (!debouncedFirestoreUpdateRef.current) {
+        debouncedFirestoreUpdateRef.current = debounce(
+          async (shapeId, shapeUpdates) => {
+            await updateShapeInFirestore(shapeId, shapeUpdates);
+          },
+          300 // Wait 300ms after last update before writing to Firestore
+        );
+      }
+      
+      debouncedFirestoreUpdateRef.current(id, updates);
     } catch (error) {
-      console.error('Failed to update shape:', error);
+      console.error('Failed to update shape:', error.message);
       // Real-time listener will revert to Firestore state if update fails
     }
   }, [user]);
@@ -162,7 +123,7 @@ function useShapes(user) {
       // Delete from Firestore
       await deleteShapeFromFirestore(id);
     } catch (error) {
-      console.error('Failed to delete shape:', error);
+      console.error('Failed to delete shape:', error.message);
       // Real-time listener will restore shape if delete fails
     }
   }, [user, selectedShapeId]);
