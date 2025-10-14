@@ -447,17 +447,7 @@ function Canvas() {
   }
   
   function handleTextChange(e) {
-    const newText = e.target.value;
-    setEditingText(newText);
-    
-    // Update the shape in real-time for live editing feedback
-    if (editingTextId) {
-      setShapes((prev) =>
-        prev.map((shape) =>
-          shape.id === editingTextId ? { ...shape, text: newText } : shape
-        )
-      );
-    }
+    setEditingText(e.target.value);
   }
   
   function handleTextKeyDown(e) {
@@ -1195,15 +1185,16 @@ function Canvas() {
               resize: 'none',
               outline: 'none',
               background: 'transparent',
-              color: 'transparent',
-              caretColor: '#646cff',
+              color: editingTextId ? (shapes.find(s => s.id === editingTextId)?.color || '#FFA07A') : '#FFA07A',
+              caretColor: 'auto',
               zIndex: 2000,
               overflow: 'hidden',
               lineHeight: '1.2',
               boxShadow: 'none',
               cursor: 'text',
               whiteSpace: 'pre-wrap',
-              wordWrap: 'break-word'
+              wordWrap: 'break-word',
+              textShadow: '0 0 1px rgba(0,0,0,0.5)'
             }}
             placeholder="Type your text..."
           />
