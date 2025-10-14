@@ -551,3 +551,258 @@ AI calls routed through backend (or client-side with API key)
 - Monitor costs
 - Add error tracking (Sentry, etc.)
 
+---
+
+## Documentation Pattern: PR_PARTY
+
+### Overview
+
+Every Pull Request gets comprehensive documentation **before** implementation begins.
+
+**Location**: `/PR_PARTY/PRXX_FEATURE_NAME.md`
+
+**Purpose**:
+- Plan architecture before coding
+- Document decisions and rationale
+- Define clear success criteria
+- Create testing strategy
+- Track implementation progress
+
+### Pattern Structure
+
+```
+PR_PARTY/
+├── README.md                    # Explains the system
+├── PR11_LINE_SHAPES.md         # Line implementation plan
+├── PR11_BUGS.md                # Bug documentation (if significant issues)
+├── PR12_TEXT_SHAPES.md         # Text implementation plan
+├── PR18_AI_SERVICE.md          # AI service plan
+└── ... (one file per PR)
+```
+
+**Note**: Create separate `PRXX_BUG_ANALYSIS.md` files when significant debugging is required.
+
+### Bug Tracking Integration
+
+**NEW**: Every PR now includes comprehensive bug analysis:
+
+1. **High-Level Bug Summary**
+   - Total bugs encountered
+   - Critical vs minor bugs  
+   - Root cause categories
+   - Time spent debugging
+
+2. **Detailed Bug Analysis** (per bug)
+   - Discovery: When/how was it found?
+   - Symptoms: What did the user see?
+   - Root Cause: Technical explanation
+   - Failed Attempts: What didn't work and why
+   - Solution: What finally worked
+   - Prevention: How to avoid in future
+   - Files Modified: Which files were changed
+   - Time to Fix: How long it took
+
+3. **Lessons Learned**
+   - Key insights gained
+   - Patterns to watch for
+   - Debugging strategies that worked
+   - Best practices discovered
+
+**Bug Severity Levels**:
+- **CRITICAL**: Feature completely broken, blocks core functionality
+- **HIGH**: Major functionality impaired, significant user impact  
+- **MEDIUM**: Minor functionality issues, workarounds available
+- **LOW**: Cosmetic issues, edge cases
+
+**Root Cause Categories**:
+- **Data Flow**: Issues with data not reaching the right place
+- **State Management**: React/Konva state synchronization
+- **Event Handling**: Incorrect event propagation or handling
+- **Architecture**: Wrong patterns or approaches
+- **Configuration**: Missing or incorrect setup
+- **Logic**: Algorithmic or business logic errors
+
+### Document Template
+
+Each PR document includes:
+
+1. **Overview**
+   - Goal and importance
+   - Key features
+   - Time estimate and risk level
+
+2. **Architecture & Design Decisions**
+   - Data structures
+   - Component relationships
+   - Coordinate systems
+   - Technical decisions with rationale
+
+3. **Cross-Platform Considerations**
+   - Desktop browser support
+   - Mobile/tablet support
+   - Browser-specific issues
+   - Performance implications
+
+4. **Locking Mechanism Integration**
+   - How it uses existing locking
+   - Visual feedback
+   - Edge cases
+
+5. **Future-Proofing**
+   - Extensibility planning
+   - AI integration readiness
+   - Compatibility notes
+
+6. **Implementation Details**
+   - Files to modify
+   - Code examples
+   - Line-by-line changes
+
+7. **Testing Strategy**
+   - Manual test checklist
+   - Automated tests
+   - Performance benchmarks
+   - Cross-browser matrix
+
+8. **Rollout Plan**
+   - Phase-by-phase steps
+   - Git workflow
+   - Deployment process
+
+9. **Success Criteria**
+   - Must have (required)
+   - Nice to have (optional)
+   - Out of scope (explicit)
+
+10. **Risk Assessment**
+    - Technical risks
+    - Project risks
+    - Mitigations
+
+### Benefits
+
+**For Development**:
+- ✅ Reduces uncertainty
+- ✅ Better time estimates
+- ✅ Fewer surprises
+- ✅ Comprehensive testing
+
+**For Maintenance**:
+- ✅ Historical context
+- ✅ Decision rationale
+- ✅ Pattern reuse
+- ✅ Easy onboarding
+
+**For AI Assistance**:
+- ✅ Complete context
+- ✅ Clear patterns
+- ✅ Documented examples
+- ✅ Consistent quality
+
+### Workflow
+
+```
+1. Create PR document → 2. Review & refine → 3. Implement → 4. Test → 5. Update with learnings
+```
+
+**Before Implementation**:
+- Write complete PR document
+- Review architecture decisions
+- Define success criteria
+- Plan testing approach
+
+**During Implementation**:
+- Follow rollout plan
+- Check off completed tasks
+- Document deviations
+- Note issues/learnings
+
+**After Implementation**:
+- Mark all items complete
+- Update with actual time
+- Document lessons learned
+- Reference for future PRs
+
+### Example Usage
+
+```markdown
+# PR #11: Line Shape Support 📏
+
+**Branch**: `feat/line-shapes`
+**Status**: Planning Complete - Ready for Implementation
+**Priority**: HIGH
+**Estimated Time**: 3-4 hours
+**Risk Level**: LOW
+
+## Overview
+Add line shape type with robust cross-platform support...
+
+## Architecture & Design Decisions
+
+### 1. Coordinate System
+**Decision**: Use start-end point representation
+...
+```
+
+### Bug Documentation (When Needed)
+
+When significant bugs are encountered during implementation, create a separate `PRXX_BUGS.md` file.
+
+**When to Create**:
+- Multiple iterations needed (3+)
+- Non-obvious root cause
+- Required research/external resources
+- Multiple related bugs
+- Architectural changes needed
+- Significant learning experience
+
+**Bug Document Structure**:
+1. **High-Level Summary**: Overview of debugging journey and key learnings
+2. **Bug Catalog**: Each bug with severity, iterations, root cause, fix, and lesson
+3. **Detailed Breakdown**: Full investigation and solution process for each bug
+4. **Cross-References**: Link back to main PR document
+5. **Patterns**: Recurring issues or framework quirks discovered
+
+**Example**:
+```markdown
+# PR #11 - Bugs & Fixes
+
+## High-Level Summary
+Encountered 6 iterations to fix line endpoint manipulation.
+Root cause: Data flow issue, not Konva patterns.
+
+## Bug #1: Line Length Changes When Dragged
+**Severity**: Critical
+**Iterations**: 4
+**Root Cause**: Mixed coordinate systems...
+**Fix**: Use Group wrapper with absolute points...
+**Lesson**: Always separate shape transform from geometry...
+```
+
+**Benefits**:
+- Documents debugging process for future reference
+- Identifies framework/library quirks
+- Prevents similar bugs in future PRs
+- Creates knowledge base of solutions
+
+### Quality Standards
+
+**Complete Documentation**:
+- All 10 sections filled
+- Code examples included
+- Clear rationale for decisions
+- Comprehensive test cases
+
+**Before Coding**:
+- Document must be complete
+- Architecture reviewed
+- Risks identified
+- Success criteria defined
+
+**Living Document**:
+- Update during implementation
+- Note deviations from plan
+- Document learnings
+- Track actual vs estimated time
+- Create bug document if needed
+
