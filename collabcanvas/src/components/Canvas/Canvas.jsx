@@ -709,18 +709,29 @@ function Canvas() {
           <span style={{ opacity: 0.7 }}>Shapes:</span>
           <span style={{ color: '#a78bfa', fontWeight: 'bold' }}>{shapes.length}</span>
         </div>
-        {import.meta.env.DEV && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ opacity: 0.7 }}>FPS:</span>
-            <span style={{ 
-              color: fps >= 55 ? '#4ade80' : fps >= 30 ? '#fbbf24' : '#ef4444',
-              fontWeight: 'bold'
-            }}>
-              {fps}
-            </span>
-          </div>
-        )}
       </div>
+
+      {/* FPS Counter (dev mode only) - Top Right */}
+      {import.meta.env.DEV && (
+        <div style={{
+          position: 'absolute',
+          top: '10px',
+          right: '10px',
+          background: 'rgba(0, 0, 0, 0.85)',
+          color: fps >= 55 ? '#4ade80' : fps >= 30 ? '#fbbf24' : '#ef4444',
+          padding: '10px 16px',
+          borderRadius: '8px',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          fontFamily: 'monospace',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          zIndex: 1000,
+          backdropFilter: 'blur(8px)',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+        }}>
+          FPS: {fps}
+        </div>
+      )}
 
       {/* Instructions */}
       <div style={{
