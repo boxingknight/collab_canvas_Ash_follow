@@ -52,23 +52,26 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
     }
     
     if (isLine) {
-      // For lines with absolute points, dragging applies an offset
-      // e.target.x() and e.target.y() give the drag offset
-      const offsetX = e.target.x();
-      const offsetY = e.target.y();
+      // Line is positioned at (shape.x, shape.y) with relative points
+      // After drag, e.target.x() and e.target.y() give us the NEW position
+      const newX = e.target.x();
+      const newY = e.target.y();
       
-      console.log('[LINE DRAG END] Offset:', offsetX, offsetY);
+      // Calculate how much the start point moved
+      const deltaX = newX - shape.x;
+      const deltaY = newY - shape.y;
+      
+      console.log('[LINE DRAG END] New start position:', newX, newY);
+      console.log('[LINE DRAG END] Delta:', deltaX, deltaY);
       console.log('[LINE DRAG END] Old coords:', shape.x, shape.y, shape.endX, shape.endY);
       
-      // Calculate new absolute coordinates
-      const newX = shape.x + offsetX;
-      const newY = shape.y + offsetY;
-      const newEndX = shape.endX + offsetX;
-      const newEndY = shape.endY + offsetY;
+      // Apply the same delta to the end point
+      const newEndX = shape.endX + deltaX;
+      const newEndY = shape.endY + deltaY;
       
       console.log('[LINE DRAG END] New coords:', newX, newY, newEndX, newEndY);
       
-      // Apply offset to all coordinates (both start and end points)
+      // Update both start and end points
       onDragEnd({
         id: shape.id,
         x: newX,
@@ -76,10 +79,6 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
         endX: newEndX,
         endY: newEndY
       });
-      
-      // Reset Line position to origin to prevent offset accumulation on next drag
-      // This must happen AFTER we've calculated and saved the new coordinates
-      e.target.position({ x: 0, y: 0 });
     } else {
       // Get the current position from the dragged element
       let newX = e.target.x();
@@ -121,20 +120,26 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
 
   // Render line shapes
   if (isLine) {
-    // SIMPLIFIED APPROACH: Just make the Line itself draggable
-    // Store absolute coordinates, handle drag offset properly
-    const points = [shape.x, shape.y, shape.endX, shape.endY];
+    // CORRECT KONVA PATTERN:
+    // - Position Line at start point (x, y)
+    // - Points are RELATIVE to that position [0, 0, deltaX, deltaY]
+    // - This makes dragging work naturally
+    const deltaX = shape.endX - shape.x;
+    const deltaY = shape.endY - shape.y;
+    const points = [0, 0, deltaX, deltaY];
     
-    // Calculate midpoint for lock icon
+    // Calculate midpoint for lock icon (in absolute coordinates)
     const centerX = (shape.x + shape.endX) / 2;
     const centerY = (shape.y + shape.endY) / 2;
     
     return (
       <>
-        {/* Main line - draggable */}
+        {/* Main line - draggable, positioned at start point */}
         <Line
           ref={shapeRef}
           id={shape.id}
+          x={shape.x}
+          y={shape.y}
           points={points}
           stroke={shape.color}
           strokeWidth={shape.strokeWidth || DEFAULT_STROKE_WIDTH}
@@ -229,9 +234,6 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
                   endX: shape.endX,
                   endY: shape.endY
                 });
-                
-                // Reset anchor position to prevent offset accumulation
-                e.target.position({ x: newX, y: newY });
               }}
             />
             
@@ -275,9 +277,6 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
                   endX: newEndX,
                   endY: newEndY
                 });
-                
-                // Reset anchor position to prevent offset accumulation
-                e.target.position({ x: newEndX, y: newEndY });
               }}
             />
           </>
