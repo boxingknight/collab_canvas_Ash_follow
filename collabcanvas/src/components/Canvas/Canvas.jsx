@@ -1115,6 +1115,8 @@ function Canvas() {
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              // Clicking outside the textarea saves the text
+              handleTextSave();
             }}
             onMouseDown={(e) => {
               e.preventDefault();
