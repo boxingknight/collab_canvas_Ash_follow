@@ -52,21 +52,22 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
     }
     
     if (isLine) {
-      // For lines, the draggable element is a Group
-      // The Group was dragged, so e.target.x() and e.target.y() give the Group's offset
-      const groupX = e.target.x();
-      const groupY = e.target.y();
+      // For lines with absolute points, dragging applies an offset
+      // e.target.x() and e.target.y() give the drag offset
+      const offsetX = e.target.x();
+      const offsetY = e.target.y();
       
-      // The line points are absolute, so we need to add the Group's offset to them
+      // Apply offset to all coordinates (both start and end points)
       onDragEnd({
         id: shape.id,
-        x: shape.x + groupX,
-        y: shape.y + groupY,
-        endX: shape.endX + groupX,
-        endY: shape.endY + groupY
+        x: shape.x + offsetX,
+        y: shape.y + offsetY,
+        endX: shape.endX + offsetX,
+        endY: shape.endY + offsetY
       });
       
-      // Reset the Group's position to (0, 0) after updating coordinates
+      // CRITICAL: Reset the Line's position to (0, 0) after we've saved the new coordinates
+      // This prevents accumulation of offsets on subsequent drags
       e.target.position({ x: 0, y: 0 });
     } else {
       // Get the current position from the dragged element
@@ -109,24 +110,24 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
 
   // Render line shapes
   if (isLine) {
-    // CORRECT APPROACH: Use absolute points in a draggable Group
-    // This prevents any visual glitches during dragging
+    // SIMPLIFIED APPROACH: Just make the Line itself draggable
+    // Store absolute coordinates, handle drag offset properly
     const points = [shape.x, shape.y, shape.endX, shape.endY];
     
-    // Calculate midpoint for lock icon and bounds
+    // Calculate midpoint for lock icon
     const centerX = (shape.x + shape.endX) / 2;
     const centerY = (shape.y + shape.endY) / 2;
     
-    // Calculate bounds for the Group (needed for proper hit detection)
-    const minX = Math.min(shape.x, shape.endX);
-    const minY = Math.min(shape.y, shape.endY);
-    const maxX = Math.max(shape.x, shape.endX);
-    const maxY = Math.max(shape.y, shape.endY);
-    
     return (
       <>
-        <Group
+        {/* Main line - draggable */}
+        <Line
           ref={shapeRef}
+          id={shape.id}
+          points={points}
+          stroke={shape.color}
+          strokeWidth={shape.strokeWidth || DEFAULT_STROKE_WIDTH}
+          hitStrokeWidth={DEFAULT_LINE_HIT_WIDTH}
           draggable={canDrag}
           dragDistance={3}
           listening={canInteract}
@@ -135,65 +136,48 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
           onDragStart={handleDragStart}
           onDragMove={handleDragMove}
           onDragEnd={handleDragEnd}
-        >
-          <Line
-            id={shape.id}
-            points={points}  // Use absolute coordinates
-            stroke={shape.color}
-            strokeWidth={shape.strokeWidth || DEFAULT_STROKE_WIDTH}
-            hitStrokeWidth={DEFAULT_LINE_HIT_WIDTH}
-            shadowColor={isSelected ? '#646cff' : undefined}
-            shadowBlur={isSelected ? 10 : 0}
-            shadowOpacity={isSelected ? 0.8 : 0}
-            opacity={isLockedByOther ? 0.6 : 1}
-            perfectDrawEnabled={false}
-            shadowForStrokeEnabled={false}
-          />
-          
-          {/* Lock icon at midpoint */}
-          {isLockedByOther && (
-            <Group
-              x={centerX - 15}
-              y={centerY - 35}
-              listening={false}
-            >
-              <Rect
-                x={0}
-                y={0}
-                width={30}
-                height={30}
-                fill="#ef4444"
-                cornerRadius={6}
-                shadowColor="black"
-                shadowBlur={4}
-                shadowOpacity={0.5}
-              />
-              <Text
-                x={0}
-                y={0}
-                width={30}
-                height={30}
-                text="🔒"
-                fontSize={18}
-                align="center"
-                verticalAlign="middle"
-              />
-            </Group>
-          )}
-        </Group>
+          shadowColor={isSelected ? '#646cff' : undefined}
+          shadowBlur={isSelected ? 10 : 0}
+          shadowOpacity={isSelected ? 0.8 : 0}
+          opacity={isLockedByOther ? 0.6 : 1}
+          perfectDrawEnabled={false}
+          shadowForStrokeEnabled={false}
+        />
         
-        {/* Endpoint anchor circles for line adjustment */}
+        {/* Lock icon at midpoint */}
+        {isLockedByOther && (
+          <Group
+            x={centerX - 15}
+            y={centerY - 35}
+            listening={false}
+          >
+            <Rect
+              x={0}
+              y={0}
+              width={30}
+              height={30}
+              fill="#ef4444"
+              cornerRadius={6}
+              shadowColor="black"
+              shadowBlur={4}
+              shadowOpacity={0.5}
+            />
+            <Text
+              x={0}
+              y={0}
+              width={30}
+              height={30}
+              text="🔒"
+              fontSize={18}
+              align="center"
+              verticalAlign="middle"
+            />
+          </Group>
+        )}
+        
+        {/* Endpoint anchor circles for line adjustment - NO TRANSFORMER */}
         {isSelected && !isLockedByOther && (
           <>
-            {/* Transformer (no anchors, just visual border) */}
-            <Transformer
-              ref={transformerRef}
-              enabledAnchors={[]}
-              rotateEnabled={false}
-              borderStroke="#646cff"
-              borderStrokeWidth={2}
-            />
-            
             {/* Start point anchor */}
             <Circle
               x={shape.x}
