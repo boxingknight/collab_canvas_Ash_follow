@@ -3,7 +3,7 @@ import { useRef, useEffect, memo } from 'react';
 import { SHAPE_TYPES, DEFAULT_STROKE_WIDTH, DEFAULT_LINE_HIT_WIDTH, DEFAULT_FONT_SIZE, DEFAULT_FONT_WEIGHT } from '../../utils/constants';
 
 // Memoized Shape component to prevent unnecessary re-renders
-const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDragStart, onDragMove, onTextEdit, isDraggable = true, isInteractive = true, isLockedByOther = false, currentUserId }) {
+const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDragStart, onDragMove, onTextEdit, isEditing = false, isDraggable = true, isInteractive = true, isLockedByOther = false, currentUserId }) {
   const shapeRef = useRef(null);
   const transformerRef = useRef(null);
   const lineRef = useRef(null);  // For direct line manipulation (used only for line shapes)
@@ -350,13 +350,13 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
             verticalAlign="top"
             wrap="word"
             lineHeight={1.2}
-            draggable={canDrag}
+            draggable={canDrag && !isEditing}
             dragDistance={3}
-            listening={canInteract}
-            onClick={canInteract ? handleClick : undefined}
-            onTap={canInteract ? handleClick : undefined}
-            onDblClick={canInteract ? handleDoubleClick : undefined}
-            onDblTap={canInteract ? handleDoubleClick : undefined}
+            listening={canInteract && !isEditing}
+            onClick={canInteract && !isEditing ? handleClick : undefined}
+            onTap={canInteract && !isEditing ? handleClick : undefined}
+            onDblClick={canInteract && !isEditing ? handleDoubleClick : undefined}
+            onDblTap={canInteract && !isEditing ? handleDoubleClick : undefined}
             onDragStart={handleDragStart}
             onDragMove={handleDragMove}
             onDragEnd={handleDragEnd}
@@ -364,7 +364,7 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
             shadowColor={isSelected ? '#646cff' : undefined}
             shadowBlur={isSelected ? 10 : 0}
             shadowOpacity={isSelected ? 0.8 : 0}
-            opacity={isLockedByOther ? 0.6 : 1}
+            opacity={isEditing ? 0 : isLockedByOther ? 0.6 : 1}
             // Performance
             perfectDrawEnabled={false}
             shadowForStrokeEnabled={false}
@@ -402,8 +402,8 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
           )}
         </Group>
         
-        {/* Transformer for selected text */}
-        {isSelected && !isLockedByOther && (
+        {/* Transformer for selected text (hide during editing) */}
+        {isSelected && !isLockedByOther && !isEditing && (
           <Transformer
             ref={transformerRef}
             enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']}

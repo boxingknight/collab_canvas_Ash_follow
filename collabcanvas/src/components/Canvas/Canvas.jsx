@@ -663,6 +663,7 @@ function Canvas() {
                 onDragMove={handleShapeDragMove}
                 onDragEnd={handleShapeDragEnd}
                 onTextEdit={handleTextEdit}
+                isEditing={shape.id === editingTextId}
                 isDraggable={mode === 'move'}
                 isInteractive={mode !== 'draw'}
                 isLockedByOther={isLockedByOther}
