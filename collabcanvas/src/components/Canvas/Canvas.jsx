@@ -528,18 +528,18 @@ function Canvas() {
         ref={stageRef}
         width={stageSize.width}
         height={stageSize.height}
-        draggable={mode === 'pan'}
+        draggable={mode === 'pan' && !editingTextId}
         x={position.x}
         y={position.y}
         scaleX={scale}
         scaleY={scale}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        onWheel={handleWheel}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onClick={handleStageClick}
+        onWheel={editingTextId ? undefined : handleWheel}
+        onMouseDown={editingTextId ? undefined : handleMouseDown}
+        onMouseMove={editingTextId ? undefined : handleMouseMove}
+        onMouseUp={editingTextId ? undefined : handleMouseUp}
+        onClick={editingTextId ? undefined : handleStageClick}
         style={{ 
           cursor: isDrawing ? 'crosshair' 
                 : mode === 'draw' ? 'crosshair'
@@ -1088,42 +1088,76 @@ function Canvas() {
         </span>
       </div>
 
-      {/* Inline Text Editor - positioned directly over the text shape */}
+      {/* Inline Text Editor with overlay to prevent canvas interaction */}
       {editingTextId && (
-        <textarea
-          ref={(textarea) => {
-            if (textarea) {
-              textarea.focus();
-              textarea.select();
-            }
-          }}
-          value={editingText}
-          onChange={handleTextChange}
-          onKeyDown={handleTextKeyDown}
-          onBlur={handleTextSave}
-          style={{
-            position: 'absolute',
-            left: `${textEditorPosition.x}px`,
-            top: `${textEditorPosition.y}px`,
-            width: `${Math.max(textEditorPosition.width, 100)}px`,
-            minHeight: `${Math.max(textEditorPosition.height, 30)}px`,
-            padding: '4px',
-            border: '2px solid #646cff',
-            borderRadius: '4px',
-            fontSize: `${textEditorPosition.fontSize || 16}px`,
-            fontFamily: 'Arial, sans-serif',
-            resize: 'none',
-            outline: 'none',
-            background: 'rgba(255, 255, 255, 0.95)',
-            color: '#000',
-            zIndex: 2000,
-            overflow: 'hidden',
-            lineHeight: '1.2',
-            boxShadow: '0 4px 12px rgba(100, 108, 255, 0.4)'
-          }}
-          placeholder="Type your text..."
-          autoFocus
-        />
+        <>
+          {/* Overlay to prevent canvas interaction while editing */}
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 1999,
+              background: 'transparent',
+              cursor: 'default'
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          />
+          
+          {/* Textarea positioned over the text shape */}
+          <textarea
+            ref={(textarea) => {
+              if (textarea) {
+                textarea.focus();
+                textarea.select();
+              }
+            }}
+            value={editingText}
+            onChange={handleTextChange}
+            onKeyDown={handleTextKeyDown}
+            onBlur={handleTextSave}
+            onMouseDown={(e) => {
+              // Prevent event from reaching canvas
+              e.stopPropagation();
+            }}
+            onClick={(e) => {
+              // Prevent event from reaching canvas
+              e.stopPropagation();
+            }}
+            style={{
+              position: 'absolute',
+              left: `${textEditorPosition.x}px`,
+              top: `${textEditorPosition.y}px`,
+              width: `${Math.max(textEditorPosition.width, 100)}px`,
+              minHeight: `${Math.max(textEditorPosition.height, 30)}px`,
+              padding: '4px',
+              border: '2px solid #646cff',
+              borderRadius: '4px',
+              fontSize: `${textEditorPosition.fontSize || 16}px`,
+              fontFamily: 'Arial, sans-serif',
+              resize: 'none',
+              outline: 'none',
+              background: 'rgba(255, 255, 255, 0.95)',
+              color: '#000',
+              zIndex: 2000,
+              overflow: 'hidden',
+              lineHeight: '1.2',
+              boxShadow: '0 4px 12px rgba(100, 108, 255, 0.4)',
+              cursor: 'text'
+            }}
+            placeholder="Type your text..."
+            autoFocus
+          />
+        </>
       )}
     </div>
   );
