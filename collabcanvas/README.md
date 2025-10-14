@@ -7,8 +7,10 @@ CollabCanvas is a real-time collaborative drawing application that allows multip
 ### Core Functionality
 - **Real-time Collaboration**: Multiple users can work on the same canvas simultaneously
 - **Infinite Canvas**: Large 5000x5000px workspace with smooth pan and zoom
-- **Shape Creation**: Click and drag to create rectangles
-- **Shape Manipulation**: Move, select, and delete shapes with intuitive controls
+- **Shape Creation**: Click and drag to create rectangles and circles
+- **Shape Types**: Support for multiple shape types (rectangles, circles) with easy-to-use shape selector
+- **Shape Manipulation**: Move, select, resize, and delete shapes with intuitive controls
+- **Selection-First Interaction**: Professional click-to-select, then drag-to-move pattern (like Figma/Sketch)
 - **Multiplayer Cursors**: See other users' cursor positions in real-time
 - **User Presence**: View list of currently online collaborators
 
@@ -21,10 +23,11 @@ CollabCanvas is a real-time collaborative drawing application that allows multip
 ### User Experience
 - **Three Interaction Modes**:
   - **Pan Mode (V)**: Drag canvas to navigate, scroll to zoom
-  - **Move Mode (M)**: Drag shapes to reposition them
-  - **Draw Mode (D)**: Click and drag to create new rectangles
+  - **Move Mode (M)**: Click to select, then drag to move or resize shapes
+  - **Draw Mode (D)**: Choose shape type (rectangle/circle), click and drag to create
 - **Keyboard Shortcuts**: Quick mode switching and shape deletion
-- **Visual Feedback**: Selection indicators, mode indicators, and online user count
+- **Visual Feedback**: Selection indicators, transformer handles, mode indicators, and online user count
+- **Smart Drag Detection**: 3px threshold prevents accidental drags on click
 - **Dark Theme**: Eye-friendly dark interface
 
 ## 🚀 Live Demo
@@ -144,12 +147,17 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 - **Click shapes**: Selects shape and auto-switches to Move Mode
 
 #### Move Mode (Press M)
+- **Select shapes**: Click on a shape to select it (shows blue border and transformer handles)
 - **Drag shapes**: Click and drag selected shapes to move them
-- **Select shapes**: Click on shapes to select (shows blue border)
+- **Resize shapes**: Drag transformer corner handles to resize
+- Selection-first pattern: must select before dragging (prevents accidental moves)
 - Canvas does NOT pan in this mode
 
 #### Draw Mode (Press D)
-- **Create rectangles**: Click and drag on empty space to create shapes
+- **Choose shape type**: Click rectangle 🔲 or circle ⚪ button to select shape type
+- **Create shapes**: Click and drag on empty space to create shapes
+- **Rectangle**: Drag to create rectangular shapes
+- **Circle**: Drag to create circular shapes (based on smaller dimension for perfect circles)
 - Random colors assigned automatically
 - Canvas does NOT pan in this mode
 
@@ -297,16 +305,21 @@ collabcanvas/
 ```javascript
 {
   id: "auto-generated",
-  x: 100,              // X position
-  y: 200,              // Y position
+  x: 100,              // X position (top-left corner for all shapes)
+  y: 200,              // Y position (top-left corner for all shapes)
   width: 150,          // Width in pixels
   height: 100,         // Height in pixels
   color: "#646cff",    // Fill color
+  type: "rectangle",   // Shape type: "rectangle" or "circle"
   createdBy: "userId", // Creator's Firebase Auth UID
   createdAt: Timestamp,
-  updatedAt: Timestamp
+  updatedAt: Timestamp,
+  lockedBy: "userId",  // User currently dragging (prevents conflicts)
+  lockedAt: Timestamp  // Lock timestamp (auto-expires after 30s)
 }
 ```
+
+**Coordinate System Note**: All shapes store `{x, y}` as the top-left corner of their bounding box for consistency. Circles are rendered from center but stored with top-left coordinates.
 
 ### cursors
 ```javascript
@@ -338,8 +351,11 @@ collabcanvas/
 ### Basic Functionality
 - [ ] Sign up with new account
 - [ ] Login with existing account
-- [ ] Create shapes by dragging
-- [ ] Move shapes in Move Mode
+- [ ] Create rectangles by dragging in Draw Mode
+- [ ] Create circles by selecting circle type and dragging
+- [ ] Click to select shapes (shows transformer handles)
+- [ ] Drag selected shapes in Move Mode (no accidental drags)
+- [ ] Resize shapes using transformer corner handles
 - [ ] Delete shapes with Delete key
 - [ ] Pan canvas in Pan Mode
 - [ ] Zoom in/out with mouse wheel
@@ -378,11 +394,27 @@ npm run lint
 
 ### Adding Features
 
-1. **New Shape Types**: Extend `Shape.jsx` with different Konva shapes
+1. **New Shape Types**: Extend `Shape.jsx` with different Konva shapes (triangles, stars, etc.)
+   - Add new type to `SHAPE_TYPES` constant
+   - Add rendering logic in `Shape.jsx`
+   - Update shape type selector UI
 2. **Color Picker**: Add color selection UI in canvas toolbar
 3. **Undo/Redo**: Implement action history with timestamps
 4. **Export**: Add canvas export to PNG/SVG
 5. **Rooms**: Add URL-based rooms for separate canvas instances
+6. **Rotation**: Enable transformer rotation handles for shape rotation
+
+### Recent Updates
+
+#### Circle Shape Support (Latest)
+- ✅ Added circle shape type alongside rectangles
+- ✅ Shape type selector in Draw Mode (🔲 rectangle / ⚪ circle buttons)
+- ✅ Proper coordinate system handling (circles stored as bounding box, rendered from center)
+- ✅ Fixed ghost teleport issue with pending updates tracking
+- ✅ Selection-first interaction pattern (click to select, then drag to move)
+- ✅ 3px drag threshold prevents accidental drags on click
+- ✅ Immediate Firestore writes on drag end (no flicker)
+- ✅ Smart conflict resolution for real-time collaboration
 
 ## 🤝 Contributing
 
