@@ -390,35 +390,44 @@ function Canvas() {
   }
   
   // Text editing handlers
-  function handleTextEdit(shapeId, currentText) {
+  async function handleTextEdit(shapeId, currentText) {
     const shape = shapes.find(s => s.id === shapeId);
     if (!shape) return;
     
-    // Calculate text editor position
+    // Lock the shape to prevent others from editing
+    await lockShape(shapeId);
+    
+    // Calculate text editor position (positioned over the text shape)
     const stage = stageRef.current;
     const stageBox = stage.container().getBoundingClientRect();
     const scale = stage.scaleX();
+    const stagePos = stage.position();
     
     setTextEditorPosition({
-      x: stageBox.left + (shape.x * scale),
-      y: stageBox.top + (shape.y * scale),
+      x: stageBox.left + (shape.x * scale) + stagePos.x,
+      y: stageBox.top + (shape.y * scale) + stagePos.y,
       width: shape.width * scale,
-      height: shape.height * scale
+      height: shape.height * scale,
+      fontSize: (shape.fontSize || 16) * scale
     });
     
     setEditingTextId(shapeId);
     setEditingText(currentText);
   }
   
-  function handleTextSave() {
+  async function handleTextSave() {
     if (editingTextId) {
-      updateShape(editingTextId, { text: editingText });
+      await updateShape(editingTextId, { text: editingText });
+      await unlockShape(editingTextId);
       setEditingTextId(null);
       setEditingText('');
     }
   }
   
-  function handleTextCancel() {
+  async function handleTextCancel() {
+    if (editingTextId) {
+      await unlockShape(editingTextId);
+    }
     setEditingTextId(null);
     setEditingText('');
   }
@@ -428,6 +437,7 @@ function Canvas() {
   }
   
   function handleTextKeyDown(e) {
+    // Allow Shift+Enter for new lines
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleTextSave();
@@ -435,6 +445,8 @@ function Canvas() {
       e.preventDefault();
       handleTextCancel();
     }
+    // Stop propagation to prevent other keyboard shortcuts
+    e.stopPropagation();
   }
 
   // Clean up any locks on unmount
@@ -1075,84 +1087,42 @@ function Canvas() {
         </span>
       </div>
 
-      {/* Text Editor Overlay */}
+      {/* Inline Text Editor - positioned directly over the text shape */}
       {editingTextId && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          zIndex: 2000,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <div style={{
-            background: 'white',
-            padding: '20px',
-            borderRadius: '8px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-            minWidth: '300px',
-            maxWidth: '500px'
-          }}>
-            <h3 style={{ margin: '0 0 15px 0', color: '#333' }}>Edit Text</h3>
-            <textarea
-              value={editingText}
-              onChange={handleTextChange}
-              onKeyDown={handleTextKeyDown}
-              style={{
-                width: '100%',
-                minHeight: '100px',
-                padding: '10px',
-                border: '2px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '14px',
-                fontFamily: 'Arial, sans-serif',
-                resize: 'vertical',
-                outline: 'none'
-              }}
-              placeholder="Enter your text here..."
-              autoFocus
-            />
-            <div style={{ 
-              display: 'flex', 
-              gap: '10px', 
-              marginTop: '15px',
-              justifyContent: 'flex-end'
-            }}>
-              <button
-                onClick={handleTextCancel}
-                style={{
-                  padding: '8px 16px',
-                  background: '#6b7280',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleTextSave}
-                style={{
-                  padding: '8px 16px',
-                  background: '#3b82f6',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
+        <textarea
+          ref={(textarea) => {
+            if (textarea) {
+              textarea.focus();
+              textarea.select();
+            }
+          }}
+          value={editingText}
+          onChange={handleTextChange}
+          onKeyDown={handleTextKeyDown}
+          onBlur={handleTextSave}
+          style={{
+            position: 'absolute',
+            left: `${textEditorPosition.x}px`,
+            top: `${textEditorPosition.y}px`,
+            width: `${Math.max(textEditorPosition.width, 100)}px`,
+            minHeight: `${Math.max(textEditorPosition.height, 30)}px`,
+            padding: '4px',
+            border: '2px solid #646cff',
+            borderRadius: '4px',
+            fontSize: `${textEditorPosition.fontSize || 16}px`,
+            fontFamily: 'Arial, sans-serif',
+            resize: 'none',
+            outline: 'none',
+            background: 'rgba(255, 255, 255, 0.95)',
+            color: '#000',
+            zIndex: 2000,
+            overflow: 'hidden',
+            lineHeight: '1.2',
+            boxShadow: '0 4px 12px rgba(100, 108, 255, 0.4)'
+          }}
+          placeholder="Type your text..."
+          autoFocus
+        />
       )}
     </div>
   );
