@@ -29,8 +29,9 @@
 - ✅ AI-friendly context for future sessions
 
 **Current PR Docs**:
-- ✅ PR #11 (Line Shapes): `/PR_PARTY/PR11_LINE_SHAPES.md` - Complete
-- ✅ PR #12 (Text Shapes): `/PR_PARTY/PR12_TEXT_SHAPES.md` - Planning Complete
+- ✅ PR #11 (Line Shapes): `/PR_PARTY/PR11_LINE_SHAPES.md` - Complete & Deployed
+- ✅ PR #12 (Text Shapes): `/PR_PARTY/PR12_TEXT_SHAPES.md` - Complete & Deployed
+- 📋 PR #13 (Multi-Select): Next priority
 
 ---
 
@@ -38,17 +39,30 @@
 
 ### Immediate Focus: Complete Core Shape Types
 
-**Current Sprint**: Preparing for AI integration by completing required shape types and transformations.
+**Current Sprint**: Core shapes complete! Ready to move to AI integration phase.
 
 **Priority Order:**
 1. ✅ **MVP Completed** - Rectangles, circles, real-time sync, multiplayer cursors
 2. ✅ **PR #11 COMPLETED** - Line shapes (fully implemented with drag endpoints, locking, sync)
-3. 📋 **Next** - PR #12: Text layers, rotation support
-4. 🎯 **Critical** - AI service integration and command implementation
+3. ✅ **PR #12 COMPLETED** - Text shapes (inline editing, font customization, deployed!)
+4. 🎯 **NEXT CRITICAL** - Multi-select, rotation, then AI service integration
 
 ## Recent Changes
 
-### Google OAuth Implementation (Current Session)
+### PR #12: Text Shapes Implementation (Just Completed! 🎉)
+- ✅ Text shape type fully implemented
+- ✅ Click-to-place text creation
+- ✅ Double-click inline editing with textarea overlay
+- ✅ Font size, weight, color customization working
+- ✅ Multi-line support with word wrapping
+- ✅ Edit locking prevents simultaneous edits
+- ✅ Cross-platform support (desktop + mobile)
+- ✅ Real-time sync verified (<100ms)
+- ✅ Merged to main branch
+- ✅ Deployed to production: https://collabcanvas-2ba10.web.app
+- ✅ All 4 core shape types now complete! 🚀
+
+### Google OAuth Implementation (Previous Session)
 - ✅ Added Google sign-in functionality
   - Created `loginWithGoogle()` in auth service using Firebase `signInWithPopup`
   - Exposed method through useAuth hook

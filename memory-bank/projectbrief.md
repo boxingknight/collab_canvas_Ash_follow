@@ -22,10 +22,10 @@ This is a **one-week sprint project** with three deadlines:
 - ✅ User authentication (email/password + Google OAuth)
 - ✅ Deployed and publicly accessible
 
-#### Extended Canvas Features (Post-MVP - IN PROGRESS)
-- ⏳ Lines with solid colors and stroke width control
-- ⏳ Text layers with basic formatting (font size, weight, color)
-- ⏳ Rotation transformation for all shapes
+#### Extended Canvas Features (Post-MVP - MOSTLY COMPLETE)
+- ✅ Lines with solid colors and stroke width control (PR #11)
+- ✅ Text layers with basic formatting (font size, weight, color) (PR #12)
+- ⏳ Rotation transformation for all shapes (PR #16 - pending)
 - ⏳ Multi-select (shift-click to add/remove)
 - ⏳ Drag-select (selection box)
 - ⏳ Layer management (bring forward/back, z-index control)
