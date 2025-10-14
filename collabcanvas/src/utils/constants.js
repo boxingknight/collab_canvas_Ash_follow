@@ -1,6 +1,6 @@
 // Canvas dimensions
-export const CANVAS_WIDTH = 5000;
-export const CANVAS_HEIGHT = 5000;
+export const CANVAS_WIDTH = 50000;
+export const CANVAS_HEIGHT = 50000;
 
 // Canvas viewport
 export const VIEWPORT_WIDTH = window.innerWidth;
