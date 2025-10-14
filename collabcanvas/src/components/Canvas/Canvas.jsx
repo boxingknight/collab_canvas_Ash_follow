@@ -343,7 +343,17 @@ function Canvas() {
   // Handle shape drag end
   async function handleShapeDragEnd(data) {
     // Use immediate update (no debounce) to prevent ghost teleport effect
-    await updateShapeImmediate(data.id, { x: data.x, y: data.y });
+    // IMPORTANT: For lines, data includes endX and endY; for rectangles/circles, just x and y
+    const updates = { x: data.x, y: data.y };
+    
+    // If this is a line shape, include endpoint coordinates
+    if (data.endX !== undefined && data.endY !== undefined) {
+      updates.endX = data.endX;
+      updates.endY = data.endY;
+      console.log('[CANVAS] Updating line with endpoint:', updates);
+    }
+    
+    await updateShapeImmediate(data.id, updates);
     setIsDraggingShape(false);
     
     // Unlock the shape so others can use it
