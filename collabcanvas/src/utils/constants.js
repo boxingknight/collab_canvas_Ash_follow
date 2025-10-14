@@ -34,11 +34,19 @@ export const DEFAULT_SHAPE_COLOR = SHAPE_COLORS[0];
 export const DEFAULT_STROKE_WIDTH = 2;
 export const DEFAULT_LINE_HIT_WIDTH = 20;
 
+// Text defaults
+export const DEFAULT_FONT_SIZE = 16;
+export const DEFAULT_FONT_WEIGHT = 'normal';
+export const DEFAULT_TEXT = 'Text';
+export const MIN_TEXT_WIDTH = 50;
+export const MIN_TEXT_HEIGHT = 20;
+
 // Shape types
 export const SHAPE_TYPES = {
   RECTANGLE: 'rectangle',
   CIRCLE: 'circle',
   LINE: 'line',
+  TEXT: 'text',
 };
 
 // Cursor update throttle (ms)

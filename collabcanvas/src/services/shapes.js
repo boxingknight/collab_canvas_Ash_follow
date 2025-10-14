@@ -10,6 +10,7 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db } from './firebase';
+import { DEFAULT_FONT_SIZE, DEFAULT_FONT_WEIGHT, DEFAULT_TEXT, MIN_TEXT_WIDTH, MIN_TEXT_HEIGHT, DEFAULT_STROKE_WIDTH } from '../utils/constants';
 
 const SHAPES_COLLECTION = 'shapes';
 
@@ -37,7 +38,14 @@ export async function addShape(shapeData, userId) {
       // Lines use endX, endY, strokeWidth
       baseDoc.endX = shapeData.endX;
       baseDoc.endY = shapeData.endY;
-      baseDoc.strokeWidth = shapeData.strokeWidth || 2;
+      baseDoc.strokeWidth = shapeData.strokeWidth || DEFAULT_STROKE_WIDTH;
+    } else if (shapeData.type === 'text') {
+      // Text uses text, fontSize, fontWeight, width, height
+      baseDoc.text = shapeData.text || DEFAULT_TEXT;
+      baseDoc.fontSize = shapeData.fontSize || DEFAULT_FONT_SIZE;
+      baseDoc.fontWeight = shapeData.fontWeight || DEFAULT_FONT_WEIGHT;
+      baseDoc.width = shapeData.width || MIN_TEXT_WIDTH;
+      baseDoc.height = shapeData.height || MIN_TEXT_HEIGHT;
     } else {
       // Rectangles and Circles use width, height
       baseDoc.width = shapeData.width;
@@ -89,7 +97,13 @@ export async function addShapesBatch(shapesData, userId) {
         if (shapeData.type === 'line') {
           baseDoc.endX = shapeData.endX;
           baseDoc.endY = shapeData.endY;
-          baseDoc.strokeWidth = shapeData.strokeWidth || 2;
+          baseDoc.strokeWidth = shapeData.strokeWidth || DEFAULT_STROKE_WIDTH;
+        } else if (shapeData.type === 'text') {
+          baseDoc.text = shapeData.text || DEFAULT_TEXT;
+          baseDoc.fontSize = shapeData.fontSize || DEFAULT_FONT_SIZE;
+          baseDoc.fontWeight = shapeData.fontWeight || DEFAULT_FONT_WEIGHT;
+          baseDoc.width = shapeData.width || MIN_TEXT_WIDTH;
+          baseDoc.height = shapeData.height || MIN_TEXT_HEIGHT;
         } else {
           baseDoc.width = shapeData.width;
           baseDoc.height = shapeData.height;

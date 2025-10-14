@@ -6,7 +6,7 @@ import useCursors from '../../hooks/useCursors';
 import useAuth from '../../hooks/useAuth';
 import Shape from './Shape';
 import RemoteCursor from './RemoteCursor';
-import { CANVAS_WIDTH, CANVAS_HEIGHT, SHAPE_COLORS, SHAPE_TYPES, DEFAULT_STROKE_WIDTH } from '../../utils/constants';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, SHAPE_COLORS, SHAPE_TYPES, DEFAULT_STROKE_WIDTH, DEFAULT_FONT_SIZE, DEFAULT_FONT_WEIGHT, DEFAULT_TEXT, MIN_TEXT_WIDTH, MIN_TEXT_HEIGHT } from '../../utils/constants';
 import { createFPSCounter, getRandomColor } from '../../utils/helpers';
 
 function Canvas() {
@@ -35,6 +35,11 @@ function Canvas() {
   
   // Shape dragging state
   const [isDraggingShape, setIsDraggingShape] = useState(false);
+  
+  // Text editing state
+  const [editingTextId, setEditingTextId] = useState(null);
+  const [editingText, setEditingText] = useState('');
+  const [textEditorPosition, setTextEditorPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
   // Generate grid lines
   const gridSize = 100; // Grid cell size
@@ -200,7 +205,25 @@ function Canvas() {
       const stage = stageRef.current;
       const pos = stage.getRelativePointerPosition();
       
-      if (shapeType === SHAPE_TYPES.LINE) {
+      if (shapeType === SHAPE_TYPES.TEXT) {
+        // Text creation - create immediately at click position
+        try {
+          addShape({
+            x: pos.x,
+            y: pos.y,
+            text: DEFAULT_TEXT,
+            fontSize: DEFAULT_FONT_SIZE,
+            fontWeight: DEFAULT_FONT_WEIGHT,
+            color: getRandomColor(SHAPE_COLORS),
+            width: MIN_TEXT_WIDTH,
+            height: MIN_TEXT_HEIGHT,
+            type: 'text'
+          });
+        } catch (error) {
+          console.error('Failed to add text:', error.message);
+          alert(`Failed to create text: ${error.message}`);
+        }
+      } else if (shapeType === SHAPE_TYPES.LINE) {
         // Line creation starts with single point
         setIsDrawing(true);
         setNewShape({
@@ -366,6 +389,54 @@ function Canvas() {
     // (User can click elsewhere or press Esc to deselect)
   }
   
+  // Text editing handlers
+  function handleTextEdit(shapeId, currentText) {
+    const shape = shapes.find(s => s.id === shapeId);
+    if (!shape) return;
+    
+    // Calculate text editor position
+    const stage = stageRef.current;
+    const stageBox = stage.container().getBoundingClientRect();
+    const scale = stage.scaleX();
+    
+    setTextEditorPosition({
+      x: stageBox.left + (shape.x * scale),
+      y: stageBox.top + (shape.y * scale),
+      width: shape.width * scale,
+      height: shape.height * scale
+    });
+    
+    setEditingTextId(shapeId);
+    setEditingText(currentText);
+  }
+  
+  function handleTextSave() {
+    if (editingTextId) {
+      updateShape(editingTextId, { text: editingText });
+      setEditingTextId(null);
+      setEditingText('');
+    }
+  }
+  
+  function handleTextCancel() {
+    setEditingTextId(null);
+    setEditingText('');
+  }
+  
+  function handleTextChange(e) {
+    setEditingText(e.target.value);
+  }
+  
+  function handleTextKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleTextSave();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleTextCancel();
+    }
+  }
+
   // Clean up any locks on unmount
   useEffect(() => {
     return () => {
@@ -579,6 +650,7 @@ function Canvas() {
                 onDragStart={() => handleShapeDragStart(shape.id)}
                 onDragMove={handleShapeDragMove}
                 onDragEnd={handleShapeDragEnd}
+                onTextEdit={handleTextEdit}
                 isDraggable={mode === 'move'}
                 isInteractive={mode !== 'draw'}
                 isLockedByOther={isLockedByOther}
@@ -788,6 +860,29 @@ function Canvas() {
             <span style={{ fontSize: '16px' }}>📏</span>
             <span>Line</span>
           </button>
+          
+          <button
+            onClick={() => setShapeType(SHAPE_TYPES.TEXT)}
+            title="Add Text"
+            style={{
+              padding: '8px 14px',
+              background: shapeType === SHAPE_TYPES.TEXT ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'rgba(0, 0, 0, 0.7)',
+              color: 'white',
+              border: shapeType === SHAPE_TYPES.TEXT ? '2px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: shapeType === SHAPE_TYPES.TEXT ? 'bold' : 'normal',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s',
+              boxShadow: shapeType === SHAPE_TYPES.TEXT ? '0 4px 12px rgba(245, 158, 11, 0.4)' : 'none'
+            }}
+          >
+            <span style={{ fontSize: '16px' }}>📝</span>
+            <span>Text</span>
+          </button>
         </div>
       )}
 
@@ -954,6 +1049,7 @@ function Canvas() {
       }}>
         <strong style={{ fontSize: '16px' }}>
           {mode === 'pan' ? '✋ Pan Mode' : mode === 'move' ? '🔄 Move Mode' : (
+            shapeType === SHAPE_TYPES.TEXT ? '📝 Text Mode' :
             shapeType === SHAPE_TYPES.LINE ? '📏 Draw Mode' :
             shapeType === SHAPE_TYPES.CIRCLE ? '⚪ Draw Mode' :
             '🔲 Draw Mode'
@@ -965,6 +1061,8 @@ function Canvas() {
             ? 'Drag canvas to pan • Click shapes to select (auto-switches to Move) • Scroll to zoom'
             : mode === 'move'
             ? 'Click to select • Drag selected shapes to move or resize • Click elsewhere to deselect'
+            : shapeType === SHAPE_TYPES.TEXT
+            ? 'Click on empty space to add text • Double-click text to edit • Canvas will NOT pan'
             : `Click & drag on empty space to create ${
                 shapeType === SHAPE_TYPES.LINE ? 'lines' :
                 shapeType === SHAPE_TYPES.CIRCLE ? 'circles' :
@@ -976,6 +1074,86 @@ function Canvas() {
           Shapes: {shapes.length} {selectedShapeId ? '• 1 selected' : ''} • Keyboard: V (Pan) • M (Move) • D (Draw) • Esc (Pan + Deselect) • Del/Backspace (Delete)
         </span>
       </div>
+
+      {/* Text Editor Overlay */}
+      {editingTextId && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 2000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+            minWidth: '300px',
+            maxWidth: '500px'
+          }}>
+            <h3 style={{ margin: '0 0 15px 0', color: '#333' }}>Edit Text</h3>
+            <textarea
+              value={editingText}
+              onChange={handleTextChange}
+              onKeyDown={handleTextKeyDown}
+              style={{
+                width: '100%',
+                minHeight: '100px',
+                padding: '10px',
+                border: '2px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '14px',
+                fontFamily: 'Arial, sans-serif',
+                resize: 'vertical',
+                outline: 'none'
+              }}
+              placeholder="Enter your text here..."
+              autoFocus
+            />
+            <div style={{ 
+              display: 'flex', 
+              gap: '10px', 
+              marginTop: '15px',
+              justifyContent: 'flex-end'
+            }}>
+              <button
+                onClick={handleTextCancel}
+                style={{
+                  padding: '8px 16px',
+                  background: '#6b7280',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleTextSave}
+                style={{
+                  padding: '8px 16px',
+                  background: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

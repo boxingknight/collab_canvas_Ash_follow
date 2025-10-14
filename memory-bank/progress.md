@@ -68,8 +68,18 @@
 
 **Quality**: Fully working
 
-#### Line Shape ❌
-**Status**: Not implemented (PR #11 next)
+#### Line Shape ✅
+**Status**: Fully implemented (PR #11 complete)
+- Click-drag creation from start to end point
+- Configurable stroke width (default: 2px)
+- Enhanced hit detection (20px hit area for easy clicking)
+- Full locking mechanism (prevents user conflicts)
+- Real-time sync across all users (<100ms)
+- Selection, movement, deletion
+- Cross-platform support (desktop + mobile)
+- Draggable endpoint anchors for precise editing
+- No transformer border (cleaner UX)
+- All bugs resolved through 6 iterations
 
 #### Text Shape ❌
 **Status**: Not implemented (PR #12 upcoming)
@@ -233,32 +243,33 @@
 
 ## What's Left to Build
 
-### ⏳ Core Shape Completion (High Priority)
+### ✅ Core Shape Completion (High Priority)
 
-#### Line Shape (PR #11)
-**Estimated**: 2-3 hours
-- Add line type to constants
-- Implement line rendering (Konva Line)
-- Line creation mode (click-drag from start to end)
-- strokeWidth property support
-- Improved hit detection (wider hit area for thin lines)
-- Real-time sync
+#### Line Shape (PR #11) ✅
+**Status**: COMPLETED
+- ✅ Line type added to constants
+- ✅ Line rendering implemented (Konva Line)
+- ✅ Line creation mode (click-drag from start to end)
+- ✅ strokeWidth property support
+- ✅ Enhanced hit detection (20px hit area for thin lines)
+- ✅ Draggable endpoint anchors for precise editing
+- ✅ Real-time sync working perfectly
+- ✅ All bugs resolved through 6 iterations
+- ✅ Cross-platform support (desktop + mobile)
 
-**Status**: Not started
-
-#### Text Shape (PR #12)
-**Estimated**: 3-4 hours
-- Add text type to constants
-- Implement text rendering (Konva Text)
-- Click-to-place text creation
-- Double-click inline editing (textarea overlay)
-- Font size, weight, color properties
-- Auto-resize text box based on content
-- Multi-line support
-- Edit locking (prevent simultaneous edits)
-- Real-time sync
-
-**Status**: Not started
+#### Text Shape (PR #12) 📋
+**Estimated**: 4-5 hours
+**Status**: Planning Complete - Ready for Implementation
+- ✅ Complete architecture documentation
+- ✅ Click-to-place text creation design
+- ✅ Double-click inline editing with textarea overlay
+- ✅ Font size, weight, color customization
+- ✅ Auto-resize text box based on content
+- ✅ Multi-line support with proper wrapping
+- ✅ Edit locking (prevent simultaneous edits)
+- ✅ Full locking mechanism integration
+- ✅ Cross-platform support (desktop + mobile)
+- ✅ Real-time sync testing strategy
 
 ---
 

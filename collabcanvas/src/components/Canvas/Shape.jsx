@@ -1,6 +1,6 @@
 import { Rect, Circle, Line, Transformer, Group, Text } from 'react-konva';
 import { useRef, useEffect, memo } from 'react';
-import { SHAPE_TYPES, DEFAULT_STROKE_WIDTH, DEFAULT_LINE_HIT_WIDTH } from '../../utils/constants';
+import { SHAPE_TYPES, DEFAULT_STROKE_WIDTH, DEFAULT_LINE_HIT_WIDTH, DEFAULT_FONT_SIZE, DEFAULT_FONT_WEIGHT } from '../../utils/constants';
 
 // Memoized Shape component to prevent unnecessary re-renders
 const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDragStart, onDragMove, isDraggable = true, isInteractive = true, isLockedByOther = false, currentUserId }) {
@@ -109,6 +109,7 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
   const shapeType = shape.type || SHAPE_TYPES.RECTANGLE;
   const isCircle = shapeType === SHAPE_TYPES.CIRCLE;
   const isLine = shapeType === SHAPE_TYPES.LINE;
+  const isText = shapeType === SHAPE_TYPES.TEXT;
 
   /**
    * COORDINATE SYSTEM NOTES:
@@ -316,6 +317,105 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
     );
   }
   
+  // Handle double-click for text editing
+  function handleDoubleClick(e) {
+    if (isText && canInteract) {
+      e.cancelBubble = true;
+      if (e.evt) e.evt.stopPropagation();
+      // Call parent's text edit handler
+      if (onTextEdit) {
+        onTextEdit(shape.id, shape.text);
+      }
+    }
+  }
+  
+  // Render text shapes
+  if (isText) {
+    return (
+      <>
+        <Group>
+          <Text
+            ref={shapeRef}
+            id={shape.id}
+            x={shape.x}
+            y={shape.y}
+            width={shape.width}
+            height={shape.height}
+            text={shape.text}
+            fontSize={shape.fontSize || DEFAULT_FONT_SIZE}
+            fontFamily="Arial"
+            fontStyle={shape.fontWeight || DEFAULT_FONT_WEIGHT}
+            fill={shape.color}
+            align="left"
+            verticalAlign="top"
+            wrap="word"
+            lineHeight={1.2}
+            draggable={canDrag}
+            dragDistance={3}
+            listening={canInteract}
+            onClick={canInteract ? handleClick : undefined}
+            onTap={canInteract ? handleClick : undefined}
+            onDblClick={canInteract ? handleDoubleClick : undefined}
+            onDblTap={canInteract ? handleDoubleClick : undefined}
+            onDragStart={handleDragStart}
+            onDragMove={handleDragMove}
+            onDragEnd={handleDragEnd}
+            // Selection styling
+            shadowColor={isSelected ? '#646cff' : undefined}
+            shadowBlur={isSelected ? 10 : 0}
+            shadowOpacity={isSelected ? 0.8 : 0}
+            opacity={isLockedByOther ? 0.6 : 1}
+            // Performance
+            perfectDrawEnabled={false}
+            shadowForStrokeEnabled={false}
+          />
+          
+          {/* Lock icon at top-left */}
+          {isLockedByOther && (
+            <Group
+              x={shape.x - 15}
+              y={shape.y - 35}
+              listening={false}
+            >
+              <Rect
+                x={0}
+                y={0}
+                width={30}
+                height={30}
+                fill="#ef4444"
+                cornerRadius={6}
+                shadowColor="black"
+                shadowBlur={4}
+                shadowOpacity={0.5}
+              />
+              <Text
+                x={0}
+                y={0}
+                width={30}
+                height={30}
+                text="🔒"
+                fontSize={18}
+                align="center"
+                verticalAlign="middle"
+              />
+            </Group>
+          )}
+        </Group>
+        
+        {/* Transformer for selected text */}
+        {isSelected && !isLockedByOther && (
+          <Transformer
+            ref={transformerRef}
+            enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']}
+            rotateEnabled={false}  // No rotation for now
+            borderStroke="#646cff"
+            borderStrokeWidth={2}
+          />
+        )}
+      </>
+    );
+  }
+  
   // Common shape props for rectangles and circles
   const commonProps = {
     ref: shapeRef,
@@ -416,6 +516,26 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
       prevProps.shape.endY === nextProps.shape.endY &&
       prevProps.shape.color === nextProps.shape.color &&
       prevProps.shape.strokeWidth === nextProps.shape.strokeWidth &&
+      prevProps.shape.lockedBy === nextProps.shape.lockedBy &&
+      prevProps.isSelected === nextProps.isSelected &&
+      prevProps.isDraggable === nextProps.isDraggable &&
+      prevProps.isInteractive === nextProps.isInteractive &&
+      prevProps.isLockedByOther === nextProps.isLockedByOther
+    );
+  }
+  
+  // Text-specific comparison
+  if (prevProps.shape.type === 'text' && nextProps.shape.type === 'text') {
+    return (
+      prevProps.shape.id === nextProps.shape.id &&
+      prevProps.shape.x === nextProps.shape.x &&
+      prevProps.shape.y === nextProps.shape.y &&
+      prevProps.shape.width === nextProps.shape.width &&
+      prevProps.shape.height === nextProps.shape.height &&
+      prevProps.shape.text === nextProps.shape.text &&
+      prevProps.shape.fontSize === nextProps.shape.fontSize &&
+      prevProps.shape.fontWeight === nextProps.shape.fontWeight &&
+      prevProps.shape.color === nextProps.shape.color &&
       prevProps.shape.lockedBy === nextProps.shape.lockedBy &&
       prevProps.isSelected === nextProps.isSelected &&
       prevProps.isDraggable === nextProps.isDraggable &&
