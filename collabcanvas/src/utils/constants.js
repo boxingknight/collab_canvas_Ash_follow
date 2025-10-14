@@ -30,10 +30,15 @@ export const DEFAULT_SHAPE_WIDTH = 100;
 export const DEFAULT_SHAPE_HEIGHT = 100;
 export const DEFAULT_SHAPE_COLOR = SHAPE_COLORS[0];
 
+// Line defaults
+export const DEFAULT_STROKE_WIDTH = 2;
+export const DEFAULT_LINE_HIT_WIDTH = 20;
+
 // Shape types
 export const SHAPE_TYPES = {
   RECTANGLE: 'rectangle',
   CIRCLE: 'circle',
+  LINE: 'line',
 };
 
 // Cursor update throttle (ms)
