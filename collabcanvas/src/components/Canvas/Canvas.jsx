@@ -206,25 +206,7 @@ function Canvas() {
       const stage = stageRef.current;
       const pos = stage.getRelativePointerPosition();
       
-      if (shapeType === SHAPE_TYPES.TEXT) {
-        // Text creation - create immediately at click position
-        try {
-          addShape({
-            x: pos.x,
-            y: pos.y,
-            text: DEFAULT_TEXT,
-            fontSize: DEFAULT_FONT_SIZE,
-            fontWeight: DEFAULT_FONT_WEIGHT,
-            color: getRandomColor(SHAPE_COLORS),
-            width: MIN_TEXT_WIDTH,
-            height: MIN_TEXT_HEIGHT,
-            type: 'text'
-          });
-        } catch (error) {
-          console.error('Failed to add text:', error.message);
-          alert(`Failed to create text: ${error.message}`);
-        }
-      } else if (shapeType === SHAPE_TYPES.LINE) {
+      if (shapeType === SHAPE_TYPES.LINE) {
         // Line creation starts with single point
         setIsDrawing(true);
         setNewShape({
@@ -237,16 +219,25 @@ function Canvas() {
           strokeWidth: DEFAULT_STROKE_WIDTH
         });
       } else {
-        // Rectangle/Circle creation
-        setIsDrawing(true);
-        setNewShape({
+        // Rectangle/Circle/Text creation - click and drag to size
+        const initialState = {
           x: pos.x,
           y: pos.y,
           width: 0,
           height: 0,
           color: getRandomColor(SHAPE_COLORS),
           type: shapeType
-        });
+        };
+        
+        // Add text-specific properties
+        if (shapeType === SHAPE_TYPES.TEXT) {
+          initialState.text = DEFAULT_TEXT;
+          initialState.fontSize = DEFAULT_FONT_SIZE;
+          initialState.fontWeight = DEFAULT_FONT_WEIGHT;
+        }
+        
+        setIsDrawing(true);
+        setNewShape(initialState);
       }
       
       // Deselect any selected shape
@@ -324,6 +315,13 @@ function Canvas() {
           color: newShape.color,
           type: newShape.type
         };
+        
+        // Add text-specific properties if this is a text shape
+        if (newShape.type === SHAPE_TYPES.TEXT) {
+          normalizedShape.text = newShape.text;
+          normalizedShape.fontSize = newShape.fontSize;
+          normalizedShape.fontWeight = newShape.fontWeight;
+        }
         
         try {
           await addShape(normalizedShape);
@@ -712,6 +710,23 @@ function Canvas() {
                 y={newShape.y + newShape.height / 2}
                 radius={Math.min(Math.abs(newShape.width), Math.abs(newShape.height)) / 2}
                 fill={newShape.color}
+                opacity={0.6}
+                listening={false}
+              />
+            ) : newShape.type === SHAPE_TYPES.TEXT ? (
+              <Text
+                x={newShape.x}
+                y={newShape.y}
+                width={Math.abs(newShape.width)}
+                height={Math.abs(newShape.height)}
+                text={newShape.text}
+                fontSize={newShape.fontSize}
+                fontFamily="Arial"
+                fontStyle={newShape.fontWeight}
+                fill={newShape.color}
+                align="left"
+                verticalAlign="top"
+                wrap="word"
                 opacity={0.6}
                 listening={false}
               />
