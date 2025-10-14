@@ -3,7 +3,7 @@ import { useRef, useEffect, memo } from 'react';
 import { SHAPE_TYPES, DEFAULT_STROKE_WIDTH, DEFAULT_LINE_HIT_WIDTH, DEFAULT_FONT_SIZE, DEFAULT_FONT_WEIGHT } from '../../utils/constants';
 
 // Memoized Shape component to prevent unnecessary re-renders
-const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDragStart, onDragMove, isDraggable = true, isInteractive = true, isLockedByOther = false, currentUserId }) {
+const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDragStart, onDragMove, onTextEdit, isDraggable = true, isInteractive = true, isLockedByOther = false, currentUserId }) {
   const shapeRef = useRef(null);
   const transformerRef = useRef(null);
   const lineRef = useRef(null);  // For direct line manipulation (used only for line shapes)
