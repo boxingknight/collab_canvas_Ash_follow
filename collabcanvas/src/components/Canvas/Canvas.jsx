@@ -475,21 +475,6 @@ function Canvas() {
         </Layer>
       </Stage>
 
-      {/* Shape Counter */}
-      <div style={{
-        position: 'absolute',
-        top: '10px',
-        right: '10px',
-        background: 'rgba(0, 0, 0, 0.8)',
-        color: '#fff',
-        padding: '10px 15px',
-        borderRadius: '8px',
-        fontSize: '14px',
-        fontWeight: 'bold'
-      }}>
-        📊 Shapes: {shapes.length}
-      </div>
-
       {/* Mode Toggle */}
       <div style={{
         position: 'absolute',
@@ -529,7 +514,7 @@ function Canvas() {
             padding: '10px 16px',
             background: mode === 'move' ? 'linear-gradient(135deg, #4ade80 0%, #22c55e 100%)' : 'rgba(0, 0, 0, 0.7)',
             color: 'white',
-            border: mode === 'move' ? '2px solid #4ade80' : '1px solid rgba(255, 255, 255, 0.2)',
+            border: mode === 'move' ? '2px solid #4ade80' : '1px solid rgba(255, 255, 0.2)',
             borderRadius: '8px',
             cursor: 'pointer',
             fontSize: '14px',
@@ -569,45 +554,65 @@ function Canvas() {
         </button>
       </div>
 
-      {/* Position and Zoom Indicator */}
+      {/* Unified Stats Panel */}
       <div style={{
         position: 'absolute',
         top: '65px',
         left: '10px',
-        background: 'rgba(0, 0, 0, 0.8)',
+        background: 'rgba(0, 0, 0, 0.85)',
         color: 'white',
-        padding: '10px 14px',
-        borderRadius: '6px',
+        padding: '12px 16px',
+        borderRadius: '8px',
         fontSize: '12px',
         fontFamily: 'monospace',
         border: '1px solid rgba(255, 255, 255, 0.2)',
         zIndex: 1000,
-        lineHeight: '1.5'
+        lineHeight: '1.8',
+        backdropFilter: 'blur(8px)',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
       }}>
-        <div>X: <span style={{ color: '#4ade80' }}>{Math.round(position.x)}</span></div>
-        <div>Y: <span style={{ color: '#fbbf24' }}>{Math.round(position.y)}</span></div>
-        <div>Zoom: <span style={{ color: '#646cff' }}>{(scale * 100).toFixed(0)}%</span></div>
-      </div>
-
-      {/* FPS Counter (dev mode only) */}
-      {import.meta.env.DEV && (
-        <div style={{
-          position: 'absolute',
-          top: '10px',
-          right: '10px',
-          background: 'rgba(0, 0, 0, 0.7)',
-          color: fps >= 55 ? '#4ade80' : fps >= 30 ? '#fbbf24' : '#ef4444',
-          padding: '8px 12px',
-          borderRadius: '6px',
-          fontSize: '14px',
-          fontWeight: 'bold',
-          fontFamily: 'monospace',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          zIndex: 1000
+        <div style={{ 
+          fontSize: '13px', 
+          fontWeight: 'bold', 
+          marginBottom: '8px', 
+          color: '#a78bfa',
+          letterSpacing: '0.5px'
         }}>
-          FPS: {fps}
+          📊 CANVAS STATS
         </div>
-      )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ opacity: 0.7 }}>X:</span>
+          <span style={{ color: '#4ade80', fontWeight: 'bold' }}>{Math.round(position.x)}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ opacity: 0.7 }}>Y:</span>
+          <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>{Math.round(position.y)}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ opacity: 0.7 }}>Zoom:</span>
+          <span style={{ color: '#646cff', fontWeight: 'bold' }}>{(scale * 100).toFixed(0)}%</span>
+        </div>
+        <div style={{ 
+          height: '1px', 
+          background: 'rgba(255, 255, 255, 0.1)', 
+          margin: '8px 0' 
+        }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ opacity: 0.7 }}>Shapes:</span>
+          <span style={{ color: '#a78bfa', fontWeight: 'bold' }}>{shapes.length}</span>
+        </div>
+        {import.meta.env.DEV && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ opacity: 0.7 }}>FPS:</span>
+            <span style={{ 
+              color: fps >= 55 ? '#4ade80' : fps >= 30 ? '#fbbf24' : '#ef4444',
+              fontWeight: 'bold'
+            }}>
+              {fps}
+            </span>
+          </div>
+        )}
+      </div>
 
       {/* Instructions */}
       <div style={{
