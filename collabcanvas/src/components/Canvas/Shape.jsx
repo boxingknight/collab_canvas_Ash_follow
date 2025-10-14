@@ -1,6 +1,6 @@
-import { Rect, Circle, Transformer, Group, Text } from 'react-konva';
+import { Rect, Circle, Line, Transformer, Group, Text } from 'react-konva';
 import { useRef, useEffect, memo } from 'react';
-import { SHAPE_TYPES } from '../../utils/constants';
+import { SHAPE_TYPES, DEFAULT_STROKE_WIDTH, DEFAULT_LINE_HIT_WIDTH } from '../../utils/constants';
 
 // Memoized Shape component to prevent unnecessary re-renders
 const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDragStart, onDragMove, isDraggable = true, isInteractive = true, isLockedByOther = false, currentUserId }) {
@@ -51,22 +51,41 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
       e.evt.stopPropagation();
     }
     
-    // Get the current position from the dragged element
-    let newX = e.target.x();
-    let newY = e.target.y();
-    
-    // For circles, e.target.x/y returns the CENTER position
-    // We need to convert it back to top-left corner for consistent storage
-    if (isCircle) {
-      newX = newX - shape.width / 2;
-      newY = newY - shape.height / 2;
+    if (isLine) {
+      // Lines drag from center, recalculate start and end from new center position
+      const oldCenterX = (shape.x + shape.endX) / 2;
+      const oldCenterY = (shape.y + shape.endY) / 2;
+      const newCenterX = e.target.x();
+      const newCenterY = e.target.y();
+      
+      const deltaX = newCenterX - oldCenterX;
+      const deltaY = newCenterY - oldCenterY;
+      
+      onDragEnd({
+        id: shape.id,
+        x: shape.x + deltaX,
+        y: shape.y + deltaY,
+        endX: shape.endX + deltaX,
+        endY: shape.endY + deltaY
+      });
+    } else {
+      // Get the current position from the dragged element
+      let newX = e.target.x();
+      let newY = e.target.y();
+      
+      // For circles, e.target.x/y returns the CENTER position
+      // We need to convert it back to top-left corner for consistent storage
+      if (isCircle) {
+        newX = newX - shape.width / 2;
+        newY = newY - shape.height / 2;
+      }
+      
+      onDragEnd({
+        id: shape.id,
+        x: newX,
+        y: newY
+      });
     }
-    
-    onDragEnd({
-      id: shape.id,
-      x: newX,
-      y: newY
-    });
   }
 
   // Determine if this shape is actually draggable (not locked by another user)
@@ -77,6 +96,7 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
   // Determine shape type (default to rectangle for backward compatibility)
   const shapeType = shape.type || SHAPE_TYPES.RECTANGLE;
   const isCircle = shapeType === SHAPE_TYPES.CIRCLE;
+  const isLine = shapeType === SHAPE_TYPES.LINE;
 
   /**
    * COORDINATE SYSTEM NOTES:
@@ -87,7 +107,85 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
    * - Dragging: Circles report center position, must convert back to top-left on save
    */
 
-  // Common shape props
+  // Render line shapes
+  if (isLine) {
+    const points = [shape.x, shape.y, shape.endX, shape.endY];
+    const centerX = (shape.x + shape.endX) / 2;
+    const centerY = (shape.y + shape.endY) / 2;
+    
+    return (
+      <>
+        <Group>
+          <Line
+            ref={shapeRef}
+            id={shape.id}
+            points={points}
+            stroke={shape.color}
+            strokeWidth={shape.strokeWidth || DEFAULT_STROKE_WIDTH}
+            hitStrokeWidth={DEFAULT_LINE_HIT_WIDTH}
+            draggable={canDrag}
+            dragDistance={3}
+            listening={canInteract}
+            onClick={canInteract ? handleClick : undefined}
+            onTap={canInteract ? handleClick : undefined}
+            onDragStart={handleDragStart}
+            onDragMove={handleDragMove}
+            onDragEnd={handleDragEnd}
+            shadowColor={isSelected ? '#646cff' : undefined}
+            shadowBlur={isSelected ? 10 : 0}
+            shadowOpacity={isSelected ? 0.8 : 0}
+            opacity={isLockedByOther ? 0.6 : 1}
+            perfectDrawEnabled={false}
+            shadowForStrokeEnabled={false}
+          />
+          
+          {/* Lock icon at midpoint */}
+          {isLockedByOther && (
+            <Group
+              x={centerX - 15}
+              y={centerY - 35}
+              listening={false}
+            >
+              <Rect
+                x={0}
+                y={0}
+                width={30}
+                height={30}
+                fill="#ef4444"
+                cornerRadius={6}
+                shadowColor="black"
+                shadowBlur={4}
+                shadowOpacity={0.5}
+              />
+              <Text
+                x={0}
+                y={0}
+                width={30}
+                height={30}
+                text="🔒"
+                fontSize={18}
+                align="center"
+                verticalAlign="middle"
+              />
+            </Group>
+          )}
+        </Group>
+        
+        {/* Transformer for selected lines */}
+        {isSelected && !isLockedByOther && (
+          <Transformer
+            ref={transformerRef}
+            enabledAnchors={[]}
+            rotateEnabled={false}
+            borderStroke="#646cff"
+            borderStrokeWidth={2}
+          />
+        )}
+      </>
+    );
+  }
+  
+  // Common shape props for rectangles and circles
   const commonProps = {
     ref: shapeRef,
     id: shape.id,
@@ -177,7 +275,25 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
   );
 }, (prevProps, nextProps) => {
   // Custom comparison function for React.memo
-  // Only re-render if these props change
+  // Line-specific comparison
+  if (prevProps.shape.type === 'line' && nextProps.shape.type === 'line') {
+    return (
+      prevProps.shape.id === nextProps.shape.id &&
+      prevProps.shape.x === nextProps.shape.x &&
+      prevProps.shape.y === nextProps.shape.y &&
+      prevProps.shape.endX === nextProps.shape.endX &&
+      prevProps.shape.endY === nextProps.shape.endY &&
+      prevProps.shape.color === nextProps.shape.color &&
+      prevProps.shape.strokeWidth === nextProps.shape.strokeWidth &&
+      prevProps.shape.lockedBy === nextProps.shape.lockedBy &&
+      prevProps.isSelected === nextProps.isSelected &&
+      prevProps.isDraggable === nextProps.isDraggable &&
+      prevProps.isInteractive === nextProps.isInteractive &&
+      prevProps.isLockedByOther === nextProps.isLockedByOther
+    );
+  }
+  
+  // Rectangle/Circle comparison
   return (
     prevProps.shape.id === nextProps.shape.id &&
     prevProps.shape.x === nextProps.shape.x &&
