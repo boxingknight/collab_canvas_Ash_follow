@@ -14,11 +14,14 @@ function Canvas() {
   const staticLayerRef = useRef(null); // For caching static grid/background
   const { user } = useAuth();
   const { position, scale, updatePosition, updateScale } = useCanvas();
-  const { shapes, selectedShapeId, isLoading, addShape, updateShape, deleteShape, selectShape, deselectShape } = useShapes(user);
+  const { shapes, selectedShapeId, isLoading, addShape, updateShape, deleteShape, selectShape, deselectShape, lockShape, unlockShape } = useShapes(user);
   const { remoteCursors, updateMyCursor } = useCursors(user);
   const [stageSize, setStageSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [fps, setFps] = useState(60);
   const fpsCounterRef = useRef(null);
+  
+  // Track shapes currently being dragged by this user
+  const activeDragRef = useRef(null);
   
   // Canvas mode: 'pan', 'move', or 'draw'
   const [mode, setMode] = useState('pan');
@@ -265,8 +268,14 @@ function Canvas() {
   }
 
   // Handle shape drag start
-  function handleShapeDragStart() {
+  async function handleShapeDragStart(shapeId) {
     setIsDraggingShape(true);
+    
+    // Lock the shape so other users can't manipulate it
+    const locked = await lockShape(shapeId);
+    if (locked) {
+      activeDragRef.current = shapeId;
+    }
   }
 
   // Handle shape drag move
@@ -275,12 +284,28 @@ function Canvas() {
   }
 
   // Handle shape drag end
-  function handleShapeDragEnd(data) {
+  async function handleShapeDragEnd(data) {
     updateShape(data.id, { x: data.x, y: data.y });
     setIsDraggingShape(false);
+    
+    // Unlock the shape so others can use it
+    if (activeDragRef.current === data.id) {
+      await unlockShape(data.id);
+      activeDragRef.current = null;
+    }
+    
     // Auto-deselect after dragging for cleaner UX
     deselectShape();
   }
+  
+  // Clean up any locks on unmount
+  useEffect(() => {
+    return () => {
+      if (activeDragRef.current) {
+        unlockShape(activeDragRef.current);
+      }
+    };
+  }, [unlockShape]);
 
   // Handle stage click (deselect)
   function handleStageClick(e) {
@@ -438,19 +463,24 @@ function Canvas() {
         {/* Dynamic Layer - Shapes, cursors, and interactive elements */}
         <Layer>
           {/* Render existing shapes */}
-          {shapes.map((shape) => (
-            <Shape
-              key={shape.id}
-              shape={shape}
-              isSelected={shape.id === selectedShapeId}
-              onSelect={() => handleShapeSelect(shape.id)}
-              onDragStart={handleShapeDragStart}
-              onDragMove={handleShapeDragMove}
-              onDragEnd={handleShapeDragEnd}
-              isDraggable={mode === 'move'}
-              isInteractive={mode !== 'draw'}
-            />
-          ))}
+          {shapes.map((shape) => {
+            const isLockedByOther = shape.lockedBy && shape.lockedBy !== user?.uid;
+            return (
+              <Shape
+                key={shape.id}
+                shape={shape}
+                isSelected={shape.id === selectedShapeId}
+                onSelect={() => handleShapeSelect(shape.id)}
+                onDragStart={() => handleShapeDragStart(shape.id)}
+                onDragMove={handleShapeDragMove}
+                onDragEnd={handleShapeDragEnd}
+                isDraggable={mode === 'move'}
+                isInteractive={mode !== 'draw'}
+                isLockedByOther={isLockedByOther}
+                currentUserId={user?.uid}
+              />
+            );
+          })}
           
           {/* Render shape being drawn */}
           {isDrawing && newShape && (

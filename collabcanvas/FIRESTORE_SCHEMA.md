@@ -21,6 +21,8 @@ Each document represents a single shape on the canvas.
   createdBy: string;       // User UID from Firebase Auth
   createdAt: Timestamp;    // Firebase server timestamp
   updatedAt: Timestamp;    // Firebase server timestamp (for last modification)
+  lockedBy: string | null; // User UID currently manipulating this shape (null if not locked)
+  lockedAt: Timestamp | null; // Timestamp when lock was acquired (null if not locked)
 }
 ```
 
@@ -36,7 +38,27 @@ Each document represents a single shape on the canvas.
   "color": "#646cff",
   "createdBy": "user_uid_here",
   "createdAt": "2024-01-15T10:30:00Z",
-  "updatedAt": "2024-01-15T10:35:00Z"
+  "updatedAt": "2024-01-15T10:35:00Z",
+  "lockedBy": null,
+  "lockedAt": null
+}
+```
+
+**Example Document (Locked):**
+
+```json
+{
+  "id": "abc123xyz789",
+  "x": 150,
+  "y": 200,
+  "width": 100,
+  "height": 80,
+  "color": "#646cff",
+  "createdBy": "user_uid_here",
+  "createdAt": "2024-01-15T10:30:00Z",
+  "updatedAt": "2024-01-15T10:35:00Z",
+  "lockedBy": "another_user_uid",
+  "lockedAt": "2024-01-15T10:36:00Z"
 }
 ```
 
@@ -54,10 +76,21 @@ Each document represents a single shape on the canvas.
 ### Updating a Shape
 
 1. User drags shape to new position
-2. Local state updates immediately (optimistic update)
-3. Position sent to Firestore via `updateShape()`
-4. Firestore updates document with new position and updatedAt timestamp
-5. Real-time listener broadcasts update to other users
+2. Shape is locked via `lockShape()` to prevent other users from manipulating it
+3. Local state updates immediately (optimistic update)
+4. Position sent to Firestore via `updateShape()`
+5. Firestore updates document with new position and updatedAt timestamp
+6. When drag ends, shape is unlocked via `unlockShape()`
+7. Real-time listener broadcasts updates to other users
+
+### Locking a Shape
+
+1. User starts dragging a shape
+2. `lockShape()` is called, setting `lockedBy` to the user's UID and `lockedAt` to current timestamp
+3. Other users see a red lock icon on the shape
+4. Other users cannot interact with or drag the locked shape
+5. When dragging ends, `unlockShape()` is called, setting both fields to null
+6. Stale locks (older than 30 seconds) are automatically cleaned up to handle disconnections
 
 ### Loading Shapes
 
@@ -125,7 +158,4 @@ Add `cursors` collection for real-time cursor positions
 
 ### Version 4: Layers
 Add `zIndex` field for stacking order
-
-### Version 5: Collaborative Features
-Add `lockedBy` field for shape locking during editing
 

@@ -3,7 +3,10 @@ import {
   addShape as addShapeToFirestore, 
   updateShape as updateShapeInFirestore,
   deleteShape as deleteShapeFromFirestore,
-  subscribeToShapes 
+  subscribeToShapes,
+  lockShape as lockShapeInFirestore,
+  unlockShape as unlockShapeInFirestore,
+  cleanupStaleLocks
 } from '../services/shapes';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../services/firebase';
@@ -30,13 +33,22 @@ function useShapes(user) {
       return;
     }
 
+    // Clean up any stale locks on mount
+    cleanupStaleLocks();
+
     const unsubscribe = subscribeToShapes((updatedShapes) => {
       setShapes(updatedShapes);
       setIsLoading(false);
     });
 
+    // Periodically clean up stale locks every 30 seconds
+    const cleanupInterval = setInterval(() => {
+      cleanupStaleLocks();
+    }, 30000);
+
     return () => {
       unsubscribe();
+      clearInterval(cleanupInterval);
     };
   }, [user]);
 
@@ -143,6 +155,43 @@ function useShapes(user) {
     setSelectedShapeId(null);
   }, []);
 
+  /**
+   * Lock a shape for editing
+   * @param {string} id - Shape ID
+   * @returns {Promise<boolean>} True if lock was acquired
+   */
+  const lockShape = useCallback(async (id) => {
+    if (!user) {
+      console.error('Cannot lock shape: user not authenticated');
+      return false;
+    }
+
+    try {
+      const success = await lockShapeInFirestore(id, user.uid);
+      return success;
+    } catch (error) {
+      console.error('Failed to lock shape:', error.message);
+      return false;
+    }
+  }, [user]);
+
+  /**
+   * Unlock a shape
+   * @param {string} id - Shape ID
+   */
+  const unlockShape = useCallback(async (id) => {
+    if (!user) {
+      console.error('Cannot unlock shape: user not authenticated');
+      return;
+    }
+
+    try {
+      await unlockShapeInFirestore(id, user.uid);
+    } catch (error) {
+      console.error('Failed to unlock shape:', error.message);
+    }
+  }, [user]);
+
   return {
     shapes,
     selectedShapeId,
@@ -151,7 +200,9 @@ function useShapes(user) {
     updateShape,
     deleteShape,
     selectShape,
-    deselectShape
+    deselectShape,
+    lockShape,
+    unlockShape
   };
 }
 

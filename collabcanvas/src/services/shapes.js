@@ -5,6 +5,7 @@ import {
   deleteDoc, 
   doc, 
   onSnapshot,
+  getDocs,
   serverTimestamp
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -53,6 +54,91 @@ export async function updateShape(shapeId, updates) {
   } catch (error) {
     console.error('Error updating shape:', error.message);
     throw error;
+  }
+}
+
+/**
+ * Lock a shape for editing by a specific user
+ * @param {string} shapeId - Firestore document ID
+ * @param {string} userId - User ID acquiring the lock
+ * @returns {Promise<boolean>} True if lock was acquired, false if already locked
+ */
+export async function lockShape(shapeId, userId) {
+  try {
+    const shapeRef = doc(db, SHAPES_COLLECTION, shapeId);
+    await updateDoc(shapeRef, {
+      lockedBy: userId,
+      lockedAt: serverTimestamp()
+    });
+    return true;
+  } catch (error) {
+    console.error('Error locking shape:', error.message);
+    return false;
+  }
+}
+
+/**
+ * Unlock a shape
+ * @param {string} shapeId - Firestore document ID
+ * @param {string} userId - User ID releasing the lock (for verification)
+ * @returns {Promise<void>}
+ */
+export async function unlockShape(shapeId, userId) {
+  try {
+    const shapeRef = doc(db, SHAPES_COLLECTION, shapeId);
+    await updateDoc(shapeRef, {
+      lockedBy: null,
+      lockedAt: null
+    });
+  } catch (error) {
+    console.error('Error unlocking shape:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Check for and clean up stale locks (locks older than 30 seconds)
+ * This helps handle cases where a user disconnects while dragging
+ * @returns {Promise<number>} Number of stale locks cleaned up
+ */
+export async function cleanupStaleLocks() {
+  try {
+    const shapesCollection = collection(db, SHAPES_COLLECTION);
+    const snapshot = await getDocs(shapesCollection);
+    
+    const now = Date.now();
+    const staleThreshold = 30000; // 30 seconds
+    let cleanedCount = 0;
+    
+    const cleanupPromises = [];
+    
+    snapshot.forEach((docSnapshot) => {
+      const data = docSnapshot.data();
+      
+      // Check if shape is locked and lock is stale
+      if (data.lockedBy && data.lockedAt) {
+        const lockAge = now - data.lockedAt.toMillis();
+        
+        if (lockAge > staleThreshold) {
+          const shapeRef = doc(db, SHAPES_COLLECTION, docSnapshot.id);
+          cleanupPromises.push(
+            updateDoc(shapeRef, {
+              lockedBy: null,
+              lockedAt: null
+            }).then(() => {
+              console.log(`Cleaned up stale lock on shape ${docSnapshot.id}`);
+              cleanedCount++;
+            })
+          );
+        }
+      }
+    });
+    
+    await Promise.all(cleanupPromises);
+    return cleanedCount;
+  } catch (error) {
+    console.error('Error cleaning up stale locks:', error.message);
+    return 0;
   }
 }
 
