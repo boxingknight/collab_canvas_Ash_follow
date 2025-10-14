@@ -5,8 +5,11 @@ import { useState } from 'react';
  * @param {Array} users - Array of online user objects
  * @param {Object} currentUser - Current logged-in user
  */
-function UserList({ users, currentUser }) {
+function UserList({ users = [], currentUser }) {
   const [isHovered, setIsHovered] = useState(false);
+  
+  // Safety check - ensure users is always an array
+  const safeUsers = Array.isArray(users) ? users : [];
 
   // Helper to get user color (same logic as RemoteCursor)
   function getUserColor(userId) {
@@ -41,8 +44,8 @@ function UserList({ users, currentUser }) {
 
   // Debug logging
   console.log('👥 UserList render:', {
-    usersCount: users.length,
-    users: users.map(u => ({ userId: u.userId, userName: u.userName })),
+    usersCount: safeUsers.length,
+    users: safeUsers.map(u => ({ userId: u.userId, userName: u.userName })),
     currentUserId: currentUser?.uid,
     currentUserName: currentUser?.displayName || currentUser?.email
   });
@@ -53,7 +56,7 @@ function UserList({ users, currentUser }) {
   // Add current user first if we have one
   if (currentUser) {
     // Check if current user is already in the presence list
-    const currentUserInPresence = users.find(u => u.userId === currentUser.uid);
+    const currentUserInPresence = safeUsers.find(u => u.userId === currentUser.uid);
     
     if (currentUserInPresence) {
       // Use the presence data for current user
@@ -70,13 +73,25 @@ function UserList({ users, currentUser }) {
   }
   
   // Add all other users from presence (excluding current user to avoid duplicates)
-  users.forEach(user => {
+  safeUsers.forEach(user => {
     if (user.userId !== currentUser?.uid) {
       allUsers.push(user);
     }
   });
   
   console.log('👥 UserList allUsers after processing:', allUsers.length, allUsers.map(u => u.userName));
+
+  // Don't render anything if no current user (not logged in yet)
+  if (!currentUser) {
+    console.log('👥 UserList: No current user, not rendering');
+    return null;
+  }
+
+  // Don't render if no users to show
+  if (allUsers.length === 0) {
+    console.log('👥 UserList: No users to display, not rendering');
+    return null;
+  }
 
   return (
     <div 
