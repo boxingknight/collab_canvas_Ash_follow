@@ -14,7 +14,7 @@ function Canvas() {
   const staticLayerRef = useRef(null); // For caching static grid/background
   const { user } = useAuth();
   const { position, scale, updatePosition, updateScale } = useCanvas();
-  const { shapes, selectedShapeId, isLoading, addShape, updateShape, deleteShape, selectShape, deselectShape, lockShape, unlockShape } = useShapes(user);
+  const { shapes, selectedShapeId, isLoading, addShape, updateShape, updateShapeImmediate, deleteShape, selectShape, deselectShape, lockShape, unlockShape } = useShapes(user);
   const { remoteCursors, updateMyCursor } = useCursors(user);
   const [stageSize, setStageSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [fps, setFps] = useState(60);
@@ -266,7 +266,8 @@ function Canvas() {
   // Handle shape selection
   function handleShapeSelect(shapeId) {
     selectShape(shapeId);
-    // Auto-switch to move mode when clicking a shape
+    // Auto-switch to move mode when clicking a shape (for convenience)
+    // This allows users to click a shape in pan mode and immediately interact with it
     if (mode !== 'move') {
       setMode('move');
     }
@@ -290,7 +291,8 @@ function Canvas() {
 
   // Handle shape drag end
   async function handleShapeDragEnd(data) {
-    updateShape(data.id, { x: data.x, y: data.y });
+    // Use immediate update (no debounce) to prevent ghost teleport effect
+    await updateShapeImmediate(data.id, { x: data.x, y: data.y });
     setIsDraggingShape(false);
     
     // Unlock the shape so others can use it
@@ -299,8 +301,8 @@ function Canvas() {
       activeDragRef.current = null;
     }
     
-    // Auto-deselect after dragging for cleaner UX
-    deselectShape();
+    // Keep shape selected after dragging so user can continue interacting
+    // (User can click elsewhere or press Esc to deselect)
   }
   
   // Clean up any locks on unmount
@@ -744,7 +746,7 @@ function Canvas() {
           {mode === 'pan' 
             ? 'Drag canvas to pan • Click shapes to select (auto-switches to Move) • Scroll to zoom'
             : mode === 'move'
-            ? 'Drag selected shapes to move • Click other shapes to select • Canvas will NOT pan'
+            ? 'Click to select • Drag selected shapes to move or resize • Click elsewhere to deselect'
             : `Click & drag on empty space to create ${shapeType === SHAPE_TYPES.RECTANGLE ? 'rectangles' : 'circles'} • Canvas will NOT pan`}
         </span>
         <br />

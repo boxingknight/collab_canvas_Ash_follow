@@ -24,6 +24,10 @@ function useShapes(user) {
   
   // Debounced Firestore update to reduce write operations during drag
   const debouncedFirestoreUpdateRef = useRef(null);
+  
+  // Track pending updates to prevent Firestore listener from overwriting optimistic updates
+  // Key: shapeId, Value: timestamp of when the update was made
+  const pendingUpdatesRef = useRef(new Map());
 
   // Subscribe to Firestore shapes on mount
   useEffect(() => {
@@ -37,7 +41,25 @@ function useShapes(user) {
     cleanupStaleLocks();
 
     const unsubscribe = subscribeToShapes((updatedShapes) => {
-      setShapes(updatedShapes);
+      // Merge incoming shapes with local optimistic updates
+      // If a shape has a pending update less than 500ms old, keep the local version
+      const now = Date.now();
+      setShapes((prevShapes) => {
+        return updatedShapes.map((incomingShape) => {
+          const pendingTimestamp = pendingUpdatesRef.current.get(incomingShape.id);
+          
+          // If there's a recent pending update (< 500ms), keep the local version
+          if (pendingTimestamp && (now - pendingTimestamp) < 500) {
+            const localShape = prevShapes.find(s => s.id === incomingShape.id);
+            return localShape || incomingShape;
+          }
+          
+          // Otherwise, use the incoming shape from Firestore
+          // Clear any stale pending update
+          pendingUpdatesRef.current.delete(incomingShape.id);
+          return incomingShape;
+        });
+      });
       setIsLoading(false);
     });
 
@@ -79,7 +101,8 @@ function useShapes(user) {
   }, [user]);
 
   /**
-   * Update an existing shape (local + Firestore)
+   * Update an existing shape (local + Firestore) with debouncing
+   * Use this for continuous updates like dragging
    * @param {string} id - Shape ID
    * @param {Object} updates - Properties to update
    */
@@ -90,6 +113,9 @@ function useShapes(user) {
     }
 
     try {
+      // Mark this shape as having a pending update
+      pendingUpdatesRef.current.set(id, Date.now());
+
       // Optimistic update: update local state immediately for responsive UI
       setShapes((prev) =>
         prev.map((shape) =>
@@ -103,6 +129,8 @@ function useShapes(user) {
         debouncedFirestoreUpdateRef.current = debounce(
           async (shapeId, shapeUpdates) => {
             await updateShapeInFirestore(shapeId, shapeUpdates);
+            // Clear pending update after Firestore write completes
+            pendingUpdatesRef.current.delete(shapeId);
           },
           300 // Wait 300ms after last update before writing to Firestore
         );
@@ -111,6 +139,44 @@ function useShapes(user) {
       debouncedFirestoreUpdateRef.current(id, updates);
     } catch (error) {
       console.error('Failed to update shape:', error.message);
+      pendingUpdatesRef.current.delete(id);
+      // Real-time listener will revert to Firestore state if update fails
+    }
+  }, [user]);
+
+  /**
+   * Update an existing shape IMMEDIATELY (no debouncing)
+   * Use this for final updates like drag end
+   * @param {string} id - Shape ID
+   * @param {Object} updates - Properties to update
+   */
+  const updateShapeImmediate = useCallback(async (id, updates) => {
+    if (!user) {
+      console.error('Cannot update shape: user not authenticated');
+      return;
+    }
+
+    try {
+      // Mark this shape as having a pending update
+      pendingUpdatesRef.current.set(id, Date.now());
+
+      // Optimistic update: update local state immediately for responsive UI
+      setShapes((prev) =>
+        prev.map((shape) =>
+          shape.id === id ? { ...shape, ...updates } : shape
+        )
+      );
+
+      // Write to Firestore immediately without debouncing
+      await updateShapeInFirestore(id, updates);
+      
+      // Clear pending update after a short delay to ensure Firestore propagation
+      setTimeout(() => {
+        pendingUpdatesRef.current.delete(id);
+      }, 100);
+    } catch (error) {
+      console.error('Failed to update shape immediately:', error.message);
+      pendingUpdatesRef.current.delete(id);
       // Real-time listener will revert to Firestore state if update fails
     }
   }, [user]);
@@ -198,6 +264,7 @@ function useShapes(user) {
     isLoading,
     addShape,
     updateShape,
+    updateShapeImmediate,
     deleteShape,
     selectShape,
     deselectShape,

@@ -70,7 +70,8 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
   }
 
   // Determine if this shape is actually draggable (not locked by another user)
-  const canDrag = isDraggable && !isLockedByOther;
+  // IMPORTANT: Only allow dragging if shape is SELECTED (prevents accidental drags on click)
+  const canDrag = isDraggable && isSelected && !isLockedByOther;
   const canInteract = isInteractive && !isLockedByOther;
 
   // Determine shape type (default to rectangle for backward compatibility)
