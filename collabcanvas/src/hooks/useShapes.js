@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { 
-  addShape as addShapeToFirestore, 
+  addShape as addShapeToFirestore,
+  addShapesBatch as addShapesBatchToFirestore,
   updateShape as updateShapeInFirestore,
   deleteShape as deleteShapeFromFirestore,
   subscribeToShapes,
@@ -97,6 +98,28 @@ function useShapes(user) {
     } catch (error) {
       console.error('Failed to add shape:', error.message);
       return null;
+    }
+  }, [user]);
+
+  /**
+   * Add multiple shapes at once using batch writes (more efficient for bulk operations)
+   * @param {Array<Object>} shapesArray - Array of shape objects without IDs
+   * @returns {Promise<Array<string>>} Array of created shape IDs
+   */
+  const addShapesBatch = useCallback(async (shapesArray) => {
+    if (!user) {
+      console.error('Cannot add shapes: user not authenticated');
+      return [];
+    }
+
+    try {
+      console.log(`Adding ${shapesArray.length} shapes in batch...`);
+      const firestoreIds = await addShapesBatchToFirestore(shapesArray, user.uid);
+      console.log(`Successfully added ${firestoreIds.length} shapes`);
+      return firestoreIds;
+    } catch (error) {
+      console.error('Failed to add shapes in batch:', error.message);
+      return [];
     }
   }, [user]);
 
@@ -263,6 +286,7 @@ function useShapes(user) {
     selectedShapeId,
     isLoading,
     addShape,
+    addShapesBatch,
     updateShape,
     updateShapeImmediate,
     deleteShape,

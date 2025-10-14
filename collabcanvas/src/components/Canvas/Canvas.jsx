@@ -14,7 +14,7 @@ function Canvas() {
   const staticLayerRef = useRef(null); // For caching static grid/background
   const { user } = useAuth();
   const { position, scale, updatePosition, updateScale } = useCanvas();
-  const { shapes, selectedShapeId, isLoading, addShape, updateShape, updateShapeImmediate, deleteShape, selectShape, deselectShape, lockShape, unlockShape } = useShapes(user);
+  const { shapes, selectedShapeId, isLoading, addShape, addShapesBatch, updateShape, updateShapeImmediate, deleteShape, selectShape, deselectShape, lockShape, unlockShape } = useShapes(user);
   const { remoteCursors, updateMyCursor } = useCursors(user);
   const [stageSize, setStageSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [fps, setFps] = useState(60);
@@ -318,6 +318,43 @@ function Canvas() {
   function handleStageClick(e) {
     if (e.target === e.target.getStage()) {
       deselectShape();
+    }
+  }
+
+  // Helper function to create multiple shapes at once (for testing/development)
+  async function handleBulkCreateShapes(count) {
+    const shapesToCreate = [];
+    const colors = Object.values(SHAPE_COLORS);
+    const shapeTypes = Object.values(SHAPE_TYPES);
+    
+    // Generate shapes in a grid pattern for visibility
+    const cols = Math.ceil(Math.sqrt(count));
+    const spacing = 150;
+    const startX = 100;
+    const startY = 100;
+    
+    for (let i = 0; i < count; i++) {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      
+      shapesToCreate.push({
+        x: startX + (col * spacing),
+        y: startY + (row * spacing),
+        width: 80 + Math.random() * 40,
+        height: 80 + Math.random() * 40,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        type: shapeTypes[Math.floor(Math.random() * shapeTypes.length)]
+      });
+    }
+    
+    try {
+      console.time(`Create ${count} shapes`);
+      await addShapesBatch(shapesToCreate);
+      console.timeEnd(`Create ${count} shapes`);
+      alert(`Successfully created ${count} shapes using batch writes!`);
+    } catch (error) {
+      console.error('Batch creation failed:', error);
+      alert(`Failed to create shapes: ${error.message}`);
     }
   }
 
@@ -721,6 +758,91 @@ function Canvas() {
           </div>
         )}
       </div>
+
+      {/* Bulk Shape Creation Panel (Development Only) */}
+      {import.meta.env.DEV && (
+        <div style={{
+          position: 'absolute',
+          top: '10px',
+          right: '10px',
+          background: 'rgba(0, 0, 0, 0.85)',
+          color: 'white',
+          padding: '12px 16px',
+          borderRadius: '8px',
+          fontSize: '12px',
+          fontFamily: 'monospace',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          zIndex: 1000,
+          backdropFilter: 'blur(8px)',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+        }}>
+          <div style={{ 
+            fontSize: '13px', 
+            fontWeight: 'bold', 
+            marginBottom: '8px', 
+            color: '#f59e0b',
+            letterSpacing: '0.5px'
+          }}>
+            🧪 BULK CREATE (DEV)
+          </div>
+          <div style={{ display: 'flex', gap: '6px', flexDirection: 'column' }}>
+            <button
+              onClick={() => handleBulkCreateShapes(100)}
+              style={{
+                padding: '6px 12px',
+                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: 'bold',
+                transition: 'transform 0.1s'
+              }}
+              onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+              onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+            >
+              + 100 Shapes
+            </button>
+            <button
+              onClick={() => handleBulkCreateShapes(500)}
+              style={{
+                padding: '6px 12px',
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: 'bold',
+                transition: 'transform 0.1s'
+              }}
+              onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+              onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+            >
+              + 500 Shapes
+            </button>
+            <button
+              onClick={() => handleBulkCreateShapes(1000)}
+              style={{
+                padding: '6px 12px',
+                background: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: 'bold',
+                transition: 'transform 0.1s'
+              }}
+              onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+              onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+            >
+              + 1000 Shapes
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Instructions */}
       <div style={{

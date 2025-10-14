@@ -6,7 +6,8 @@ import {
   doc, 
   onSnapshot,
   getDocs,
-  serverTimestamp
+  serverTimestamp,
+  writeBatch
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -35,6 +36,56 @@ export async function addShape(shapeData, userId) {
     return docRef.id;
   } catch (error) {
     console.error('Error adding shape:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Add multiple shapes to Firestore in batches
+ * Firestore batch writes support up to 500 operations per batch
+ * @param {Array<Object>} shapesData - Array of shape data objects
+ * @param {string} userId - User ID from Firebase Auth
+ * @returns {Promise<Array<string>>} Array of document IDs for the created shapes
+ */
+export async function addShapesBatch(shapesData, userId) {
+  try {
+    const BATCH_SIZE = 500; // Firestore max batch size
+    const results = [];
+    
+    // Split into batches if needed
+    for (let i = 0; i < shapesData.length; i += BATCH_SIZE) {
+      const batchShapes = shapesData.slice(i, i + BATCH_SIZE);
+      const batch = writeBatch(db);
+      const batchIds = [];
+      
+      batchShapes.forEach((shapeData) => {
+        const newDocRef = doc(collection(db, SHAPES_COLLECTION));
+        batch.set(newDocRef, {
+          x: shapeData.x,
+          y: shapeData.y,
+          width: shapeData.width,
+          height: shapeData.height,
+          color: shapeData.color,
+          type: shapeData.type || 'rectangle',
+          createdBy: userId,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+        batchIds.push(newDocRef.id);
+      });
+      
+      await batch.commit();
+      results.push(...batchIds);
+      
+      // Add a small delay between batches to avoid rate limiting
+      if (i + BATCH_SIZE < shapesData.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+    
+    return results;
+  } catch (error) {
+    console.error('Error adding shapes in batch:', error.message);
     throw error;
   }
 }
