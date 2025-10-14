@@ -7,6 +7,7 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
   const shapeRef = useRef(null);
   const transformerRef = useRef(null);
   const lineRef = useRef(null);  // For direct line manipulation (used only for line shapes)
+  const doubleClickTimerRef = useRef(null);  // Track double-click to prevent drag
 
   // Attach transformer to shape when selected
   useEffect(() => {
@@ -22,10 +23,25 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
     if (e.evt) {
       e.evt.stopPropagation();
     }
+    
+    // For text shapes, set a timer to detect potential double-click
+    if (isText) {
+      doubleClickTimerRef.current = true;
+      setTimeout(() => {
+        doubleClickTimerRef.current = false;
+      }, 300); // 300ms window for double-click detection
+    }
+    
     onSelect();
   }
 
   function handleDragStart(e) {
+    // For text shapes, prevent drag if we're in double-click window
+    if (isText && doubleClickTimerRef.current) {
+      e.target.stopDrag();
+      return;
+    }
+    
     // CRITICAL: Stop ALL event propagation to prevent stage dragging
     e.cancelBubble = true;
     if (e.evt) {
@@ -320,8 +336,20 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
   // Handle double-click for text editing
   function handleDoubleClick(e) {
     if (isText && canInteract) {
+      // Clear the double-click timer immediately
+      doubleClickTimerRef.current = false;
+      
       e.cancelBubble = true;
-      if (e.evt) e.evt.stopPropagation();
+      if (e.evt) {
+        e.evt.stopPropagation();
+        e.evt.preventDefault();
+      }
+      
+      // Stop any drag that might have started
+      if (e.target && e.target.stopDrag) {
+        e.target.stopDrag();
+      }
+      
       // Call parent's text edit handler
       if (onTextEdit) {
         onTextEdit(shape.id, shape.text);
