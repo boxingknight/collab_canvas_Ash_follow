@@ -451,7 +451,7 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
             shadowColor={isSelected ? '#646cff' : undefined}
             shadowBlur={isSelected ? 10 : 0}
             shadowOpacity={isSelected ? 0.8 : 0}
-            opacity={isEditing ? 0 : isLockedByOther ? 0.6 : 1}
+            opacity={isLockedByOther ? 0.6 : 1}
             // Performance
             perfectDrawEnabled={false}
             shadowForStrokeEnabled={false}

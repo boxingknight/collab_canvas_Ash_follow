@@ -447,7 +447,17 @@ function Canvas() {
   }
   
   function handleTextChange(e) {
-    setEditingText(e.target.value);
+    const newText = e.target.value;
+    setEditingText(newText);
+    
+    // Update the shape in real-time for live editing feedback
+    if (editingTextId) {
+      setShapes((prev) =>
+        prev.map((shape) =>
+          shape.id === editingTextId ? { ...shape, text: newText } : shape
+        )
+      );
+    }
   }
   
   function handleTextKeyDown(e) {
@@ -1185,7 +1195,8 @@ function Canvas() {
               resize: 'none',
               outline: 'none',
               background: 'transparent',
-              color: editingTextId ? (shapes.find(s => s.id === editingTextId)?.color || '#000') : '#000',
+              color: 'transparent',
+              caretColor: '#646cff',
               zIndex: 2000,
               overflow: 'hidden',
               lineHeight: '1.2',
