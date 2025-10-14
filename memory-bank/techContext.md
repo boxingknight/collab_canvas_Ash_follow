@@ -13,7 +13,9 @@
 - **Firebase 12.4.0** - Backend as a Service
   - **Firestore** - Document database for shapes (persistent data)
   - **Realtime Database** - For cursors and presence (ephemeral, low-latency)
-  - **Firebase Authentication** - User auth (email/password + Google OAuth)
+  - **Firebase Authentication** - User auth
+    - Email/password authentication ✅
+    - Google OAuth (popup-based) ✅
   - **Firebase Hosting** - Deployment platform
 
 ### AI Integration (To Be Added)
@@ -156,11 +158,20 @@ npm run lint               # Run ESLint
 1. Create Firebase project at console.firebase.google.com
 2. Enable Firestore Database (test mode initially)
 3. Enable Realtime Database (test mode initially)
-4. Enable Authentication (Email/Password + Google)
+4. Enable Authentication (Email/Password + Google OAuth)
+   - Email/Password: Toggle on in Authentication > Sign-in method
+   - Google: Toggle on, set support email, save
 5. Add web app to project
 6. Copy config to .env.local
 7. Deploy security rules (from FIRESTORE_RULES.txt)
 8. Add authorized domains (localhost, production URL)
+
+**Google OAuth Setup:**
+- Uses `signInWithPopup` for popup-based authentication
+- Provider: `GoogleAuthProvider` from Firebase Auth
+- Auto-populates display name from Google account
+- No additional configuration needed beyond enabling in Firebase Console
+- See GOOGLE_OAUTH_SETUP.md for detailed setup guide
 
 ## Data Models
 

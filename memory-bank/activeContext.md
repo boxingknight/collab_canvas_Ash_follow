@@ -20,8 +20,22 @@
 
 ## Recent Changes
 
+### Google OAuth Implementation (Current Session)
+- ✅ Added Google sign-in functionality
+  - Created `loginWithGoogle()` in auth service using Firebase `signInWithPopup`
+  - Exposed method through useAuth hook
+  - Added "Sign in with Google" button to Login component
+  - Added "Sign up with Google" button to SignUp component
+  - Included official Google logo SVG
+  - Added auth divider ("OR") styling
+  - Implemented btn-google styles with hover effects
+  - Full dark/light mode support
+  - Created comprehensive setup guide (GOOGLE_OAUTH_SETUP.md)
+- ✅ Tested and verified working
+- ✅ Committed and pushed to GitHub
+
 ### MVP Completion (Previous Session)
-- ✅ Authentication working (email/password + Google OAuth)
+- ✅ Authentication working (email/password)
 - ✅ Basic canvas with pan/zoom (5000x5000px bounded)
 - ✅ Rectangle and circle creation
 - ✅ Shape selection and movement

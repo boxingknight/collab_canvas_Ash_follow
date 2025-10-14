@@ -19,7 +19,7 @@ This is a **one-week sprint project** with three deadlines:
 - ✅ Real-time sync between 2+ users
 - ✅ Multiplayer cursors with name labels
 - ✅ Presence awareness (who's online)
-- ✅ User authentication
+- ✅ User authentication (email/password + Google OAuth)
 - ✅ Deployed and publicly accessible
 
 #### Extended Canvas Features (Post-MVP - IN PROGRESS)

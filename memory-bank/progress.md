@@ -3,11 +3,17 @@
 ## What Works (Completed Features)
 
 ### ✅ Authentication System
-**Status**: Fully functional
+**Status**: Fully functional (Updated: Google OAuth added)
 
 **Features:**
 - User registration with email/password
-- Google OAuth sign-in
+- ✅ Google OAuth sign-in (NEWLY ADDED)
+  - One-click Google authentication
+  - Sign in with Google button on Login page
+  - Sign up with Google button on SignUp page
+  - Official Google logo and branding
+  - Popup-based authentication flow
+  - Display names auto-populated from Google account
 - User login/logout
 - Persistent sessions across page refreshes
 - Display names extracted from Google or email
