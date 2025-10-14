@@ -40,6 +40,7 @@ function Canvas() {
   const [editingTextId, setEditingTextId] = useState(null);
   const [editingText, setEditingText] = useState('');
   const [textEditorPosition, setTextEditorPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const textareaRef = useRef(null);
 
   // Generate grid lines
   const gridSize = 100; // Grid cell size
@@ -448,6 +449,14 @@ function Canvas() {
     // Stop propagation to prevent other keyboard shortcuts
     e.stopPropagation();
   }
+
+  // Focus and select text when editing starts
+  useEffect(() => {
+    if (editingTextId && textareaRef.current) {
+      textareaRef.current.focus();
+      textareaRef.current.select();
+    }
+  }, [editingTextId]); // Only run when editingTextId changes (editing starts)
 
   // Clean up any locks on unmount
   useEffect(() => {
@@ -1115,12 +1124,7 @@ function Canvas() {
           
           {/* Textarea positioned over the text shape */}
           <textarea
-            ref={(textarea) => {
-              if (textarea) {
-                textarea.focus();
-                textarea.select();
-              }
-            }}
+            ref={textareaRef}
             value={editingText}
             onChange={handleTextChange}
             onKeyDown={handleTextKeyDown}
@@ -1155,7 +1159,6 @@ function Canvas() {
               cursor: 'text'
             }}
             placeholder="Type your text..."
-            autoFocus
           />
         </>
       )}
