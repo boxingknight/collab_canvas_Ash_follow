@@ -1578,7 +1578,7 @@ PR #11 implements line shapes with:
 
 **Discovered During**: Initial testing with dev server  
 **Severity**: HIGH - Breaks core functionality  
-**Status**: FIXED ✅ (after 2 iterations)
+**Status**: FIXED ✅ (after 3 iterations)
 
 **Problem Description**:
 When dragging a line to a new position, the line's length and angle would change unpredictably. This made lines completely unusable for any precise work.
@@ -1642,12 +1642,98 @@ e.target.position({ x: 0, y: 0 });
 - `Shape.jsx` - Line rendering: Wrapped in draggable Group (lines 128-138)
 - `Shape.jsx` - handleDragEnd: Handle Group offset calculation (lines 54-70)
 
-**Test Results**:
-- ✅ Lines maintain perfect length when dragged
-- ✅ Lines maintain perfect angle when dragged
-- ✅ No visual glitches during drag
-- ✅ Multi-user sync works correctly
+**Test Results from Iteration #2**:
+- ❌ STILL HAD ISSUES - Dragging continued to change line size!
+- ❌ Anchors had positioning problems (one worked, one didn't)
+- ❌ Visual line position didn't match anchor positions
+
+**User Feedback**: "we continue to have the dragging changes the size of the line bug"
+
+---
+
+**Iteration #3 - The ACTUAL Correct Solution** ✅
+
+After deeper investigation, the Group approach was fundamentally flawed.
+
+**The Real Root Cause**:
+Using absolute coordinates `[shape.x, shape.y, shape.endX, shape.endY]` inside a **draggable Group** causes Konva to apply the Group's position offset to those already-absolute coordinates:
+
+```javascript
+// BROKEN: Absolute points in draggable Group
+<Group draggable={true}>  {/* Group offset: x:50, y:50 after drag */}
+  <Line points={[100, 100, 300, 200]} />  {/* Absolute coords */}
+</Group>
+
+// Konva renders: [100+50, 100+50, 300+50, 200+50] = [150, 150, 350, 250]
+// Result: Line appears in wrong position with wrong length! ❌
+```
+
+**The Correct Solution - Simplicity Wins**:
+Remove the Group entirely. Make the Line directly draggable and handle the offset properly:
+
+```javascript
+// CORRECT: Draggable Line with absolute points
+<Line 
+  points={[shape.x, shape.y, shape.endX, shape.endY]}  // Absolute coords
+  draggable={true}
+/>
+
+// In handleDragEnd:
+const offsetX = e.target.x();  // Drag offset (NOT absolute position)
+const offsetY = e.target.y();
+
+onDragEnd({
+  id: shape.id,
+  x: shape.x + offsetX,     // Apply offset equally to all coords
+  y: shape.y + offsetY,
+  endX: shape.endX + offsetX,
+  endY: shape.endY + offsetY
+});
+
+// CRITICAL: Reset Line's position to origin for next drag
+e.target.position({ x: 0, y: 0 });
+```
+
+**Why This Works**:
+1. Line has absolute points in Firestore: `[100, 100, 300, 200]`
+2. User drags the line by 50 pixels
+3. Konva applies a transform offset (not changing points)
+4. `e.target.x()` returns the offset: `50`
+5. We add offset to ALL coordinates equally: `+50, +50, +50, +50`
+6. New coordinates: `[150, 150, 350, 250]` - **length preserved!**
+7. We reset Line position to `(0, 0)` so next drag starts fresh
+
+**The Key Insight**:
+- Konva's drag on a Line with absolute points applies an **offset** (transform)
+- This offset is what `e.target.x()` and `e.target.y()` return
+- Adding the same offset to all coordinates maintains the line's length and angle
+- Resetting position prevents offset accumulation
+
+**Additional Fix**: Removed Transformer border (user request)
+- Transformer made no sense for lines (it's for rectangles)
+- Lines now only show anchor circles when selected
+- Cleaner, more intuitive UX
+
+**Files Modified**:
+- `Shape.jsx` - Removed Group wrapper, made Line directly draggable (lines 122-144)
+- `Shape.jsx` - Fixed handleDragEnd to apply offset to all coords (lines 54-71)
+- `Shape.jsx` - Removed Transformer component for lines (no longer exists)
+
+**Test Results from Iteration #3**:
+- ✅ Lines maintain PERFECT length when dragged
+- ✅ Lines maintain PERFECT angle when dragged
+- ✅ No visual glitches or stuttering
+- ✅ Both anchors work correctly
+- ✅ No Transformer border clutter
+- ✅ Multi-user sync works flawlessly
 - ✅ Lock icon position correct
+
+**Lessons from 3 Iterations**:
+1. **Simplicity usually wins** - The simplest solution (draggable Line) was correct all along
+2. **Understand the framework** - Know that Konva's drag applies a transform offset
+3. **Test your assumptions** - "Group wrapper" seemed right but was wrong
+4. **Listen to user feedback** - User reported continued issues, we investigated deeper
+5. **Document failures** - Knowing what DOESN'T work is valuable
 
 ---
 
@@ -1759,33 +1845,46 @@ Custom anchor circles are the right choice for lines:
 - ✅ Additional functionality beyond initial plan
 - ✅ Deep understanding of Konva's drag interaction patterns
 
-**Time to Fix**: ~60 minutes (2 iterations for Bug #1, 1 iteration for Bug #2)  
-**Complexity**: High - Required understanding Konva's internal drag mechanics  
-**Risk**: Low (well-tested, follows Konva best practices)
+**Time to Fix**: ~90 minutes (3 iterations for Bug #1, 1 iteration for Bug #2)  
+**Complexity**: Very High - Required deep understanding of Konva's drag transform system  
+**Risk**: Low (well-tested, uses simplest correct approach)
 
 ---
 
 ### 🎓 Lessons Learned
 
-1. **Konva's Drag Lifecycle is Immediate**: When dragging, Konva updates node positions **before** React re-renders. For shapes with complex internal geometry, this creates mismatches between DOM state and React props. Solution: Use draggable Groups with absolute-coordinate children.
+1. **Simplicity Often Wins**: After 3 iterations, the simplest solution (draggable Line with offset handling) was correct. Don't over-engineer - start simple, then add complexity only if needed.
 
-2. **Complete Event Handling is Required**: Draggable Konva shapes need ALL THREE handlers:
+2. **Understand Framework Transform Systems**: Konva's drag applies a **transform offset**, not an absolute position change. This is critical:
+   - `e.target.x()` = drag offset (delta), NOT final position
+   - Apply this offset equally to all coordinates
+   - Reset position to (0, 0) after each drag to prevent accumulation
+
+3. **Absolute vs Relative Coordinates - The Real Rule**: 
+   - If the container is draggable, children MUST use relative coordinates
+   - If the shape itself is draggable, children can use absolute coordinates
+   - Mixing these causes visual glitches and size changes
+
+4. **Test Assumptions Aggressively**: We thought "Group wrapper" was the answer (iteration #2), but testing proved otherwise. Don't trust theory - test reality.
+
+5. **Complete Event Handling is Required**: Draggable Konva shapes need ALL THREE handlers:
    - `onDragStart` - Initiates the drag
    - `onDragMove` - Provides smooth interaction feedback
    - `onDragEnd` - Finalizes the drag
-   Missing any one causes broken or janky interactions.
 
-3. **Event Propagation Must Be Controlled**: With nested draggable elements (Group > Line, plus anchor circles), you MUST stop event propagation (`e.cancelBubble = true` + `e.evt.stopPropagation()`) or events will bubble up and trigger unintended drags.
+6. **Event Propagation Must Be Controlled**: With multiple draggable elements (Line + anchor circles), you MUST stop event propagation (`e.cancelBubble = true` + `e.evt.stopPropagation()`) or events will bubble and trigger unintended drags.
 
-4. **Test Early and Iterate**: Found both bugs within minutes of first test. Quick iteration (2 approaches for Bug #1) led to the correct solution faster than trying to "plan perfectly" upfront.
+7. **User Feedback is Gold**: User reported "bug still exists" after iteration #2. This forced deeper investigation and led to the correct solution. Never dismiss user reports.
 
-5. **Custom Solutions > Forcing Built-ins**: Transformer is great for rectangles/circles, but forcing it to work for lines would be complex. Custom anchor circles are simpler, more intuitive, and more maintainable.
+8. **Document Everything - Especially Failures**: This document now shows 3 iterations:
+   - Iteration #1: Relative points + x/y positioning (failed)
+   - Iteration #2: Draggable Group wrapper (failed)
+   - Iteration #3: Simple draggable Line (SUCCESS!)
+   - Future developers can learn from our mistakes
 
-6. **User Expectations Drive Features**: Users immediately expected to adjust line endpoints - it's a standard feature in all design tools (Figma, Sketch, Adobe XD). Listen to user feedback.
+9. **Custom Solutions > Forcing Built-ins**: Transformer is for rectangles/circles. Custom anchor circles are simpler, more intuitive, and more maintainable for lines.
 
-7. **Documentation is Critical**: Writing down the bug, root cause, failed attempts, and final solution creates a knowledge base for future developers. This PR_PARTY document is now the definitive reference.
-
-8. **Framework Patterns Trump Intuition**: What "seems right" (draggable Line with x/y) doesn't always match framework best practices (draggable Group with absolute children). Learn the framework's preferred patterns.
+10. **Iterative Development Works**: 3 iterations in 90 minutes is better than 3 hours of "perfect planning" that might still be wrong. Ship, test, fix, repeat.
 
 ---
 
