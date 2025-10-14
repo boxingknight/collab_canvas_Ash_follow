@@ -4,6 +4,7 @@ import useCanvas from '../../hooks/useCanvas';
 import useShapes from '../../hooks/useShapes';
 import useCursors from '../../hooks/useCursors';
 import useAuth from '../../hooks/useAuth';
+import useSelection from '../../hooks/useSelection';
 import Shape from './Shape';
 import RemoteCursor from './RemoteCursor';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, SHAPE_COLORS, SHAPE_TYPES, DEFAULT_STROKE_WIDTH, DEFAULT_FONT_SIZE, DEFAULT_FONT_WEIGHT, DEFAULT_TEXT, MIN_TEXT_WIDTH, MIN_TEXT_HEIGHT } from '../../utils/constants';
@@ -14,8 +15,20 @@ function Canvas() {
   const staticLayerRef = useRef(null); // For caching static grid/background
   const { user } = useAuth();
   const { position, scale, updatePosition, updateScale } = useCanvas();
-  const { shapes, selectedShapeId, isLoading, addShape, addShapesBatch, updateShape, updateShapeImmediate, deleteShape, selectShape, deselectShape, lockShape, unlockShape } = useShapes(user);
+  const { shapes, isLoading, addShape, addShapesBatch, updateShape, updateShapeImmediate, deleteShape, lockShape, unlockShape } = useShapes(user);
   const { remoteCursors, updateMyCursor } = useCursors(user);
+  const { 
+    selectedShapeIds, 
+    toggleSelection, 
+    setSelection, 
+    clearSelection, 
+    selectAll, 
+    isSelected,
+    selectionCount,
+    hasSelection,
+    isMultiSelect,
+    selectedShapeId // For backward compatibility
+  } = useSelection();
   const [stageSize, setStageSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [fps, setFps] = useState(60);
   const fpsCounterRef = useRef(null);
@@ -107,6 +120,17 @@ function Canvas() {
       // Don't trigger if user is typing in an input
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       
+      // Platform-specific modifier key (Cmd on Mac, Ctrl on Windows/Linux)
+      const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+      const modifierKey = isMac ? e.metaKey : e.ctrlKey;
+      
+      // Cmd/Ctrl + A: Select all shapes
+      if (modifierKey && e.key.toLowerCase() === 'a') {
+        e.preventDefault();
+        selectAll(shapes.map(s => s.id));
+        return;
+      }
+      
       switch(e.key.toLowerCase()) {
         case 'v':
           setMode('pan');
@@ -119,14 +143,14 @@ function Canvas() {
           break;
         case 'escape':
           setMode('pan');
-          deselectShape();
+          clearSelection();
           break;
         case 'delete':
         case 'backspace':
-          // Delete selected shape
-          if (selectedShapeId) {
+          // Delete all selected shapes
+          if (selectionCount > 0) {
             e.preventDefault(); // Prevent browser back navigation on Backspace
-            deleteShape(selectedShapeId);
+            deleteSelectedShapes();
           }
           break;
         default:
@@ -136,7 +160,7 @@ function Canvas() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [deselectShape, selectedShapeId, deleteShape]);
+  }, [shapes, selectionCount, clearSelection, selectAll]);
 
   // Handle window resize
   useEffect(() => {
@@ -240,8 +264,8 @@ function Canvas() {
         setNewShape(initialState);
       }
       
-      // Deselect any selected shape
-      deselectShape();
+      // Deselect any selected shapes
+      clearSelection();
     }
   }
 
@@ -336,14 +360,45 @@ function Canvas() {
     setNewShape(null);
   }
 
-  // Handle shape selection
-  function handleShapeSelect(shapeId) {
-    selectShape(shapeId);
+  // Handle shape selection (supports shift-click for multi-select)
+  function handleShapeSelect(shapeId, event) {
+    if (event?.shiftKey) {
+      // Shift-click: Toggle shape in selection
+      toggleSelection(shapeId);
+    } else {
+      // Normal click: Replace selection with this shape
+      setSelection([shapeId]);
+    }
+    
     // Auto-switch to move mode when clicking a shape (for convenience)
     // This allows users to click a shape in pan mode and immediately interact with it
     if (mode !== 'move') {
       setMode('move');
     }
+  }
+  
+  // Delete all selected shapes
+  async function deleteSelectedShapes() {
+    if (selectionCount === 0) return;
+    
+    // Filter out shapes that are locked by other users
+    const shapesToDelete = selectedShapeIds.filter(id => {
+      const shape = shapes.find(s => s.id === id);
+      return shape && (!shape.lockedBy || shape.lockedBy === user?.uid);
+    });
+    
+    const lockedCount = selectionCount - shapesToDelete.length;
+    
+    // Delete all unlocked shapes
+    await Promise.all(shapesToDelete.map(id => deleteShape(id)));
+    
+    // Show warning if some shapes were locked
+    if (lockedCount > 0) {
+      console.warn(`${lockedCount} shape(s) were locked by other users and were not deleted.`);
+    }
+    
+    // Clear selection
+    clearSelection();
   }
 
   // Handle shape drag start
@@ -483,7 +538,7 @@ function Canvas() {
   // Handle stage click (deselect)
   function handleStageClick(e) {
     if (e.target === e.target.getStage()) {
-      deselectShape();
+      clearSelection();
     }
   }
 
@@ -679,8 +734,9 @@ function Canvas() {
               <Shape
                 key={shape.id}
                 shape={shape}
-                isSelected={shape.id === selectedShapeId}
-                onSelect={() => handleShapeSelect(shape.id)}
+                isSelected={isSelected(shape.id)}
+                isMultiSelect={isMultiSelect}
+                onSelect={(e) => handleShapeSelect(shape.id, e)}
                 onDragStart={() => handleShapeDragStart(shape.id)}
                 onDragMove={handleShapeDragMove}
                 onDragEnd={handleShapeDragEnd}
@@ -1123,7 +1179,7 @@ function Canvas() {
         </span>
         <br />
         <span style={{ fontSize: '11px', opacity: 0.75, marginTop: '4px', display: 'block' }}>
-          Shapes: {shapes.length} {selectedShapeId ? '• 1 selected' : ''} • Keyboard: V (Pan) • M (Move) • D (Draw) • Esc (Pan + Deselect) • Del/Backspace (Delete)
+          Shapes: {shapes.length} {selectionCount > 0 ? `• ${selectionCount} selected` : ''} • Keyboard: V (Pan) • M (Move) • D (Draw) • Cmd/Ctrl+A (Select All) • Esc (Deselect) • Del/Backspace (Delete)
         </span>
       </div>
 
@@ -1199,6 +1255,13 @@ function Canvas() {
             placeholder="Type your text..."
           />
         </>
+      )}
+
+      {/* Selection count badge */}
+      {selectionCount > 0 && (
+        <div className="selection-badge">
+          {selectionCount} shape{selectionCount !== 1 ? 's' : ''} selected
+        </div>
       )}
     </div>
   );

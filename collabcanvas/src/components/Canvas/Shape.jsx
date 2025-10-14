@@ -3,7 +3,7 @@ import { useRef, useEffect, memo } from 'react';
 import { SHAPE_TYPES, DEFAULT_STROKE_WIDTH, DEFAULT_LINE_HIT_WIDTH, DEFAULT_FONT_SIZE, DEFAULT_FONT_WEIGHT } from '../../utils/constants';
 
 // Memoized Shape component to prevent unnecessary re-renders
-const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDragStart, onDragMove, onTextEdit, isEditing = false, isDraggable = true, isInteractive = true, isLockedByOther = false, currentUserId }) {
+const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, onSelect, onDragEnd, onDragStart, onDragMove, onTextEdit, isEditing = false, isDraggable = true, isInteractive = true, isLockedByOther = false, currentUserId }) {
   const shapeRef = useRef(null);
   const transformerRef = useRef(null);
   const lineRef = useRef(null);  // For direct line manipulation (used only for line shapes)
@@ -92,7 +92,8 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
       }, 300); // 300ms window for double-click detection
     }
     
-    onSelect();
+    // Pass the event to parent for shift-click detection
+    onSelect(e);
   }
 
   function handleDragStart(e) {
@@ -230,10 +231,11 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
             stroke={shape.color}
             strokeWidth={shape.strokeWidth || DEFAULT_STROKE_WIDTH}
             hitStrokeWidth={DEFAULT_LINE_HIT_WIDTH}
-            shadowColor={isSelected ? '#646cff' : undefined}
+            shadowColor={isSelected ? (isMultiSelect ? '#3b82f6' : '#646cff') : undefined}
             shadowBlur={isSelected ? 10 : 0}
             shadowOpacity={isSelected ? 0.8 : 0}
             opacity={isLockedByOther ? 0.6 : 1}
+            dash={isSelected && isMultiSelect ? [10, 5] : undefined}
             perfectDrawEnabled={false}
             shadowForStrokeEnabled={false}
           />
@@ -447,8 +449,8 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
             onDragStart={handleDragStart}
             onDragMove={handleDragMove}
             onDragEnd={handleDragEnd}
-            // Selection styling
-            shadowColor={isSelected ? '#646cff' : undefined}
+            // Selection styling (darker for multi-select)
+            shadowColor={isSelected ? (isMultiSelect ? '#3b82f6' : '#646cff') : undefined}
             shadowBlur={isSelected ? 10 : 0}
             shadowOpacity={isSelected ? 0.8 : 0}
             opacity={isEditing ? 0 : isLockedByOther ? 0.6 : 1}
@@ -516,8 +518,10 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
     onDragStart: handleDragStart,
     onDragMove: handleDragMove,
     onDragEnd: handleDragEnd,
-    stroke: isSelected ? '#646cff' : isLockedByOther ? '#ef4444' : undefined,
+    // Multi-select: darker blue with dashed border
+    stroke: isSelected ? (isMultiSelect ? '#3b82f6' : '#646cff') : isLockedByOther ? '#ef4444' : undefined,
     strokeWidth: isSelected ? 3 : isLockedByOther ? 2 : 0,
+    dash: isSelected && isMultiSelect ? [10, 5] : undefined,
     shadowColor: isSelected ? '#646cff' : undefined,
     shadowBlur: isSelected ? 10 : 0,
     shadowOpacity: isSelected ? 0.5 : 0,
@@ -605,6 +609,7 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
       prevProps.shape.strokeWidth === nextProps.shape.strokeWidth &&
       prevProps.shape.lockedBy === nextProps.shape.lockedBy &&
       prevProps.isSelected === nextProps.isSelected &&
+      prevProps.isMultiSelect === nextProps.isMultiSelect &&
       prevProps.isDraggable === nextProps.isDraggable &&
       prevProps.isInteractive === nextProps.isInteractive &&
       prevProps.isLockedByOther === nextProps.isLockedByOther
@@ -625,6 +630,7 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
       prevProps.shape.color === nextProps.shape.color &&
       prevProps.shape.lockedBy === nextProps.shape.lockedBy &&
       prevProps.isSelected === nextProps.isSelected &&
+      prevProps.isMultiSelect === nextProps.isMultiSelect &&
       prevProps.isDraggable === nextProps.isDraggable &&
       prevProps.isInteractive === nextProps.isInteractive &&
       prevProps.isLockedByOther === nextProps.isLockedByOther
@@ -642,6 +648,7 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
     prevProps.shape.type === nextProps.shape.type &&
     prevProps.shape.lockedBy === nextProps.shape.lockedBy &&
     prevProps.isSelected === nextProps.isSelected &&
+    prevProps.isMultiSelect === nextProps.isMultiSelect &&
     prevProps.isDraggable === nextProps.isDraggable &&
     prevProps.isInteractive === nextProps.isInteractive &&
     prevProps.isLockedByOther === nextProps.isLockedByOther
