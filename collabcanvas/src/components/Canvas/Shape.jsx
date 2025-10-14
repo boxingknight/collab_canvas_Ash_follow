@@ -116,6 +116,31 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
     }
   }
 
+  function handleTransformEnd(e) {
+    // Handle transform (resize) for text shapes
+    const node = shapeRef.current;
+    if (!node) return;
+
+    const scaleX = node.scaleX();
+    const scaleY = node.scaleY();
+
+    // Reset scale to 1 and update width/height instead
+    node.scaleX(1);
+    node.scaleY(1);
+
+    const updates = {
+      id: shape.id,
+      x: node.x(),
+      y: node.y(),
+      width: Math.max(5, node.width() * scaleX),
+      height: Math.max(5, node.height() * scaleY)
+    };
+
+    if (onDragEnd) {
+      onDragEnd(updates);
+    }
+  }
+
   // Determine if this shape is actually draggable (not locked by another user)
   // IMPORTANT: Only allow dragging if shape is SELECTED (prevents accidental drags on click)
   const canDrag = isDraggable && isSelected && !isLockedByOther;
@@ -388,6 +413,7 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
             onDragStart={handleDragStart}
             onDragMove={handleDragMove}
             onDragEnd={handleDragEnd}
+            onTransformEnd={handleTransformEnd}
             // Selection styling
             shadowColor={isSelected ? '#646cff' : undefined}
             shadowBlur={isSelected ? 10 : 0}
