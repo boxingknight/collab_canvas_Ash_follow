@@ -385,6 +385,11 @@ function Canvas() {
       updates.height = data.height;
     }
     
+    // If fontSize is provided (from text transform), include it
+    if (data.fontSize !== undefined) {
+      updates.fontSize = data.fontSize;
+    }
+    
     console.log('[CANVAS] Updating shape:', data.id, updates);
     
     await updateShapeImmediate(data.id, updates);

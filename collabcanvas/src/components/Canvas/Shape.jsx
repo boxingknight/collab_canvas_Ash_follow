@@ -29,19 +29,33 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
           const scaleX = node.scaleX();
           const scaleY = node.scaleY();
           
-          console.log('[TEXT TRANSFORM] Current scale:', scaleX, scaleY);
+          // Use the average of scaleX and scaleY for font scaling
+          // This gives more natural results than just using one axis
+          const avgScale = (scaleX + scaleY) / 2;
+          
+          console.log('[TEXT TRANSFORM] Current scale:', scaleX, scaleY, 'avg:', avgScale);
           console.log('[TEXT TRANSFORM] Current dimensions:', node.width(), node.height());
+          console.log('[TEXT TRANSFORM] Current fontSize:', node.fontSize());
 
-          // Reset scale to 1 and update width/height instead
+          // Calculate new dimensions and font size
+          const newWidth = Math.max(5, node.width() * scaleX);
+          const newHeight = Math.max(5, node.height() * scaleY);
+          const newFontSize = Math.max(8, Math.round(node.fontSize() * avgScale));
+
+          // Reset scale to 1 (Konva best practice)
           node.scaleX(1);
           node.scaleY(1);
+          
+          // Update the node's fontSize immediately for visual feedback
+          node.fontSize(newFontSize);
 
           const updates = {
             id: shape.id,
             x: node.x(),
             y: node.y(),
-            width: Math.max(5, node.width() * scaleX),
-            height: Math.max(5, node.height() * scaleY)
+            width: newWidth,
+            height: newHeight,
+            fontSize: newFontSize
           };
           
           console.log('[TEXT TRANSFORM] Sending updates:', updates);
