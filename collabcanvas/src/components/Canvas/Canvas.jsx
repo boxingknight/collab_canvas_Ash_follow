@@ -367,7 +367,7 @@ function Canvas() {
   // Handle shape drag end
   async function handleShapeDragEnd(data) {
     // Use immediate update (no debounce) to prevent ghost teleport effect
-    // IMPORTANT: For lines, data includes endX and endY; for rectangles/circles, just x and y
+    // IMPORTANT: For lines, data includes endX and endY; for text, may include width/height
     const updates = { x: data.x, y: data.y };
     
     // If this is a line shape, include endpoint coordinates
@@ -376,6 +376,16 @@ function Canvas() {
       updates.endY = data.endY;
       console.log('[CANVAS] Updating line with endpoint:', updates);
     }
+    
+    // If width and height are provided (from transform), include them
+    if (data.width !== undefined) {
+      updates.width = data.width;
+    }
+    if (data.height !== undefined) {
+      updates.height = data.height;
+    }
+    
+    console.log('[CANVAS] Updating shape:', data.id, updates);
     
     await updateShapeImmediate(data.id, updates);
     setIsDraggingShape(false);

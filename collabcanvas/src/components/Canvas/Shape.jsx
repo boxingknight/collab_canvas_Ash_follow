@@ -9,13 +9,59 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
   const lineRef = useRef(null);  // For direct line manipulation (used only for line shapes)
   const doubleClickTimerRef = useRef(null);  // Track double-click to prevent drag
 
+  // Determine shape type early (needed for useEffect)
+  const shapeType = shape.type || SHAPE_TYPES.RECTANGLE;
+  const isText = shapeType === SHAPE_TYPES.TEXT;
+
   // Attach transformer to shape when selected
   useEffect(() => {
     if (isSelected && transformerRef.current && shapeRef.current) {
       transformerRef.current.nodes([shapeRef.current]);
       transformerRef.current.getLayer().batchDraw();
+      
+      // For text shapes, listen to transform end on the node itself
+      const node = shapeRef.current;
+      if (node && isText) {
+        const handleTransform = () => {
+          console.log('[TEXT TRANSFORM] Transform event fired');
+          
+          // Get transform properties
+          const scaleX = node.scaleX();
+          const scaleY = node.scaleY();
+          
+          console.log('[TEXT TRANSFORM] Current scale:', scaleX, scaleY);
+          console.log('[TEXT TRANSFORM] Current dimensions:', node.width(), node.height());
+
+          // Reset scale to 1 and update width/height instead
+          node.scaleX(1);
+          node.scaleY(1);
+
+          const updates = {
+            id: shape.id,
+            x: node.x(),
+            y: node.y(),
+            width: Math.max(5, node.width() * scaleX),
+            height: Math.max(5, node.height() * scaleY)
+          };
+          
+          console.log('[TEXT TRANSFORM] Sending updates:', updates);
+
+          if (onDragEnd) {
+            onDragEnd(updates);
+          } else {
+            console.log('[TEXT TRANSFORM] No onDragEnd handler!');
+          }
+        };
+        
+        node.on('transformend', handleTransform);
+        
+        // Cleanup
+        return () => {
+          node.off('transformend', handleTransform);
+        };
+      }
     }
-  }, [isSelected]);
+  }, [isSelected, isText, shape.id, onDragEnd]);
 
   function handleClick(e) {
     // CRITICAL: Stop ALL event propagation
@@ -116,30 +162,6 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
     }
   }
 
-  function handleTransformEnd(e) {
-    // Handle transform (resize) for text shapes
-    const node = shapeRef.current;
-    if (!node) return;
-
-    const scaleX = node.scaleX();
-    const scaleY = node.scaleY();
-
-    // Reset scale to 1 and update width/height instead
-    node.scaleX(1);
-    node.scaleY(1);
-
-    const updates = {
-      id: shape.id,
-      x: node.x(),
-      y: node.y(),
-      width: Math.max(5, node.width() * scaleX),
-      height: Math.max(5, node.height() * scaleY)
-    };
-
-    if (onDragEnd) {
-      onDragEnd(updates);
-    }
-  }
 
   // Determine if this shape is actually draggable (not locked by another user)
   // IMPORTANT: Only allow dragging if shape is SELECTED (prevents accidental drags on click)
@@ -147,10 +169,8 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
   const canInteract = isInteractive && !isLockedByOther;
 
   // Determine shape type (default to rectangle for backward compatibility)
-  const shapeType = shape.type || SHAPE_TYPES.RECTANGLE;
   const isCircle = shapeType === SHAPE_TYPES.CIRCLE;
   const isLine = shapeType === SHAPE_TYPES.LINE;
-  const isText = shapeType === SHAPE_TYPES.TEXT;
 
   /**
    * COORDINATE SYSTEM NOTES:
@@ -413,7 +433,6 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
             onDragStart={handleDragStart}
             onDragMove={handleDragMove}
             onDragEnd={handleDragEnd}
-            onTransformEnd={handleTransformEnd}
             // Selection styling
             shadowColor={isSelected ? '#646cff' : undefined}
             shadowBlur={isSelected ? 10 : 0}
