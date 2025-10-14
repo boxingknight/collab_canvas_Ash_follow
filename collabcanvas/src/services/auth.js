@@ -2,7 +2,9 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  updateProfile
+  updateProfile,
+  signInWithPopup,
+  GoogleAuthProvider
 } from 'firebase/auth';
 import { auth } from './firebase';
 
@@ -65,4 +67,19 @@ export async function logout() {
  */
 export function getCurrentUser() {
   return auth.currentUser;
+}
+
+/**
+ * Sign in with Google OAuth
+ * @returns {Promise<Object>} User credentials
+ */
+export async function loginWithGoogle() {
+  try {
+    const provider = new GoogleAuthProvider();
+    const userCredential = await signInWithPopup(auth, provider);
+    return userCredential;
+  } catch (error) {
+    console.error('Error signing in with Google:', error);
+    throw error;
+  }
 }

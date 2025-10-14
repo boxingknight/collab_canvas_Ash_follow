@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../services/firebase';
-import { login as loginService, signup as signupService, logout as logoutService } from '../services/auth';
+import { 
+  login as loginService, 
+  signup as signupService, 
+  logout as logoutService,
+  loginWithGoogle as loginWithGoogleService
+} from '../services/auth';
 
 /**
  * Custom hook to manage authentication state
@@ -73,13 +78,30 @@ function useAuth() {
     }
   }
 
+  /**
+   * Log in with Google OAuth
+   */
+  async function loginWithGoogle() {
+    try {
+      setError(null);
+      setLoading(true);
+      await loginWithGoogleService();
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return {
     user,
     loading,
     error,
     signup,
     login,
-    logout
+    logout,
+    loginWithGoogle
   };
 }
 

@@ -179,6 +179,63 @@ body {
   cursor: not-allowed;
 }
 
+.auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1.5rem 0;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.875rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.auth-divider span {
+  padding: 0 1rem;
+}
+
+.btn-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-google:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+}
+
+.btn-google:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-google:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-google svg {
+  flex-shrink: 0;
+}
+
 /* App Layout */
 .app-layout {
   display: flex;
@@ -296,6 +353,26 @@ body {
   
   .form-group input:focus {
     background-color: #fff;
+  }
+  
+  .auth-divider {
+    color: rgba(33, 53, 71, 0.5);
+  }
+  
+  .auth-divider::before,
+  .auth-divider::after {
+    border-bottom-color: rgba(33, 53, 71, 0.2);
+  }
+  
+  .btn-google {
+    color: #213547;
+    background-color: rgba(33, 53, 71, 0.05);
+    border-color: rgba(33, 53, 71, 0.2);
+  }
+  
+  .btn-google:hover:not(:disabled) {
+    background-color: rgba(33, 53, 71, 0.1);
+    border-color: rgba(33, 53, 71, 0.3);
   }
   
   .app-layout {
