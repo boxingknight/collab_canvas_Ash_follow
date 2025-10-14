@@ -4,7 +4,9 @@ import UserList from '../Presence/UserList';
 function AppLayout({ children, user, onLogout }) {
   const { onlineUsers } = usePresence(user);
   
-  console.log('👥 AppLayout onlineUsers:', onlineUsers.length, onlineUsers);
+  // Safety check for undefined onlineUsers
+  const safeOnlineUsers = onlineUsers || [];
+  console.log('👥 AppLayout onlineUsers:', safeOnlineUsers.length, safeOnlineUsers);
 
   return (
     <div className="app-layout">
@@ -14,7 +16,7 @@ function AppLayout({ children, user, onLogout }) {
           <div className="user-info">
             <span className="user-name">👤 {user?.displayName || user?.email}</span>
             {/* User presence avatars */}
-            <UserList users={onlineUsers} currentUser={user} />
+            <UserList users={safeOnlineUsers} currentUser={user} />
             <button onClick={onLogout} className="btn-logout">
               Logout
             </button>
