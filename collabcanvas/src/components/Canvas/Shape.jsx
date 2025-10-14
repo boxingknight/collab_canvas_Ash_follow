@@ -76,6 +76,10 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
         endX: newEndX,
         endY: newEndY
       });
+      
+      // Reset Line position to origin to prevent offset accumulation on next drag
+      // This must happen AFTER we've calculated and saved the new coordinates
+      e.target.position({ x: 0, y: 0 });
     } else {
       // Get the current position from the dragged element
       let newX = e.target.x();
@@ -225,6 +229,9 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
                   endX: shape.endX,
                   endY: shape.endY
                 });
+                
+                // Reset anchor position to prevent offset accumulation
+                e.target.position({ x: newX, y: newY });
               }}
             />
             
@@ -268,6 +275,9 @@ const Shape = memo(function Shape({ shape, isSelected, onSelect, onDragEnd, onDr
                   endX: newEndX,
                   endY: newEndY
                 });
+                
+                // Reset anchor position to prevent offset accumulation
+                e.target.position({ x: newEndX, y: newEndY });
               }}
             />
           </>
