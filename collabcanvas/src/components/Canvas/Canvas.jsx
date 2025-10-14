@@ -405,10 +405,18 @@ function Canvas() {
   async function handleShapeDragStart(shapeId) {
     setIsDraggingShape(true);
     
-    // Lock the shape so other users can't manipulate it
-    const locked = await lockShape(shapeId);
-    if (locked) {
-      activeDragRef.current = shapeId;
+    // If this shape is part of a multi-select, lock all selected shapes
+    if (isMultiSelect && isSelected(shapeId)) {
+      // Lock all selected shapes
+      const lockPromises = selectedShapeIds.map(id => lockShape(id));
+      await Promise.all(lockPromises);
+      activeDragRef.current = 'multi-select'; // Mark as multi-select drag
+    } else {
+      // Single shape drag - lock just this shape
+      const locked = await lockShape(shapeId);
+      if (locked) {
+        activeDragRef.current = shapeId;
+      }
     }
   }
 
@@ -419,40 +427,82 @@ function Canvas() {
 
   // Handle shape drag end
   async function handleShapeDragEnd(data) {
-    // Use immediate update (no debounce) to prevent ghost teleport effect
-    // IMPORTANT: For lines, data includes endX and endY; for text, may include width/height
-    const updates = { x: data.x, y: data.y };
-    
-    // If this is a line shape, include endpoint coordinates
-    if (data.endX !== undefined && data.endY !== undefined) {
-      updates.endX = data.endX;
-      updates.endY = data.endY;
-      console.log('[CANVAS] Updating line with endpoint:', updates);
-    }
-    
-    // If width and height are provided (from transform), include them
-    if (data.width !== undefined) {
-      updates.width = data.width;
-    }
-    if (data.height !== undefined) {
-      updates.height = data.height;
-    }
-    
-    // If fontSize is provided (from text transform), include it
-    if (data.fontSize !== undefined) {
-      updates.fontSize = data.fontSize;
-    }
-    
-    console.log('[CANVAS] Updating shape:', data.id, updates);
-    
-    await updateShapeImmediate(data.id, updates);
-    setIsDraggingShape(false);
-    
-    // Unlock the shape so others can use it
-    if (activeDragRef.current === data.id) {
-      await unlockShape(data.id);
+    // Check if this was a multi-select drag
+    if (activeDragRef.current === 'multi-select' && isMultiSelect) {
+      // Calculate the offset from the dragged shape
+      const draggedShape = shapes.find(s => s.id === data.id);
+      if (!draggedShape) return;
+      
+      const dx = data.x - draggedShape.x;
+      const dy = data.y - draggedShape.y;
+      
+      console.log('[CANVAS] Group drag end. Offset:', dx, dy);
+      
+      // Update all selected shapes with the same offset
+      const updatePromises = selectedShapeIds.map(async (id) => {
+        const shape = shapes.find(s => s.id === id);
+        if (!shape) return;
+        
+        const updates = {
+          x: shape.x + dx,
+          y: shape.y + dy
+        };
+        
+        // For lines, also update endpoints
+        if (shape.endX !== undefined && shape.endY !== undefined) {
+          updates.endX = shape.endX + dx;
+          updates.endY = shape.endY + dy;
+        }
+        
+        console.log('[CANVAS] Updating shape in group:', id, updates);
+        await updateShapeImmediate(id, updates);
+      });
+      
+      await Promise.all(updatePromises);
+      
+      // Unlock all selected shapes
+      const unlockPromises = selectedShapeIds.map(id => unlockShape(id));
+      await Promise.all(unlockPromises);
+      
       activeDragRef.current = null;
+    } else {
+      // Single shape drag
+      // Use immediate update (no debounce) to prevent ghost teleport effect
+      // IMPORTANT: For lines, data includes endX and endY; for text, may include width/height
+      const updates = { x: data.x, y: data.y };
+      
+      // If this is a line shape, include endpoint coordinates
+      if (data.endX !== undefined && data.endY !== undefined) {
+        updates.endX = data.endX;
+        updates.endY = data.endY;
+        console.log('[CANVAS] Updating line with endpoint:', updates);
+      }
+      
+      // If width and height are provided (from transform), include them
+      if (data.width !== undefined) {
+        updates.width = data.width;
+      }
+      if (data.height !== undefined) {
+        updates.height = data.height;
+      }
+      
+      // If fontSize is provided (from text transform), include it
+      if (data.fontSize !== undefined) {
+        updates.fontSize = data.fontSize;
+      }
+      
+      console.log('[CANVAS] Updating shape:', data.id, updates);
+      
+      await updateShapeImmediate(data.id, updates);
+      
+      // Unlock the shape so others can use it
+      if (activeDragRef.current === data.id) {
+        await unlockShape(data.id);
+        activeDragRef.current = null;
+      }
     }
+    
+    setIsDraggingShape(false);
     
     // Keep shape selected after dragging so user can continue interacting
     // (User can click elsewhere or press Esc to deselect)
