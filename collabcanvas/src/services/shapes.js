@@ -14,7 +14,7 @@ const SHAPES_COLLECTION = 'shapes';
 
 /**
  * Add a new shape to Firestore
- * @param {Object} shapeData - Shape data (x, y, width, height, color)
+ * @param {Object} shapeData - Shape data (x, y, width, height, color, type)
  * @param {string} userId - User ID from Firebase Auth
  * @returns {Promise<string>} Document ID of the created shape
  */
@@ -26,6 +26,7 @@ export async function addShape(shapeData, userId) {
       width: shapeData.width,
       height: shapeData.height,
       color: shapeData.color,
+      type: shapeData.type || 'rectangle', // Default to rectangle for backward compatibility
       createdBy: userId,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()

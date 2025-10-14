@@ -6,7 +6,7 @@ import useCursors from '../../hooks/useCursors';
 import useAuth from '../../hooks/useAuth';
 import Shape from './Shape';
 import RemoteCursor from './RemoteCursor';
-import { CANVAS_WIDTH, CANVAS_HEIGHT, SHAPE_COLORS } from '../../utils/constants';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, SHAPE_COLORS, SHAPE_TYPES } from '../../utils/constants';
 import { createFPSCounter, getRandomColor } from '../../utils/helpers';
 
 function Canvas() {
@@ -25,6 +25,9 @@ function Canvas() {
   
   // Canvas mode: 'pan', 'move', or 'draw'
   const [mode, setMode] = useState('pan');
+  
+  // Shape type: 'rectangle' or 'circle'
+  const [shapeType, setShapeType] = useState(SHAPE_TYPES.RECTANGLE);
   
   // Shape creation state
   const [isDrawing, setIsDrawing] = useState(false);
@@ -203,7 +206,8 @@ function Canvas() {
         y: pos.y,
         width: 0,
         height: 0,
-        color: getRandomColor(SHAPE_COLORS)
+        color: getRandomColor(SHAPE_COLORS),
+        type: shapeType
       });
       
       // Deselect any selected shape
@@ -243,7 +247,8 @@ function Canvas() {
         y: newShape.height < 0 ? newShape.y + newShape.height : newShape.y,
         width: Math.abs(newShape.width),
         height: Math.abs(newShape.height),
-        color: newShape.color
+        color: newShape.color,
+        type: newShape.type
       };
       
       try {
@@ -484,15 +489,26 @@ function Canvas() {
           
           {/* Render shape being drawn */}
           {isDrawing && newShape && (
-            <Rect
-              x={newShape.x}
-              y={newShape.y}
-              width={newShape.width}
-              height={newShape.height}
-              fill={newShape.color}
-              opacity={0.6}
-              listening={false}
-            />
+            newShape.type === SHAPE_TYPES.CIRCLE ? (
+              <Circle
+                x={newShape.x + newShape.width / 2}
+                y={newShape.y + newShape.height / 2}
+                radius={Math.min(Math.abs(newShape.width), Math.abs(newShape.height)) / 2}
+                fill={newShape.color}
+                opacity={0.6}
+                listening={false}
+              />
+            ) : (
+              <Rect
+                x={newShape.x}
+                y={newShape.y}
+                width={newShape.width}
+                height={newShape.height}
+                fill={newShape.color}
+                opacity={0.6}
+                listening={false}
+              />
+            )
           )}
           
           {/* Render remote cursors from other users */}
@@ -562,7 +578,7 @@ function Canvas() {
         
         <button
           onClick={() => setMode('draw')}
-          title="Draw Mode (D) - Click and drag to create rectangles"
+          title="Draw Mode (D) - Click and drag to create shapes"
           style={{
             padding: '10px 16px',
             background: mode === 'draw' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'rgba(0, 0, 0, 0.7)',
@@ -579,15 +595,75 @@ function Canvas() {
             boxShadow: mode === 'draw' ? '0 4px 12px rgba(245, 158, 11, 0.4)' : 'none'
           }}
         >
-          <span style={{ fontSize: '18px' }}>🔲</span>
+          <span style={{ fontSize: '18px' }}>
+            {shapeType === SHAPE_TYPES.RECTANGLE ? '🔲' : '⚪'}
+          </span>
           <span>Draw (D)</span>
         </button>
       </div>
 
+      {/* Shape Type Toggle - Only visible in draw mode */}
+      {mode === 'draw' && (
+        <div style={{
+          position: 'absolute',
+          top: '65px',
+          left: '10px',
+          display: 'flex',
+          gap: '8px',
+          zIndex: 1000
+        }}>
+          <button
+            onClick={() => setShapeType(SHAPE_TYPES.RECTANGLE)}
+            title="Draw Rectangles"
+            style={{
+              padding: '8px 14px',
+              background: shapeType === SHAPE_TYPES.RECTANGLE ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'rgba(0, 0, 0, 0.7)',
+              color: 'white',
+              border: shapeType === SHAPE_TYPES.RECTANGLE ? '2px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: shapeType === SHAPE_TYPES.RECTANGLE ? 'bold' : 'normal',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s',
+              boxShadow: shapeType === SHAPE_TYPES.RECTANGLE ? '0 4px 12px rgba(245, 158, 11, 0.4)' : 'none'
+            }}
+          >
+            <span style={{ fontSize: '16px' }}>🔲</span>
+            <span>Rectangle</span>
+          </button>
+          
+          <button
+            onClick={() => setShapeType(SHAPE_TYPES.CIRCLE)}
+            title="Draw Circles"
+            style={{
+              padding: '8px 14px',
+              background: shapeType === SHAPE_TYPES.CIRCLE ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'rgba(0, 0, 0, 0.7)',
+              color: 'white',
+              border: shapeType === SHAPE_TYPES.CIRCLE ? '2px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: shapeType === SHAPE_TYPES.CIRCLE ? 'bold' : 'normal',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s',
+              boxShadow: shapeType === SHAPE_TYPES.CIRCLE ? '0 4px 12px rgba(245, 158, 11, 0.4)' : 'none'
+            }}
+          >
+            <span style={{ fontSize: '16px' }}>⚪</span>
+            <span>Circle</span>
+          </button>
+        </div>
+      )}
+
       {/* Unified Stats Panel */}
       <div style={{
         position: 'absolute',
-        top: '65px',
+        top: mode === 'draw' ? '120px' : '65px',
         left: '10px',
         background: 'rgba(0, 0, 0, 0.85)',
         color: 'white',
@@ -661,7 +737,7 @@ function Canvas() {
         maxWidth: '550px'
       }}>
         <strong style={{ fontSize: '16px' }}>
-          {mode === 'pan' ? '✋ Pan Mode' : mode === 'move' ? '🔄 Move Mode' : '🔲 Draw Mode'}
+          {mode === 'pan' ? '✋ Pan Mode' : mode === 'move' ? '🔄 Move Mode' : (shapeType === SHAPE_TYPES.RECTANGLE ? '🔲 Draw Mode' : '⚪ Draw Mode')}
         </strong>
         <br />
         <span style={{ fontSize: '13px', opacity: 0.95, lineHeight: '1.6' }}>
@@ -669,7 +745,7 @@ function Canvas() {
             ? 'Drag canvas to pan • Click shapes to select (auto-switches to Move) • Scroll to zoom'
             : mode === 'move'
             ? 'Drag selected shapes to move • Click other shapes to select • Canvas will NOT pan'
-            : 'Click & drag on empty space to create rectangles • Canvas will NOT pan'}
+            : `Click & drag on empty space to create ${shapeType === SHAPE_TYPES.RECTANGLE ? 'rectangles' : 'circles'} • Canvas will NOT pan`}
         </span>
         <br />
         <span style={{ fontSize: '11px', opacity: 0.75, marginTop: '4px', display: 'block' }}>

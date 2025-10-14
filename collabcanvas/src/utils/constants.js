@@ -30,6 +30,12 @@ export const DEFAULT_SHAPE_WIDTH = 100;
 export const DEFAULT_SHAPE_HEIGHT = 100;
 export const DEFAULT_SHAPE_COLOR = SHAPE_COLORS[0];
 
+// Shape types
+export const SHAPE_TYPES = {
+  RECTANGLE: 'rectangle',
+  CIRCLE: 'circle',
+};
+
 // Cursor update throttle (ms)
 export const CURSOR_UPDATE_THROTTLE = 50;
 
