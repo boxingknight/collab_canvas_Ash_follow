@@ -34,8 +34,7 @@
 - ✅ PR #11 (Line Shapes): `/PR_PARTY/PR11_LINE_SHAPES.md` - Complete & Deployed
 - ✅ PR #12 (Text Shapes): `/PR_PARTY/PR12_TEXT_SHAPES.md` - Complete & Deployed
 - ✅ PR #13 (Multi-Select): `/PR_PARTY/PR13_MULTI_SELECT.md` - Complete with status report!
-- ✅ Marquee Selection: **BONUS - Delivered early as part of PR #13!**
-- 📝 PR #14: [PLACEHOLDER] - Reserved for future feature (TBD)
+- ✅ PR #14 (Marquee Selection): `/PR_PARTY/PR14_MARQUEE_SELECTION.md` - Delivered early as part of PR #13!
 - ✅ PR #15 (Rotation Support): `/PR_PARTY/PR15_ROTATION_SUPPORT.md` - COMPLETE & Deployed!
 
 ---
@@ -51,9 +50,8 @@
 2. ✅ **PR #11 COMPLETED** - Line shapes (fully implemented with drag endpoints, locking, sync)
 3. ✅ **PR #12 COMPLETED** - Text shapes (inline editing, font customization, deployed!)
 4. ✅ **PR #13 COMPLETED** - Multi-select with 10x performance improvements!
-5. ✅ **Marquee Selection COMPLETED (BONUS!)** - Delivered early as part of PR #13!
-6. 📝 **PR #14 PLACEHOLDER** - Reserved for future feature (TBD)
-7. ✅ **PR #15 COMPLETED** - Rotation Support (all shapes rotate, multiplayer sync working!)
+5. ✅ **PR #14 COMPLETED** - Marquee Selection (delivered early as part of PR #13!)
+6. ✅ **PR #15 COMPLETED** - Rotation Support (all shapes rotate, multiplayer sync working!)
 8. 🎯 **NEXT UP** - Duplicate operation (PR #16), then AI service integration
 
 ## Recent Changes

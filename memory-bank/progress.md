@@ -702,8 +702,8 @@ This is the **most important feature** and the key differentiator for the projec
 1. ✅ MVP features (DONE)
 2. ✅ Lines (PR #11) - DONE
 3. ✅ Text (PR #12) - DONE
-4. ✅ **Multi-select (PR #13)** - DONE + BONUS marquee selection!
-5. 📝 PR #14 - PLACEHOLDER (Reserved)
+4. ✅ **Multi-select (PR #13)** - DONE with 10x performance!
+5. ✅ **Marquee Selection (PR #14)** - DONE (Delivered early in PR #13!)
 6. ✅ **Rotation (PR #15)** - DONE! 🎉
 7. ⏳ Duplicate (PR #16) - NEXT
 8. ❌ **AI service integration (PR #18)** - CRITICAL
@@ -779,8 +779,8 @@ This is the **most important feature** and the key differentiator for the projec
 ### Immediate (Start Here) 🚀
 1. ✅ ~~PR #11: Line Shape Support~~ DONE
 2. ✅ ~~PR #12: Text Shape Support~~ DONE
-3. ✅ ~~PR #13: Multi-Select~~ DONE + BONUS
-4. 📝 **PR #14: [PLACEHOLDER]** - Reserved for future feature (TBD)
+3. ✅ ~~PR #13: Multi-Select~~ DONE
+4. ✅ ~~**PR #14: Marquee Selection**~~ DONE (Delivered early in PR #13!)
 5. ✅ ~~**PR #15: Rotation Support**~~ DONE! (3 hours actual)
 
 ### Critical (Don't Skip)

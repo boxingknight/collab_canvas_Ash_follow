@@ -7,12 +7,14 @@ CollabCanvas is a real-time collaborative drawing application that allows multip
 ### Core Functionality
 - **Real-time Collaboration**: Multiple users can work on the same canvas simultaneously
 - **Infinite Canvas**: Large 5000x5000px workspace with smooth pan and zoom
-- **Shape Creation**: Click and drag to create rectangles and circles
-- **Shape Types**: Support for multiple shape types (rectangles, circles) with easy-to-use shape selector
-- **Shape Manipulation**: Move, select, resize, and delete shapes with intuitive controls
+- **Complete Shape Library**: Rectangles, circles, lines, and text shapes
+- **Advanced Selection**: Single-select, multi-select (shift-click), and marquee selection (drag-to-select)
+- **Shape Transformations**: Move, resize, rotate, and delete shapes with intuitive controls
+- **Text Editing**: Double-click to edit text inline with auto-resize and formatting
+- **Line Tools**: Draggable endpoint anchors for precise line positioning
 - **Selection-First Interaction**: Professional click-to-select, then drag-to-move pattern (like Figma/Sketch)
-- **Multiplayer Cursors**: See other users' cursor positions in real-time
-- **User Presence**: View list of currently online collaborators
+- **Multiplayer Cursors**: See other users' cursor positions in real-time with names
+- **User Presence**: View list of currently online collaborators with avatars
 
 ### Performance
 - **60 FPS**: Maintains smooth performance with 500+ shapes
@@ -23,11 +25,13 @@ CollabCanvas is a real-time collaborative drawing application that allows multip
 ### User Experience
 - **Three Interaction Modes**:
   - **Pan Mode (V)**: Drag canvas to navigate, scroll to zoom
-  - **Move Mode (M)**: Click to select, then drag to move or resize shapes
-  - **Draw Mode (D)**: Choose shape type (rectangle/circle), click and drag to create
-- **Keyboard Shortcuts**: Quick mode switching and shape deletion
-- **Visual Feedback**: Selection indicators, transformer handles, mode indicators, and online user count
+  - **Move Mode (M)**: Select, move, resize, and rotate shapes
+  - **Draw Mode (D)**: Create rectangles, circles, lines, or text shapes
+- **Rich Keyboard Shortcuts**: Mode switching, selection, deletion, and more
+- **Visual Feedback**: Multi-colored selection borders, transformer handles with rotation, snap guides, and selection counts
 - **Smart Drag Detection**: 3px threshold prevents accidental drags on click
+- **Group Operations**: Move and delete multiple shapes simultaneously
+- **Rotation Snapping**: Shapes snap to 45° increments for precise alignment
 - **Dark Theme**: Eye-friendly dark interface
 
 ## 🚀 Live Demo
@@ -148,16 +152,22 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 #### Move Mode (Press M)
 - **Select shapes**: Click on a shape to select it (shows blue border and transformer handles)
-- **Drag shapes**: Click and drag selected shapes to move them
+- **Multi-select**: Shift+click to add/remove shapes, or drag a marquee box to select multiple
+- **Drag shapes**: Click and drag selected shapes to move them (groups move together)
 - **Resize shapes**: Drag transformer corner handles to resize
+- **Rotate shapes**: Drag rotation handle at top (snaps to 45° increments)
+- **Edit text**: Double-click text shapes to edit inline
+- **Edit lines**: Drag colored circle endpoints to adjust line position
 - Selection-first pattern: must select before dragging (prevents accidental moves)
 - Canvas does NOT pan in this mode
 
 #### Draw Mode (Press D)
-- **Choose shape type**: Click rectangle 🔲 or circle ⚪ button to select shape type
+- **Choose shape type**: Select from rectangle 🔲, circle ⚪, line ➖, or text 📝
 - **Create shapes**: Click and drag on empty space to create shapes
-- **Rectangle**: Drag to create rectangular shapes
-- **Circle**: Drag to create circular shapes (based on smaller dimension for perfect circles)
+- **Rectangle**: Drag to create rectangular shapes with any aspect ratio
+- **Circle**: Drag to create perfect circular shapes
+- **Line**: Click-drag from start point to end point, edit endpoints after creation
+- **Text**: Click to place, type text, double-click to edit later
 - Random colors assigned automatically
 - Canvas does NOT pan in this mode
 
@@ -168,8 +178,11 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 | `V` | Switch to Pan Mode |
 | `M` | Switch to Move Mode |
 | `D` | Switch to Draw Mode |
-| `Esc` | Return to Pan Mode + Deselect shape |
-| `Delete` / `Backspace` | Delete selected shape |
+| `Esc` | Return to Pan Mode + Deselect all shapes |
+| `Delete` / `Backspace` | Delete selected shape(s) |
+| `Shift + Click` | Add/remove shapes from selection |
+| `Cmd/Ctrl + A` | Select all shapes |
+| Double-click text | Edit text inline |
 
 ### Multiplayer Features
 
@@ -305,21 +318,38 @@ collabcanvas/
 ```javascript
 {
   id: "auto-generated",
-  x: 100,              // X position (top-left corner for all shapes)
-  y: 200,              // Y position (top-left corner for all shapes)
-  width: 150,          // Width in pixels
-  height: 100,         // Height in pixels
-  color: "#646cff",    // Fill color
-  type: "rectangle",   // Shape type: "rectangle" or "circle"
+  x: 100,              // X position (top-left for rect/text/circle bounding box)
+  y: 200,              // Y position (top-left for rect/text/circle bounding box)
+  width: 150,          // Width in pixels (rect/circle/text)
+  height: 100,         // Height in pixels (rect/circle/text)
+  color: "#646cff",    // Fill color or stroke color
+  type: "rectangle",   // Shape type: "rectangle", "circle", "line", or "text"
+  rotation: 45,        // Rotation in degrees (0-359), defaults to 0
+  
+  // Line-specific fields
+  endX: 300,           // Line end X coordinate (only for lines)
+  endY: 400,           // Line end Y coordinate (only for lines)
+  strokeWidth: 2,      // Line thickness (only for lines)
+  
+  // Text-specific fields
+  text: "Hello",       // Text content (only for text)
+  fontSize: 24,        // Font size in pixels (only for text)
+  fontWeight: "normal",// Font weight: "normal" or "bold" (only for text)
+  
+  // Metadata
   createdBy: "userId", // Creator's Firebase Auth UID
   createdAt: Timestamp,
   updatedAt: Timestamp,
-  lockedBy: "userId",  // User currently dragging (prevents conflicts)
+  lockedBy: "userId",  // User currently editing (prevents conflicts)
   lockedAt: Timestamp  // Lock timestamp (auto-expires after 30s)
 }
 ```
 
-**Coordinate System Note**: All shapes store `{x, y}` as the top-left corner of their bounding box for consistency. Circles are rendered from center but stored with top-left coordinates.
+**Coordinate System Note**: 
+- **Rectangles & Text**: `{x, y}` is top-left corner
+- **Circles**: `{x, y}` is top-left of bounding box (rendered from center)
+- **Lines**: `{x, y}` is start point, `{endX, endY}` is end point
+- **Rotation**: All shapes rotate around their center point
 
 ### cursors
 ```javascript
@@ -394,7 +424,7 @@ npm run lint
 
 ### Adding Features
 
-1. **New Shape Types**: Extend `Shape.jsx` with different Konva shapes (triangles, stars, etc.)
+1. **New Shape Types**: Extend `Shape.jsx` with different Konva shapes (triangles, stars, polygons, etc.)
    - Add new type to `SHAPE_TYPES` constant
    - Add rendering logic in `Shape.jsx`
    - Update shape type selector UI
@@ -402,19 +432,44 @@ npm run lint
 3. **Undo/Redo**: Implement action history with timestamps
 4. **Export**: Add canvas export to PNG/SVG
 5. **Rooms**: Add URL-based rooms for separate canvas instances
-6. **Rotation**: Enable transformer rotation handles for shape rotation
+6. **AI Integration**: Add AI agent for natural language shape creation and manipulation
 
 ### Recent Updates
 
-#### Circle Shape Support (Latest)
-- ✅ Added circle shape type alongside rectangles
-- ✅ Shape type selector in Draw Mode (🔲 rectangle / ⚪ circle buttons)
-- ✅ Proper coordinate system handling (circles stored as bounding box, rendered from center)
-- ✅ Fixed ghost teleport issue with pending updates tracking
-- ✅ Selection-first interaction pattern (click to select, then drag to move)
-- ✅ 3px drag threshold prevents accidental drags on click
-- ✅ Immediate Firestore writes on drag end (no flicker)
-- ✅ Smart conflict resolution for real-time collaboration
+#### PR #15: Rotation Support (Latest)
+- ✅ All shape types support rotation (rectangles, circles, text)
+- ✅ Rotation handle appears on selected shapes
+- ✅ Rotation snaps to 45° increments for precision
+- ✅ Real-time multiplayer sync (<100ms)
+- ✅ Rotation persists to Firebase and survives refresh
+- ✅ No position drift on rotation
+- ✅ Text shapes now rotatable
+
+#### PR #14: Marquee Selection
+- ✅ Drag-to-select rectangle in Move mode
+- ✅ AABB collision detection for all shape types
+- ✅ Shift+marquee for additive selection
+- ✅ Scale-independent rendering
+
+#### PR #13: Multi-Select Foundation
+- ✅ Shift-click to add/remove shapes from selection
+- ✅ Cmd/Ctrl+A to select all shapes
+- ✅ Group move with zero latency (optimistic locking)
+- ✅ Group delete with batch operations
+- ✅ 20x performance improvement on drag operations
+
+#### PR #12: Text Shape Support
+- ✅ Click-to-place text creation
+- ✅ Double-click inline editing with textarea overlay
+- ✅ Font size, weight, color customization
+- ✅ Auto-resize text box and multi-line support
+- ✅ Edit locking prevents simultaneous edits
+
+#### PR #11: Line Shape Support  
+- ✅ Click-drag line creation from start to end point
+- ✅ Draggable endpoint anchors for precise editing
+- ✅ Enhanced hit detection (20px hit area)
+- ✅ Real-time sync and full locking mechanism
 
 ## 🤝 Contributing
 
