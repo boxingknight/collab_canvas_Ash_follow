@@ -21,12 +21,12 @@ export async function test1_Connection() {
 export async function test2_CanvasAPI() {
   console.log('\n=== TEST 2: Canvas API ===');
   
-  // Test rectangle creation
-  const rectResult = await canvasAPI.createRectangle(2400, 2400, 200, 150, '#FF0000', 'test-user');
+  // Test rectangle creation (null userId = use current authenticated user)
+  const rectResult = await canvasAPI.createRectangle(2400, 2400, 200, 150, '#FF0000', null);
   console.log('Rectangle creation:', rectResult.success ? '✅ PASS' : '❌ FAIL', rectResult);
   
   // Test validation (should fail)
-  const invalidResult = await canvasAPI.createRectangle(-100, 2500, 200, 150, '#FF0000', 'test-user');
+  const invalidResult = await canvasAPI.createRectangle(-100, 2500, 200, 150, '#FF0000', null);
   console.log('Validation test:', !invalidResult.success ? '✅ PASS' : '❌ FAIL', invalidResult);
   
   // Test canvas center query
@@ -103,10 +103,15 @@ export async function test6_AIErrorHandling() {
     'Create a rectangle at position -1000, -1000'
   );
   
-  console.log('AI error handling:', !result.success ? '✅ PASS' : '❌ FAIL');
+  // AI should either:
+  // 1. Return success=false (if function execution failed), OR
+  // 2. Return success=true but explain the error in the message (AI caught it before executing)
+  const aiCaughtError = !result.success || (result.message && result.message.includes('out of bounds'));
+  
+  console.log('AI error handling:', aiCaughtError ? '✅ PASS' : '❌ FAIL');
   console.log('Error message:', result.message);
   
-  return !result.success; // Should fail due to invalid position
+  return aiCaughtError; // Should either fail or explain the error
 }
 
 /**
