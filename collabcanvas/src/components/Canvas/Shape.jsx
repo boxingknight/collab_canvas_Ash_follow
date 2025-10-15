@@ -539,6 +539,7 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
             verticalAlign="top"
             wrap="word"
             lineHeight={1.2}
+            rotation={shape.rotation || 0}
             draggable={canDrag && !isEditing}
             dragDistance={3}
             listening={canInteract && !isEditing}
@@ -637,6 +638,7 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
             x={shape.x + shape.width / 2}
             y={shape.y + shape.height / 2}
             radius={Math.min(shape.width, shape.height) / 2}
+            rotation={shape.rotation || 0}
           />
         ) : (
           <Rect
@@ -645,6 +647,7 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
             y={shape.y}
             width={shape.width}
             height={shape.height}
+            rotation={shape.rotation || 0}
           />
         )}
         
