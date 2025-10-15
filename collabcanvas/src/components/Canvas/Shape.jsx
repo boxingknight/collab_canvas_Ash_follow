@@ -25,6 +25,8 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
   // Determine shape type early (needed for useEffect)
   const shapeType = shape.type || SHAPE_TYPES.RECTANGLE;
   const isText = shapeType === SHAPE_TYPES.TEXT;
+  const isCircle = shapeType === SHAPE_TYPES.CIRCLE;
+  const isLine = shapeType === SHAPE_TYPES.LINE;
   
   // CRITICAL: Use callback ref for SYNCHRONOUS registration
   // Empty deps array ensures callback is stable (never recreates)
@@ -78,7 +80,8 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
             y: node.y(),
             width: newWidth,
             height: newHeight,
-            fontSize: newFontSize
+            fontSize: newFontSize,
+            rotation: node.rotation() % 360
           };
           
           console.log('[TEXT TRANSFORM] Sending updates:', updates);
@@ -96,9 +99,65 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
         return () => {
           node.off('transformend', handleTransform);
         };
+      } else if (node && !isText && !isLine) {
+        // For non-text, non-line shapes (rectangles and circles)
+        const handleTransform = () => {
+          console.log('[SHAPE TRANSFORM] Transform event fired for', shape.type);
+          
+          // Get current transform properties
+          const scaleX = node.scaleX();
+          const scaleY = node.scaleY();
+          const rotation = node.rotation() % 360;
+          
+          console.log('[SHAPE TRANSFORM] Scale:', scaleX, scaleY, 'Rotation:', rotation);
+          
+          // Calculate new dimensions
+          const newWidth = Math.max(5, node.width() * scaleX);
+          const newHeight = Math.max(5, node.height() * scaleY);
+          
+          // Reset scale to 1 (Konva best practice)
+          node.scaleX(1);
+          node.scaleY(1);
+          
+          // For circles, node.x() and node.y() are center coordinates
+          // We need to convert them back to top-left for consistent storage
+          let newX = node.x();
+          let newY = node.y();
+          
+          if (isCircle) {
+            // Circle is rendered at center, so convert back to top-left
+            newX = node.x() - newWidth / 2;
+            newY = node.y() - newHeight / 2;
+            console.log('[SHAPE TRANSFORM] Circle center:', node.x(), node.y(), '-> top-left:', newX, newY);
+          }
+          
+          const updates = {
+            id: shape.id,
+            x: newX,
+            y: newY,
+            width: newWidth,
+            height: newHeight,
+            rotation: rotation
+          };
+          
+          console.log('[SHAPE TRANSFORM] Sending updates:', updates);
+          
+          if (onDragEnd) {
+            onDragEnd(updates);
+          } else {
+            console.log('[SHAPE TRANSFORM] No onDragEnd handler!');
+          }
+        };
+        
+        node.on('transformend', handleTransform);
+        
+        // Cleanup
+        return () => {
+          node.off('transformend', handleTransform);
+        };
       }
     }
-  }, [isSelected, isText, shape.id, onDragEnd]);
+  }, [isSelected, isText, isCircle, shape.id, onDragEnd]);
 
   function handleClick(e) {
     // CRITICAL: Stop ALL event propagation
@@ -236,10 +295,6 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
   // IMPORTANT: Only allow dragging if shape is SELECTED (prevents accidental drags on click)
   const canDrag = isDraggable && isSelected && !isLockedByOther;
   const canInteract = isInteractive && !isLockedByOther;
-
-  // Determine shape type (default to rectangle for backward compatibility)
-  const isCircle = shapeType === SHAPE_TYPES.CIRCLE;
-  const isLine = shapeType === SHAPE_TYPES.LINE;
 
   /**
    * COORDINATE SYSTEM NOTES:
@@ -494,6 +549,7 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
             verticalAlign="top"
             wrap="word"
             lineHeight={1.2}
+            rotation={shape.rotation || 0}
             draggable={canDrag && !isEditing}
             dragDistance={3}
             listening={canInteract && !isEditing}
@@ -551,7 +607,8 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
           <Transformer
             ref={transformerRef}
             enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']}
-            rotateEnabled={false}  // No rotation for now
+            rotateEnabled={true}
+            rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
             borderStroke="#646cff"
             borderStrokeWidth={2}
           />
@@ -592,6 +649,7 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
             x={shape.x + shape.width / 2}
             y={shape.y + shape.height / 2}
             radius={Math.min(shape.width, shape.height) / 2}
+            rotation={shape.rotation || 0}
           />
         ) : (
           <Rect
@@ -600,6 +658,7 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
             y={shape.y}
             width={shape.width}
             height={shape.height}
+            rotation={shape.rotation || 0}
           />
         )}
         
@@ -640,6 +699,8 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
       {isSelected && !isLockedByOther && (
         <Transformer
           ref={transformerRef}
+          rotateEnabled={true}
+          rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
           borderStroke="#646cff"
           borderStrokeWidth={2}
           anchorStroke="#646cff"
@@ -662,6 +723,7 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
       prevProps.shape.endY === nextProps.shape.endY &&
       prevProps.shape.color === nextProps.shape.color &&
       prevProps.shape.strokeWidth === nextProps.shape.strokeWidth &&
+      prevProps.shape.rotation === nextProps.shape.rotation &&
       prevProps.shape.lockedBy === nextProps.shape.lockedBy &&
       prevProps.isSelected === nextProps.isSelected &&
       prevProps.isMultiSelect === nextProps.isMultiSelect &&
@@ -683,6 +745,7 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
       prevProps.shape.fontSize === nextProps.shape.fontSize &&
       prevProps.shape.fontWeight === nextProps.shape.fontWeight &&
       prevProps.shape.color === nextProps.shape.color &&
+      prevProps.shape.rotation === nextProps.shape.rotation &&
       prevProps.shape.lockedBy === nextProps.shape.lockedBy &&
       prevProps.isSelected === nextProps.isSelected &&
       prevProps.isMultiSelect === nextProps.isMultiSelect &&
@@ -701,6 +764,7 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
     prevProps.shape.height === nextProps.shape.height &&
     prevProps.shape.color === nextProps.shape.color &&
     prevProps.shape.type === nextProps.shape.type &&
+    prevProps.shape.rotation === nextProps.shape.rotation &&
     prevProps.shape.lockedBy === nextProps.shape.lockedBy &&
     prevProps.isSelected === nextProps.isSelected &&
     prevProps.isMultiSelect === nextProps.isMultiSelect &&
