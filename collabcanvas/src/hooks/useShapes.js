@@ -338,6 +338,140 @@ function useShapes(user) {
     }
   }, [user, shapes, addShapesBatch]);
 
+  /**
+   * Bring selected shapes forward by one layer (increment zIndex by 1)
+   * @param {Array<string>} shapeIds - Array of shape IDs to bring forward
+   */
+  const bringForward = useCallback(async (shapeIds) => {
+    if (!user) {
+      console.error('Cannot bring forward: user not authenticated');
+      return;
+    }
+
+    if (!shapeIds || shapeIds.length === 0) {
+      console.log('No shapes selected to bring forward');
+      return;
+    }
+
+    try {
+      const updates = shapeIds.map(id => {
+        const shape = shapes.find(s => s.id === id);
+        if (!shape) return null;
+        return { id, zIndex: (shape.zIndex ?? 0) + 1 };
+      }).filter(Boolean);
+
+      // Batch update all shapes
+      await Promise.all(
+        updates.map(({ id, zIndex }) =>
+          updateShapeInFirestore(id, { zIndex })
+        )
+      );
+      
+      console.log(`Brought ${updates.length} shape(s) forward`);
+    } catch (error) {
+      console.error('Failed to bring forward:', error);
+    }
+  }, [user, shapes]);
+
+  /**
+   * Send selected shapes backward by one layer (decrement zIndex by 1, min 0)
+   * @param {Array<string>} shapeIds - Array of shape IDs to send backward
+   */
+  const sendBackward = useCallback(async (shapeIds) => {
+    if (!user) {
+      console.error('Cannot send backward: user not authenticated');
+      return;
+    }
+
+    if (!shapeIds || shapeIds.length === 0) {
+      console.log('No shapes selected to send backward');
+      return;
+    }
+
+    try {
+      const updates = shapeIds.map(id => {
+        const shape = shapes.find(s => s.id === id);
+        if (!shape) return null;
+        return { id, zIndex: Math.max(0, (shape.zIndex ?? 0) - 1) };
+      }).filter(Boolean);
+
+      // Batch update all shapes
+      await Promise.all(
+        updates.map(({ id, zIndex }) =>
+          updateShapeInFirestore(id, { zIndex })
+        )
+      );
+      
+      console.log(`Sent ${updates.length} shape(s) backward`);
+    } catch (error) {
+      console.error('Failed to send backward:', error);
+    }
+  }, [user, shapes]);
+
+  /**
+   * Bring selected shapes to the front (set zIndex to max + 1)
+   * @param {Array<string>} shapeIds - Array of shape IDs to bring to front
+   */
+  const bringToFront = useCallback(async (shapeIds) => {
+    if (!user) {
+      console.error('Cannot bring to front: user not authenticated');
+      return;
+    }
+
+    if (!shapeIds || shapeIds.length === 0) {
+      console.log('No shapes selected to bring to front');
+      return;
+    }
+
+    try {
+      const maxZ = Math.max(...shapes.map(s => s.zIndex ?? 0));
+      const targetZ = maxZ + 1;
+
+      // Update all selected shapes to the same z-index (on top)
+      await Promise.all(
+        shapeIds.map(id =>
+          updateShapeInFirestore(id, { zIndex: targetZ })
+        )
+      );
+      
+      console.log(`Brought ${shapeIds.length} shape(s) to front (zIndex: ${targetZ})`);
+    } catch (error) {
+      console.error('Failed to bring to front:', error);
+    }
+  }, [user, shapes]);
+
+  /**
+   * Send selected shapes to the back (set zIndex to min - 1, or 0)
+   * @param {Array<string>} shapeIds - Array of shape IDs to send to back
+   */
+  const sendToBack = useCallback(async (shapeIds) => {
+    if (!user) {
+      console.error('Cannot send to back: user not authenticated');
+      return;
+    }
+
+    if (!shapeIds || shapeIds.length === 0) {
+      console.log('No shapes selected to send to back');
+      return;
+    }
+
+    try {
+      const minZ = Math.min(...shapes.map(s => s.zIndex ?? 0));
+      const targetZ = Math.max(0, minZ - 1);
+
+      // Update all selected shapes to the same z-index (on bottom)
+      await Promise.all(
+        shapeIds.map(id =>
+          updateShapeInFirestore(id, { zIndex: targetZ })
+        )
+      );
+      
+      console.log(`Sent ${shapeIds.length} shape(s) to back (zIndex: ${targetZ})`);
+    } catch (error) {
+      console.error('Failed to send to back:', error);
+    }
+  }, [user, shapes]);
+
   return {
     shapes,
     selectedShapeId,
@@ -351,7 +485,12 @@ function useShapes(user) {
     deselectShape,
     lockShape,
     unlockShape,
-    duplicateShapes
+    duplicateShapes,
+    // Layer management operations (PR #17)
+    bringForward,
+    sendBackward,
+    bringToFront,
+    sendToBack
   };
 }
 
