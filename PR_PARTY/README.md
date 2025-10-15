@@ -130,6 +130,7 @@ Each PR document follows this template:
 ## PR Status Legend
 
 - ✅ **Complete**: Implementation finished, tested, merged
+- 🎉 **Deployed**: Complete and live in production
 - ⏳ **In Progress**: Currently being implemented
 - 📋 **Planned**: Document complete, ready to start
 - 💭 **Draft**: Document in progress
@@ -145,14 +146,21 @@ Each PR document follows this template:
 ### Phase 2: Selection & Interaction
 - ✅ PR #13: Multi-Select Foundation - COMPLETE (Exceeded requirements!)
 - ✅ PR #14: Drag-Select Box (Marquee) - COMPLETE (Delivered early in PR #13!)
-- 📋 PR #15: Duplicate & Keyboard Shortcuts - Next priority
 
-### Phase 3: Rotation & Layers
-- 📋 PR #16: Rotation Support
-- 📋 PR #17: Layer Management
+### Phase 3: Advanced Editing
+- ✅ PR #15: Rotation Support - COMPLETE (All shapes rotatable, 45° snapping, multiplayer sync)
+- ✅ PR #16: Duplicate & Keyboard Shortcuts - COMPLETE (Cmd/Ctrl+D, arrow nudging, 15+ shortcuts)
+- ✅ PR #17: Layer Management - **DEPLOYED TO PRODUCTION** 🎉
+  - ✅ Right-click context menu (professional UX)
+  - ✅ Fractional zIndex (Figma approach, zero conflicts)
+  - ✅ Visual stack navigation (one click = one layer)
+  - ✅ Negative zIndex support (unlimited depth)
+  - ✅ 3 critical bugs fixed through user testing
+  - ✅ Production URL: https://collabcanvas-2ba10.web.app
+  - 📄 Documentation: PR17_LAYER_MANAGEMENT.md, PR17_BUG_ANALYSIS.md, PR17_COMPLETE.md, PR17_BUGFIX.md
 
-### Phase 4: AI Foundation (CRITICAL)
-- 📋 PR #18: AI Service Integration
+### Phase 4: AI Foundation (CRITICAL - NEXT PRIORITY)
+- 📋 PR #18: AI Service Integration - **Next to implement**
 - 📋 PR #19: AI Chat Interface
 
 ### Phase 5: AI Commands - Basic
