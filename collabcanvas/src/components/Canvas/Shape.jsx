@@ -1,5 +1,5 @@
 import { Rect, Circle, Line, Transformer, Group, Text } from 'react-konva';
-import { useRef, useEffect, memo } from 'react';
+import { useRef, useEffect, memo, useCallback } from 'react';
 import { SHAPE_TYPES, DEFAULT_STROKE_WIDTH, DEFAULT_LINE_HIT_WIDTH, DEFAULT_FONT_SIZE, DEFAULT_FONT_WEIGHT } from '../../utils/constants';
 
 // Memoized Shape component to prevent unnecessary re-renders
@@ -13,16 +13,14 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
   const shapeType = shape.type || SHAPE_TYPES.RECTANGLE;
   const isText = shapeType === SHAPE_TYPES.TEXT;
   
-  // Register this shape's node ref with parent for direct manipulation
-  useEffect(() => {
-    if (onNodeRef && shapeRef.current) {
-      onNodeRef(shapeRef.current);
+  // CRITICAL: Use callback ref instead of useEffect for SYNCHRONOUS registration
+  // This prevents race conditions where drag starts before refs are registered
+  // Pattern used by Figma, Excalidraw, and React Three Fiber
+  const handleShapeRef = useCallback((node) => {
+    shapeRef.current = node;
+    if (onNodeRef) {
+      onNodeRef(node); // Immediate, synchronous registration during render
     }
-    return () => {
-      if (onNodeRef) {
-        onNodeRef(null);
-      }
-    };
   }, [onNodeRef]);
 
   // Attach transformer to shape when selected
@@ -256,7 +254,7 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
       <>
         {/* Wrapper Group - draggable to move the whole line */}
         <Group
-          ref={shapeRef}
+          ref={handleShapeRef}
           draggable={canDrag}  // Always draggable when canDrag is true
           dragDistance={3}
           listening={canInteract}
@@ -468,7 +466,7 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
       <>
         <Group>
           <Text
-            ref={shapeRef}
+            ref={handleShapeRef}
             id={shape.id}
             x={shape.x}
             y={shape.y}
@@ -551,7 +549,7 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
   
   // Common shape props for rectangles and circles
   const commonProps = {
-    ref: shapeRef,
+    ref: handleShapeRef,
     id: shape.id,
     fill: shape.color,
     draggable: canDrag,
