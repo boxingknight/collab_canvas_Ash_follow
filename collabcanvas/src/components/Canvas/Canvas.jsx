@@ -5,6 +5,7 @@ import useShapes from '../../hooks/useShapes';
 import useCursors from '../../hooks/useCursors';
 import useAuth from '../../hooks/useAuth';
 import useSelection from '../../hooks/useSelection';
+import useKeyboard from '../../hooks/useKeyboard';
 import Shape from './Shape';
 import RemoteCursor from './RemoteCursor';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, SHAPE_COLORS, SHAPE_TYPES, DEFAULT_STROKE_WIDTH, DEFAULT_FONT_SIZE, DEFAULT_FONT_WEIGHT, DEFAULT_TEXT, MIN_TEXT_WIDTH, MIN_TEXT_HEIGHT } from '../../utils/constants';
@@ -15,7 +16,7 @@ function Canvas() {
   const staticLayerRef = useRef(null); // For caching static grid/background
   const { user } = useAuth();
   const { position, scale, updatePosition, updateScale } = useCanvas();
-  const { shapes, isLoading, addShape, addShapesBatch, updateShape, updateShapeImmediate, deleteShape, lockShape, unlockShape } = useShapes(user);
+  const { shapes, isLoading, addShape, addShapesBatch, updateShape, updateShapeImmediate, deleteShape, lockShape, unlockShape, duplicateShapes } = useShapes(user);
   const { remoteCursors, updateMyCursor } = useCursors(user);
   const { 
     selectedShapeIds, 
@@ -125,62 +126,6 @@ function Canvas() {
       staticLayerRef.current.getLayer().batchDraw();
     }
   }, []);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    function handleKeyPress(e) {
-      // Don't trigger if user is typing in an input
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      
-      // Platform-specific modifier key (Cmd on Mac, Ctrl on Windows/Linux)
-      const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
-      const modifierKey = isMac ? e.metaKey : e.ctrlKey;
-      
-      // Cmd/Ctrl + A: Select all shapes
-      if (modifierKey && e.key.toLowerCase() === 'a') {
-        e.preventDefault();
-        selectAll(shapes.map(s => s.id));
-        return;
-      }
-      
-      switch(e.key.toLowerCase()) {
-        case 'v':
-          setMode('pan');
-          break;
-        case 'm':
-          setMode('move');
-          break;
-        case 'd':
-          setMode('draw');
-          break;
-        case 'escape':
-          // Cancel marquee selection if active
-          if (isMarqueeActive) {
-            setIsMarqueeActive(false);
-            marqueeStartRef.current = null;
-            marqueeCurrentRef.current = null;
-            clearSelection();
-          } else {
-            setMode('pan');
-            clearSelection();
-          }
-          break;
-        case 'delete':
-        case 'backspace':
-          // Delete all selected shapes
-          if (selectionCount > 0) {
-            e.preventDefault(); // Prevent browser back navigation on Backspace
-            deleteSelectedShapes();
-          }
-          break;
-        default:
-          break;
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [shapes, selectionCount, clearSelection, selectAll, isMarqueeActive]);
 
   // Handle window resize
   useEffect(() => {
@@ -531,6 +476,135 @@ function Canvas() {
     // Clear selection
     clearSelection();
   }
+
+  // Duplicate selected shapes
+  async function handleDuplicate() {
+    if (selectionCount === 0) {
+      console.log('No shapes selected to duplicate');
+      return;
+    }
+
+    try {
+      console.log(`Duplicating ${selectionCount} shape(s)...`);
+      const newShapeIds = await duplicateShapes(selectedShapeIds);
+      
+      if (newShapeIds.length > 0) {
+        // Select the newly created shapes
+        setSelection(newShapeIds);
+        console.log(`Successfully duplicated ${newShapeIds.length} shape(s)`);
+      }
+    } catch (error) {
+      console.error('Failed to duplicate shapes:', error);
+    }
+  }
+
+  // Nudge selected shapes with arrow keys
+  async function handleNudge(direction, delta) {
+    if (selectionCount === 0) return;
+
+    // Calculate new positions based on direction
+    selectedShapeIds.forEach(shapeId => {
+      const shape = shapes.find(s => s.id === shapeId);
+      if (!shape) return;
+
+      // Skip locked shapes
+      if (shape.lockedBy && shape.lockedBy !== user?.uid) {
+        console.log(`Shape ${shapeId} is locked by another user`);
+        return;
+      }
+
+      let newX = shape.x;
+      let newY = shape.y;
+
+      switch (direction) {
+        case 'up':
+          newY -= delta;
+          break;
+        case 'down':
+          newY += delta;
+          break;
+        case 'left':
+          newX -= delta;
+          break;
+        case 'right':
+          newX += delta;
+          break;
+        default:
+          return;
+      }
+
+      // Constrain to canvas bounds
+      newX = Math.max(0, Math.min(CANVAS_WIDTH - (shape.width || 0), newX));
+      newY = Math.max(0, Math.min(CANVAS_HEIGHT - (shape.height || 0), newY));
+
+      // Update shape position
+      updateShape(shapeId, { x: newX, y: newY });
+    });
+  }
+
+  // Handle tool change from keyboard shortcuts
+  function handleToolChange(toolName) {
+    switch (toolName) {
+      case 'pan':
+        setMode('pan');
+        break;
+      case 'move':
+        setMode('move');
+        break;
+      case 'draw':
+        setMode('draw');
+        break;
+      case 'rectangle':
+        setMode('draw');
+        setShapeType(SHAPE_TYPES.RECTANGLE);
+        break;
+      case 'circle':
+        setMode('draw');
+        setShapeType(SHAPE_TYPES.CIRCLE);
+        break;
+      case 'line':
+        setMode('draw');
+        setShapeType(SHAPE_TYPES.LINE);
+        break;
+      case 'text':
+        setMode('draw');
+        setShapeType(SHAPE_TYPES.TEXT);
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Handle deselect from keyboard (Escape key)
+  function handleDeselect() {
+    // Cancel marquee selection if active
+    if (isMarqueeActive) {
+      setIsMarqueeActive(false);
+      marqueeStartRef.current = null;
+      marqueeCurrentRef.current = null;
+      clearSelection();
+    } else {
+      setMode('pan');
+      clearSelection();
+    }
+  }
+
+  // Handle select all from keyboard (Cmd/Ctrl+A)
+  function handleSelectAll() {
+    selectAll(shapes.map(s => s.id));
+  }
+
+  // Integrate keyboard shortcuts
+  const isTextEditing = editingTextId !== null;
+  useKeyboard({
+    onDuplicate: handleDuplicate,
+    onDelete: deleteSelectedShapes,
+    onSelectAll: handleSelectAll,
+    onDeselect: handleDeselect,
+    onNudge: handleNudge,
+    onToolChange: handleToolChange,
+    isTextEditing
+  });
 
   // Handle shape drag start
   function handleShapeDragStart(shapeId) {

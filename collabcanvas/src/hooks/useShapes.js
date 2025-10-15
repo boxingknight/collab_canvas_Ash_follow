@@ -281,6 +281,63 @@ function useShapes(user) {
     }
   }, [user]);
 
+  /**
+   * Duplicate selected shapes with offset
+   * Creates copies of shapes offset by 20px diagonal (x+20, y+20)
+   * @param {Array<string>} shapeIds - Array of shape IDs to duplicate
+   * @returns {Promise<Array<string>>} Array of new shape IDs
+   */
+  const duplicateShapes = useCallback(async (shapeIds) => {
+    if (!user) {
+      console.error('Cannot duplicate shapes: user not authenticated');
+      return [];
+    }
+
+    if (!shapeIds || shapeIds.length === 0) {
+      console.log('No shapes selected to duplicate');
+      return [];
+    }
+
+    try {
+      // Find shapes to duplicate
+      const shapesToDuplicate = shapes.filter(shape => shapeIds.includes(shape.id));
+      
+      if (shapesToDuplicate.length === 0) {
+        console.log('No shapes found to duplicate');
+        return [];
+      }
+
+      // Create copies with offset and clean fields
+      const newShapes = shapesToDuplicate.map(shape => {
+        // Remove Firestore-specific fields
+        const { id, createdAt, updatedAt, createdBy, lockedBy, lockedAt, ...shapeData } = shape;
+        
+        // Offset position by 20px diagonal
+        return {
+          ...shapeData,
+          x: shape.x + 20,
+          y: shape.y + 20,
+          // For lines, also offset endpoints
+          ...(shape.type === 'line' && {
+            endX: shape.endX + 20,
+            endY: shape.endY + 20
+          })
+        };
+      });
+
+      console.log(`Duplicating ${newShapes.length} shapes...`);
+      
+      // Use batch operation for performance
+      const newShapeIds = await addShapesBatch(newShapes);
+      
+      console.log(`Successfully duplicated ${newShapeIds.length} shapes`);
+      return newShapeIds;
+    } catch (error) {
+      console.error('Failed to duplicate shapes:', error.message);
+      return [];
+    }
+  }, [user, shapes, addShapesBatch]);
+
   return {
     shapes,
     selectedShapeId,
@@ -293,7 +350,8 @@ function useShapes(user) {
     selectShape,
     deselectShape,
     lockShape,
-    unlockShape
+    unlockShape,
+    duplicateShapes
   };
 }
 

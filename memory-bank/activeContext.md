@@ -36,6 +36,7 @@
 - ✅ PR #13 (Multi-Select): `/PR_PARTY/PR13_MULTI_SELECT.md` - Complete with status report!
 - ✅ PR #14 (Marquee Selection): `/PR_PARTY/PR14_MARQUEE_SELECTION.md` - Delivered early as part of PR #13!
 - ✅ PR #15 (Rotation Support): `/PR_PARTY/PR15_ROTATION_SUPPORT.md` - COMPLETE & Deployed!
+- 📋 PR #16 (Duplicate & Shortcuts): `/PR_PARTY/PR16_DUPLICATE_SHORTCUTS.md` - Planning Complete, Ready to Code!
 
 ---
 
@@ -52,7 +53,8 @@
 4. ✅ **PR #13 COMPLETED** - Multi-select with 10x performance improvements!
 5. ✅ **PR #14 COMPLETED** - Marquee Selection (delivered early as part of PR #13!)
 6. ✅ **PR #15 COMPLETED** - Rotation Support (all shapes rotate, multiplayer sync working!)
-8. 🎯 **NEXT UP** - Duplicate operation (PR #16), then AI service integration
+7. 🎯 **PR #16 READY** - Duplicate & Keyboard Shortcuts (comprehensive plan complete!)
+8. 🎯 **NEXT UP** - Execute PR #16, then AI service integration (CRITICAL)
 
 ## Recent Changes
 
@@ -206,33 +208,41 @@
 **Status**: Reserved for future feature (TBD)  
 **Purpose**: Space reserved in numbering sequence
 
-#### PR #15: Rotation Support 📋 READY
-**Status**: Planning complete, comprehensive PR document created  
-**Branch**: `feat/rotation`  
-**Estimated**: 2 hours  
+#### PR #15: Rotation Support ✅ COMPLETE
+**Status**: COMPLETE - All features delivered  
+**Branch**: `feat/rotation-v3` (merged)  
+**Actual Time**: 3 hours (with testing and bug fixes)  
 **Risk**: LOW (straightforward, proven patterns)
 
-**Features**:
+**Features Delivered**:
 - ✅ Add rotation field to shape schema (0-359 degrees)
 - ✅ Enable Transformer rotation handles
 - ✅ Apply rotation to all shape types (rect, circle, line, text)
-- ✅ Keyboard shortcuts (Cmd+], Cmd+[) for 90° rotation
-- ✅ Group rotation for multi-select
-- ✅ Rotation snapping (45° increments with Shift)
+- ✅ Rotation snapping (45° increments)
 - ✅ Real-time sync across users
 - ✅ Locking integration
+- ✅ 3 critical bugs fixed (persistence, position drift, canvas crash)
 
-**Documentation**: `/PR_PARTY/PR15_ROTATION_SUPPORT.md` (50+ pages, comprehensive)
+**Documentation**: `/PR_PARTY/PR15_ROTATION_SUPPORT.md` (complete with bug analysis)
 
-#### PR #16: Duplicate & Keyboard Shortcuts
-- Implement duplicate functionality
-- Create keyboard shortcuts hook
-- Add Cmd+D for duplicate
-- Add tool shortcuts (V, M, D, R, C, L, T) - **some already working**
-- Add arrow key nudging (1px, 10px with Shift)
-- Disable shortcuts during text editing
+#### PR #16: Duplicate & Keyboard Shortcuts 🎯 READY TO START
+**Status**: Planning complete, comprehensive PR document created  
+**Branch**: `feat/duplicate-shortcuts` (to be created)  
+**Estimated**: 2-3 hours  
+**Risk**: LOW (straightforward implementation, proven patterns)
 
-**Estimated**: 2-3 hours
+**Features**:
+- 📋 Duplicate functionality (Cmd+D, works with multi-select)
+- 📋 Create useKeyboard hook (centralized shortcuts management)
+- 📋 Platform detection (Mac vs Windows/Linux)
+- 📋 Arrow key nudging (1px, 10px with Shift)
+- 📋 Tool shortcuts (R, C, L, T for shape types)
+- 📋 Context awareness (disable during text editing)
+- 📋 Preserve all properties on duplicate (color, rotation, etc.)
+
+**Documentation**: `/PR_PARTY/PR16_DUPLICATE_SHORTCUTS.md` (comprehensive, 400+ lines)
+
+**Ready to Start**: Yes - all planning complete
 
 #### PR #17: Layer Management
 - Add zIndex field to shape schema
@@ -534,12 +544,12 @@ Track these throughout development:
 
 ### When Resuming Work
 1. Read through all memory bank files (especially this one)
-2. Review `/PR_PARTY/PR15_ROTATION_SUPPORT.md` - comprehensive implementation plan
+2. Review `/PR_PARTY/PR16_DUPLICATE_SHORTCUTS.md` - comprehensive implementation plan
 3. Check progress.md for what's done vs what's left
-4. **Start with PR #15 (Rotation)** - planning complete, ready to implement!
+4. **Start with PR #16 (Duplicate & Shortcuts)** - planning complete, ready to implement!
 5. Work through PRs sequentially - each builds on previous
 6. Keep AI integration in mind - design for programmability
-7. **Note**: PR #14 is reserved as placeholder for future feature
+7. **Critical**: After PR #16, move immediately to AI integration (PRs #18-24)
 
 ### Quick Context Recovery
 - **What we built**: Real-time collaborative canvas with 4 shape types, multi-select, marquee selection
