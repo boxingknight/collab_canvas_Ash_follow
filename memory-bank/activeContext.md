@@ -34,7 +34,9 @@
 - ✅ PR #11 (Line Shapes): `/PR_PARTY/PR11_LINE_SHAPES.md` - Complete & Deployed
 - ✅ PR #12 (Text Shapes): `/PR_PARTY/PR12_TEXT_SHAPES.md` - Complete & Deployed
 - ✅ PR #13 (Multi-Select): `/PR_PARTY/PR13_MULTI_SELECT.md` - Complete with status report!
-- ✅ PR #14 (Marquee Selection): **BONUS - Delivered early as part of PR #13!**
+- ✅ Marquee Selection: **BONUS - Delivered early as part of PR #13!**
+- 📝 PR #14: [PLACEHOLDER] - Reserved for future feature (TBD)
+- 📋 PR #15 (Rotation Support): `/PR_PARTY/PR15_ROTATION_SUPPORT.md` - Planning complete!
 
 ---
 
@@ -42,21 +44,23 @@
 
 ### MAJOR MILESTONE: Multi-Select Complete! 🎉
 
-**Current Sprint**: Core shapes + multi-select complete! Performance optimized! Ready for AI integration.
+**Current Sprint**: Core shapes + multi-select complete! Performance optimized! Ready for transformations then AI integration.
 
 **Priority Order:**
 1. ✅ **MVP Completed** - Rectangles, circles, real-time sync, multiplayer cursors
 2. ✅ **PR #11 COMPLETED** - Line shapes (fully implemented with drag endpoints, locking, sync)
 3. ✅ **PR #12 COMPLETED** - Text shapes (inline editing, font customization, deployed!)
 4. ✅ **PR #13 COMPLETED** - Multi-select with 10x performance improvements!
-5. ✅ **PR #14 COMPLETED (BONUS!)** - Marquee selection (delivered early!)
-6. 🎯 **NEXT CRITICAL** - Rotation, then AI service integration
+5. ✅ **Marquee Selection COMPLETED (BONUS!)** - Delivered early as part of PR #13!
+6. 📝 **PR #14 PLACEHOLDER** - Reserved for future feature (TBD)
+7. 📋 **PR #15 READY** - Rotation Support (planning complete, ready to implement!)
+8. 🎯 **NEXT UP** - Rotation implementation (2 hours), then Duplicate, then AI service integration
 
 ## Recent Changes
 
 ### PR #13: Multi-Select Foundation (Just Completed! 🎉)
 **Time Taken**: ~3 hours  
-**Result**: **EXCEEDED REQUIREMENTS** - Delivered PR #14 early!
+**Result**: **EXCEEDED REQUIREMENTS** - Delivered marquee selection (bonus feature) early!
 
 **Core Features Implemented:**
 - ✅ `useSelection` hook with 7 methods + 4 computed values
@@ -71,8 +75,8 @@
 - ✅ 60 FPS maintained (10x performance improvement)
 - ✅ Real-time sync working perfectly
 
-**BONUS Features (PR #14 delivered early!):**
-- ✅ Marquee selection (drag-to-select rectangle)
+**BONUS Features (Marquee selection delivered early!):**
+- ✅ Marquee selection (drag-to-select rectangle - originally planned as separate PR)
 - ✅ Canvas-native Konva rect (Figma pattern)
 - ✅ AABB intersection detection
 - ✅ Mode-aware (move mode only, not pan/draw)
@@ -172,7 +176,29 @@
 
 ### Week 1, Day 3-4: Transformations & Keyboard
 
-#### PR #15: Duplicate & Keyboard Shortcuts
+#### PR #14: [PLACEHOLDER] 📝
+**Status**: Reserved for future feature (TBD)  
+**Purpose**: Space reserved in numbering sequence
+
+#### PR #15: Rotation Support 📋 READY
+**Status**: Planning complete, comprehensive PR document created  
+**Branch**: `feat/rotation`  
+**Estimated**: 2 hours  
+**Risk**: LOW (straightforward, proven patterns)
+
+**Features**:
+- ✅ Add rotation field to shape schema (0-359 degrees)
+- ✅ Enable Transformer rotation handles
+- ✅ Apply rotation to all shape types (rect, circle, line, text)
+- ✅ Keyboard shortcuts (Cmd+], Cmd+[) for 90° rotation
+- ✅ Group rotation for multi-select
+- ✅ Rotation snapping (45° increments with Shift)
+- ✅ Real-time sync across users
+- ✅ Locking integration
+
+**Documentation**: `/PR_PARTY/PR15_ROTATION_SUPPORT.md` (50+ pages, comprehensive)
+
+#### PR #16: Duplicate & Keyboard Shortcuts
 - Implement duplicate functionality
 - Create keyboard shortcuts hook
 - Add Cmd+D for duplicate
@@ -181,15 +207,6 @@
 - Disable shortcuts during text editing
 
 **Estimated**: 2-3 hours
-
-#### PR #16: Rotation Support
-- Add rotation field to shape schema
-- Update Shape component to apply rotation
-- Enable Transformer rotation handles
-- Implement group rotation
-- Test sync
-
-**Estimated**: 2 hours
 
 #### PR #17: Layer Management
 - Add zIndex field to shape schema
@@ -350,7 +367,7 @@ All core shape features complete! Multi-select complete! Foundation is rock-soli
 - **Issue**: 4-5 days remaining, AI integration is complex
 - **Mitigation**: Clear prioritization, focus on required features first
 - **Status**: On track if we execute systematically
-- **Update**: Multi-select ahead of schedule (delivered PR #14 early!)
+- **Update**: Multi-select ahead of schedule (delivered marquee selection bonus feature early!)
 
 **Risk 2: AI API Reliability** 🟢 LOW
 - **Issue**: AI responses could be slow or fail
@@ -491,11 +508,12 @@ Track these throughout development:
 
 ### When Resuming Work
 1. Read through all memory bank files (especially this one)
-2. Review PR #13 Status Report for multi-select details
+2. Review `/PR_PARTY/PR15_ROTATION_SUPPORT.md` - comprehensive implementation plan
 3. Check progress.md for what's done vs what's left
-4. Start with PR #15 or PR #16 (rotation might be easier)
+4. **Start with PR #15 (Rotation)** - planning complete, ready to implement!
 5. Work through PRs sequentially - each builds on previous
 6. Keep AI integration in mind - design for programmability
+7. **Note**: PR #14 is reserved as placeholder for future feature
 
 ### Quick Context Recovery
 - **What we built**: Real-time collaborative canvas with 4 shape types, multi-select, marquee selection
