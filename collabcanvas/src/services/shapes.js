@@ -28,6 +28,7 @@ export async function addShape(shapeData, userId) {
       y: shapeData.y,
       color: shapeData.color,
       type: shapeData.type || 'rectangle', // Default to rectangle for backward compatibility
+      rotation: shapeData.rotation || 0, // Rotation in degrees (0-359)
       createdBy: userId,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
@@ -88,6 +89,7 @@ export async function addShapesBatch(shapesData, userId) {
           y: shapeData.y,
           color: shapeData.color,
           type: shapeData.type || 'rectangle',
+          rotation: shapeData.rotation || 0, // Rotation in degrees (0-359)
           createdBy: userId,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
