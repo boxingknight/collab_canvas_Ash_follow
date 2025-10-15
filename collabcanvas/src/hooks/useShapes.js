@@ -372,10 +372,20 @@ function useShapes(user) {
         
         let newZ;
         if (nextShapeAbove) {
-          // Move to just above the next shape (same zIndex + 0.5, will be normalized)
-          // Actually, put it at the same level, then add 0.0001 to ensure it's on top
-          // Or better: put it 1 above the next shape's zIndex
-          newZ = (nextShapeAbove.zIndex ?? 0) + 1;
+          // Find the shape above the next shape (to calculate midpoint)
+          const nextShapeAboveIndex = sortedShapes.indexOf(nextShapeAbove);
+          const shapeAboveNext = sortedShapes[nextShapeAboveIndex + 1];
+          
+          if (shapeAboveNext && !shapeIds.includes(shapeAboveNext.id)) {
+            // Insert at midpoint between next shape and shape above it
+            // This prevents conflicts even if shapes are consecutive (e.g., 5, 6)
+            const nextZ = nextShapeAbove.zIndex ?? 0;
+            const aboveZ = shapeAboveNext.zIndex ?? 0;
+            newZ = (nextZ + aboveZ) / 2;
+          } else {
+            // No shape above next, just add 1
+            newZ = (nextShapeAbove.zIndex ?? 0) + 1;
+          }
         } else {
           // No shape above, just increment by 1
           newZ = currentZ + 1;
@@ -424,7 +434,6 @@ function useShapes(user) {
         const currentZ = shape.zIndex ?? 0;
         
         // Find the previous shape below this one in the visual stack
-        // Need to reverse to find from bottom up
         const nextShapeBelow = [...sortedShapes].reverse().find(s => 
           !shapeIds.includes(s.id) && // Not in selection
           (s.zIndex ?? 0) < currentZ   // Below current shape
@@ -432,8 +441,20 @@ function useShapes(user) {
         
         let newZ;
         if (nextShapeBelow) {
-          // Move to just below the previous shape
-          newZ = (nextShapeBelow.zIndex ?? 0) - 1;
+          // Find the shape below the next shape (to calculate midpoint)
+          const nextShapeBelowIndex = sortedShapes.indexOf(nextShapeBelow);
+          const shapeBelowNext = sortedShapes[nextShapeBelowIndex - 1];
+          
+          if (shapeBelowNext && !shapeIds.includes(shapeBelowNext.id)) {
+            // Insert at midpoint between next shape and shape below it
+            // This prevents conflicts even if shapes are consecutive (e.g., 5, 6)
+            const nextZ = nextShapeBelow.zIndex ?? 0;
+            const belowZ = shapeBelowNext.zIndex ?? 0;
+            newZ = (nextZ + belowZ) / 2;
+          } else {
+            // No shape below next, just subtract 1
+            newZ = (nextShapeBelow.zIndex ?? 0) - 1;
+          }
         } else {
           // No shape below, just decrement by 1
           newZ = currentZ - 1;
