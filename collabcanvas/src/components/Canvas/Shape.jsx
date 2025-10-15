@@ -25,6 +25,8 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
   // Determine shape type early (needed for useEffect)
   const shapeType = shape.type || SHAPE_TYPES.RECTANGLE;
   const isText = shapeType === SHAPE_TYPES.TEXT;
+  const isCircle = shapeType === SHAPE_TYPES.CIRCLE;
+  const isLine = shapeType === SHAPE_TYPES.LINE;
   
   // CRITICAL: Use callback ref for SYNCHRONOUS registration
   // Empty deps array ensures callback is stable (never recreates)
@@ -293,10 +295,6 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
   // IMPORTANT: Only allow dragging if shape is SELECTED (prevents accidental drags on click)
   const canDrag = isDraggable && isSelected && !isLockedByOther;
   const canInteract = isInteractive && !isLockedByOther;
-
-  // Determine shape type (default to rectangle for backward compatibility)
-  const isCircle = shapeType === SHAPE_TYPES.CIRCLE;
-  const isLine = shapeType === SHAPE_TYPES.LINE;
 
   /**
    * COORDINATE SYSTEM NOTES:
