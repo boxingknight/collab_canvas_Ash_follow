@@ -437,7 +437,8 @@ function Canvas() {
             endY: newShape.endY,
             color: newShape.color,
             strokeWidth: DEFAULT_STROKE_WIDTH,
-            type: 'line'
+            type: 'line',
+            rotation: 0
           });
         } catch (error) {
           console.error('Failed to add line:', error.message);
@@ -454,7 +455,8 @@ function Canvas() {
           width: Math.abs(newShape.width),
           height: Math.abs(newShape.height),
           color: newShape.color,
-          type: newShape.type
+          type: newShape.type,
+          rotation: 0
         };
         
         // Add text-specific properties if this is a text shape
