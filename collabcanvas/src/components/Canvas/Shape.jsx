@@ -597,7 +597,8 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
           <Transformer
             ref={transformerRef}
             enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']}
-            rotateEnabled={false}  // No rotation for now
+            rotateEnabled={true}
+            rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
             borderStroke="#646cff"
             borderStrokeWidth={2}
           />
@@ -688,6 +689,8 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
       {isSelected && !isLockedByOther && (
         <Transformer
           ref={transformerRef}
+          rotateEnabled={true}
+          rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
           borderStroke="#646cff"
           borderStrokeWidth={2}
           anchorStroke="#646cff"
