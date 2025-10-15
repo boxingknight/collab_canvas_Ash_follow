@@ -139,13 +139,13 @@ Each PR document follows this template:
 ## Current PRs
 
 ### Phase 1: Core Shape Completion
-- ✅ PR #11: Line Shape Support - Planning complete, ready to implement
+- ✅ PR #11: Line Shape Support - COMPLETE
+- ✅ PR #12: Text Shape Support - COMPLETE
 
 ### Phase 2: Selection & Interaction
-- 📋 PR #12: Text Shape Support - Next priority
-- 📋 PR #13: Multi-Select Foundation
-- 📋 PR #14: Drag-Select Box
-- 📋 PR #15: Duplicate & Keyboard Shortcuts
+- ✅ PR #13: Multi-Select Foundation - COMPLETE (Exceeded requirements!)
+- ✅ PR #14: Drag-Select Box (Marquee) - COMPLETE (Delivered early in PR #13!)
+- 📋 PR #15: Duplicate & Keyboard Shortcuts - Next priority
 
 ### Phase 3: Rotation & Layers
 - 📋 PR #16: Rotation Support
