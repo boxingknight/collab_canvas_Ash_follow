@@ -78,7 +78,8 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
             y: node.y(),
             width: newWidth,
             height: newHeight,
-            fontSize: newFontSize
+            fontSize: newFontSize,
+            rotation: node.rotation() % 360
           };
           
           console.log('[TEXT TRANSFORM] Sending updates:', updates);
@@ -87,6 +88,50 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
             onDragEnd(updates);
           } else {
             console.log('[TEXT TRANSFORM] No onDragEnd handler!');
+          }
+        };
+        
+        node.on('transformend', handleTransform);
+        
+        // Cleanup
+        return () => {
+          node.off('transformend', handleTransform);
+        };
+      } else if (node && !isText && !isLine) {
+        // For non-text, non-line shapes (rectangles and circles)
+        const handleTransform = () => {
+          console.log('[SHAPE TRANSFORM] Transform event fired for', shape.type);
+          
+          // Get current transform properties
+          const scaleX = node.scaleX();
+          const scaleY = node.scaleY();
+          const rotation = node.rotation() % 360;
+          
+          console.log('[SHAPE TRANSFORM] Scale:', scaleX, scaleY, 'Rotation:', rotation);
+          
+          // Calculate new dimensions
+          const newWidth = Math.max(5, node.width() * scaleX);
+          const newHeight = Math.max(5, node.height() * scaleY);
+          
+          // Reset scale to 1 (Konva best practice)
+          node.scaleX(1);
+          node.scaleY(1);
+          
+          const updates = {
+            id: shape.id,
+            x: node.x(),
+            y: node.y(),
+            width: newWidth,
+            height: newHeight,
+            rotation: rotation
+          };
+          
+          console.log('[SHAPE TRANSFORM] Sending updates:', updates);
+          
+          if (onDragEnd) {
+            onDragEnd(updates);
+          } else {
+            console.log('[SHAPE TRANSFORM] No onDragEnd handler!');
           }
         };
         
