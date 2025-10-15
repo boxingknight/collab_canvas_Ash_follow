@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 import { Stage, Layer, Line, Text, Rect, Circle } from 'react-konva';
 import useCanvas from '../../hooks/useCanvas';
 import useShapes from '../../hooks/useShapes';
@@ -33,6 +33,20 @@ function Canvas() {
   const [stageSize, setStageSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [fps, setFps] = useState(60);
   const fpsCounterRef = useRef(null);
+  
+  // Sort shapes by zIndex for proper rendering order
+  // Shapes with higher zIndex render on top (appear in front)
+  const sortedShapes = useMemo(() => {
+    return [...shapes].sort((a, b) => {
+      const aZ = a.zIndex ?? 0;
+      const bZ = b.zIndex ?? 0;
+      if (aZ !== bZ) return aZ - bZ;
+      // Stable sort by creation time for shapes with same zIndex
+      const aTime = a.createdAt?.toMillis?.() ?? 0;
+      const bTime = b.createdAt?.toMillis?.() ?? 0;
+      return aTime - bTime;
+    });
+  }, [shapes]);
   
   // Track shapes currently being dragged by this user
   const activeDragRef = useRef(null);
@@ -591,7 +605,7 @@ function Canvas() {
 
   // Handle select all from keyboard (Cmd/Ctrl+A)
   function handleSelectAll() {
-    selectAll(shapes.map(s => s.id));
+    selectAll(sortedShapes.map(s => s.id));
   }
 
   // Integrate keyboard shortcuts
@@ -1129,7 +1143,7 @@ function Canvas() {
         {/* Dynamic Layer - Shapes, cursors, and interactive elements */}
         <Layer>
           {/* Render existing shapes */}
-          {shapes.map((shape) => {
+          {sortedShapes.map((shape) => {
             const isLockedByOther = shape.lockedBy && shape.lockedBy !== user?.uid;
             return (
               <Shape
