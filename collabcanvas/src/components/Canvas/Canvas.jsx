@@ -544,6 +544,15 @@ function Canvas() {
         console.error('Failed to lock shapes:', err);
       });
       
+      // Debug: Check which nodes are registered
+      const registeredNodes = selectedShapeIds.filter(id => shapeNodesRef.current[id]);
+      const missingNodes = selectedShapeIds.filter(id => !shapeNodesRef.current[id]);
+      if (missingNodes.length > 0) {
+        console.warn('[MULTI-SELECT] Missing node refs at drag start:', missingNodes);
+        console.log('[MULTI-SELECT] Registered nodes:', registeredNodes);
+        console.log('[MULTI-SELECT] All refs:', Object.keys(shapeNodesRef.current));
+      }
+      
       // Store initial positions from shape data (source of truth)
       // AND reset Konva node positions to ensure clean state
       initialPositionsRef.current = {};
@@ -612,7 +621,10 @@ function Canvas() {
     // IMPORTANT: ALL shape types must be handled here for real-time visual movement!
     if (activeDragRef.current === 'multi-select' && initialPositionsRef.current && isMultiSelect) {
       const initialPos = initialPositionsRef.current[data.id];
-      if (!initialPos) return;
+      if (!initialPos) {
+        console.warn('[MULTI-SELECT] No initial position for shape:', data.id);
+        return;
+      }
       
       // Calculate offset from initial position of the dragged shape
       const dx = data.x - initialPos.x;
@@ -624,6 +636,15 @@ function Canvas() {
         
         const node = shapeNodesRef.current[shapeId];
         const shapeInitial = initialPositionsRef.current[shapeId];
+        
+        if (!node) {
+          console.warn('[MULTI-SELECT] Missing node ref for shape:', shapeId);
+          return;
+        }
+        if (!shapeInitial) {
+          console.warn('[MULTI-SELECT] Missing initial position for shape:', shapeId);
+          return;
+        }
         
         if (node && shapeInitial) {
           // CRITICAL: Handle ALL shape types for real-time movement

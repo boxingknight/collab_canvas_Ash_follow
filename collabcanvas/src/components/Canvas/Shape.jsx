@@ -1,5 +1,5 @@
 import { Rect, Circle, Line, Transformer, Group, Text } from 'react-konva';
-import { useRef, useEffect, memo, useCallback } from 'react';
+import { useRef, useEffect, useLayoutEffect, memo, useCallback } from 'react';
 import { SHAPE_TYPES, DEFAULT_STROKE_WIDTH, DEFAULT_LINE_HIT_WIDTH, DEFAULT_FONT_SIZE, DEFAULT_FONT_WEIGHT } from '../../utils/constants';
 
 // Memoized Shape component to prevent unnecessary re-renders
@@ -8,20 +8,33 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
   const transformerRef = useRef(null);
   const lineRef = useRef(null);  // For direct line manipulation (used only for line shapes)
   const doubleClickTimerRef = useRef(null);  // Track double-click to prevent drag
+  
+  // Store latest onNodeRef in ref to avoid stale closures
+  // CRITICAL: Use useLayoutEffect (not useEffect) to run BEFORE paint
+  // This ensures onNodeRefRef is updated before any event handlers run
+  // Also call registration here as backup (redundancy is fine)
+  const onNodeRefRef = useRef(onNodeRef);
+  useLayoutEffect(() => {
+    onNodeRefRef.current = onNodeRef;
+    // Also register here as backup (in case callback ref wasn't called yet)
+    if (onNodeRef && shapeRef.current) {
+      onNodeRef(shapeRef.current);
+    }
+  }, [onNodeRef]);
 
   // Determine shape type early (needed for useEffect)
   const shapeType = shape.type || SHAPE_TYPES.RECTANGLE;
   const isText = shapeType === SHAPE_TYPES.TEXT;
   
-  // CRITICAL: Use callback ref instead of useEffect for SYNCHRONOUS registration
-  // This prevents race conditions where drag starts before refs are registered
+  // CRITICAL: Use callback ref for SYNCHRONOUS registration
+  // Empty deps array ensures callback is stable (never recreates)
+  // Store onNodeRef in ref to avoid stale closures
   // Pattern used by Figma, Excalidraw, and React Three Fiber
   const handleShapeRef = useCallback((node) => {
     shapeRef.current = node;
-    if (onNodeRef) {
-      onNodeRef(node); // Immediate, synchronous registration during render
-    }
-  }, [onNodeRef]);
+    // Call latest onNodeRef via ref (avoids stale closure)
+    onNodeRefRef.current?.(node); // Immediate, synchronous registration
+  }, []); // ← Empty deps! Callback is stable for component lifetime
 
   // Attach transformer to shape when selected
   useEffect(() => {
