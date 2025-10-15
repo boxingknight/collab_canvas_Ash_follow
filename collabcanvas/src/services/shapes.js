@@ -29,6 +29,7 @@ export async function addShape(shapeData, userId) {
       color: shapeData.color,
       type: shapeData.type || 'rectangle', // Default to rectangle for backward compatibility
       rotation: shapeData.rotation || 0, // Rotation in degrees (0-359)
+      zIndex: shapeData.zIndex ?? 0, // Layer order (default: 0)
       createdBy: userId,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
@@ -90,6 +91,7 @@ export async function addShapesBatch(shapesData, userId) {
           color: shapeData.color,
           type: shapeData.type || 'rectangle',
           rotation: shapeData.rotation || 0, // Rotation in degrees (0-359)
+          zIndex: shapeData.zIndex ?? 0, // Layer order (default: 0)
           createdBy: userId,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
