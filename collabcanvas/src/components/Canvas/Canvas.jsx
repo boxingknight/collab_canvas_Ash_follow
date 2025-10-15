@@ -8,6 +8,7 @@ import useSelection from '../../hooks/useSelection';
 import useKeyboard from '../../hooks/useKeyboard';
 import Shape from './Shape';
 import RemoteCursor from './RemoteCursor';
+import ContextMenu from './ContextMenu';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, SHAPE_COLORS, SHAPE_TYPES, DEFAULT_STROKE_WIDTH, DEFAULT_FONT_SIZE, DEFAULT_FONT_WEIGHT, DEFAULT_TEXT, MIN_TEXT_WIDTH, MIN_TEXT_HEIGHT } from '../../utils/constants';
 import { createFPSCounter, getRandomColor } from '../../utils/helpers';
 
@@ -81,6 +82,13 @@ function Canvas() {
   const [editingText, setEditingText] = useState('');
   const [textEditorPosition, setTextEditorPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const textareaRef = useRef(null);
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState({
+    visible: false,
+    x: 0,
+    y: 0
+  });
 
   // Generate grid lines
   const gridSize = 100; // Grid cell size
@@ -464,6 +472,60 @@ function Canvas() {
     // This allows users to click a shape in pan mode and immediately interact with it
     if (mode !== 'move') {
       setMode('move');
+    }
+  }
+
+  // Handle right-click on shape to show context menu
+  function handleShapeContextMenu(shapeId, event) {
+    event.evt.preventDefault(); // Prevent default browser context menu
+    
+    // If shape is not selected, select it
+    if (!isSelected(shapeId)) {
+      setSelection([shapeId]);
+    }
+    
+    // Get the pointer position relative to the viewport
+    const stage = event.target.getStage();
+    const pointerPosition = stage.getPointerPosition();
+    
+    // Convert to screen coordinates
+    const container = stage.container();
+    const rect = container.getBoundingClientRect();
+    
+    setContextMenu({
+      visible: true,
+      x: rect.left + pointerPosition.x,
+      y: rect.top + pointerPosition.y
+    });
+  }
+
+  // Close context menu
+  function closeContextMenu() {
+    setContextMenu({ visible: false, x: 0, y: 0 });
+  }
+
+  // Context menu handlers
+  function handleContextBringForward() {
+    if (selectedShapeIds.length > 0) {
+      bringForward(selectedShapeIds);
+    }
+  }
+
+  function handleContextSendBackward() {
+    if (selectedShapeIds.length > 0) {
+      sendBackward(selectedShapeIds);
+    }
+  }
+
+  function handleContextBringToFront() {
+    if (selectedShapeIds.length > 0) {
+      bringToFront(selectedShapeIds);
+    }
+  }
+
+  function handleContextSendToBack() {
+    if (selectedShapeIds.length > 0) {
+      sendToBack(selectedShapeIds);
     }
   }
   
@@ -1173,6 +1235,7 @@ function Canvas() {
                 isSelected={isSelected(shape.id)}
                 isMultiSelect={isMultiSelect}
                 onSelect={(e) => handleShapeSelect(shape.id, e)}
+                onContextMenu={(e) => handleShapeContextMenu(shape.id, e)}
                 onDragStart={() => handleShapeDragStart(shape.id)}
                 onDragMove={handleShapeDragMove}
                 onDragEnd={handleShapeDragEnd}
@@ -1715,6 +1778,21 @@ function Canvas() {
           {selectionCount} shape{selectionCount !== 1 ? 's' : ''} selected
         </div>
       )}
+
+      {/* Context Menu */}
+      <ContextMenu
+        visible={contextMenu.visible}
+        x={contextMenu.x}
+        y={contextMenu.y}
+        onClose={closeContextMenu}
+        hasSelection={selectionCount > 0}
+        onBringForward={handleContextBringForward}
+        onSendBackward={handleContextSendBackward}
+        onBringToFront={handleContextBringToFront}
+        onSendToBack={handleContextSendToBack}
+        onDuplicate={handleDuplicate}
+        onDelete={deleteSelectedShapes}
+      />
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { useRef, useEffect, useLayoutEffect, memo, useCallback } from 'react';
 import { SHAPE_TYPES, DEFAULT_STROKE_WIDTH, DEFAULT_LINE_HIT_WIDTH, DEFAULT_FONT_SIZE, DEFAULT_FONT_WEIGHT } from '../../utils/constants';
 
 // Memoized Shape component to prevent unnecessary re-renders
-const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, onSelect, onDragEnd, onDragStart, onDragMove, onTextEdit, isEditing = false, isDraggable = true, isInteractive = true, isLockedByOther = false, currentUserId, onNodeRef }) {
+const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, onSelect, onContextMenu, onDragEnd, onDragStart, onDragMove, onTextEdit, isEditing = false, isDraggable = true, isInteractive = true, isLockedByOther = false, currentUserId, onNodeRef }) {
   const shapeRef = useRef(null);
   const transformerRef = useRef(null);
   const lineRef = useRef(null);  // For direct line manipulation (used only for line shapes)
@@ -328,6 +328,7 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
           listening={canInteract}
           onClick={canInteract ? handleClick : undefined}
           onTap={canInteract ? handleClick : undefined}
+          onContextMenu={canInteract && onContextMenu ? (e) => onContextMenu(e) : undefined}
           onDragStart={handleDragStart}
           onDragMove={handleDragMove}
           onDragEnd={handleDragEnd}
@@ -555,6 +556,7 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
             listening={canInteract && !isEditing}
             onClick={canInteract && !isEditing ? handleClick : undefined}
             onTap={canInteract && !isEditing ? handleClick : undefined}
+            onContextMenu={canInteract && onContextMenu && !isEditing ? (e) => onContextMenu(e) : undefined}
             onDblClick={canInteract && !isEditing ? handleDoubleClick : undefined}
             onDblTap={canInteract && !isEditing ? handleDoubleClick : undefined}
             onDragStart={handleDragStart}
@@ -627,6 +629,7 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
     listening: canInteract,
     onClick: canInteract ? handleClick : undefined,
     onTap: canInteract ? handleClick : undefined,
+    onContextMenu: canInteract && onContextMenu ? (e) => onContextMenu(e) : undefined,
     onDragStart: handleDragStart,
     onDragMove: handleDragMove,
     onDragEnd: handleDragEnd,

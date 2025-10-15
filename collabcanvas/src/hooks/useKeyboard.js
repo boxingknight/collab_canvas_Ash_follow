@@ -74,32 +74,29 @@ export default function useKeyboard({
           return;
         }
 
-        // Layer Management Shortcuts
-        // Cmd/Ctrl+]: Bring Forward (or Bring to Front with Shift)
-        if (e.key === ']') {
-          e.preventDefault();
-          if (e.shiftKey && onBringToFront) {
-            // Cmd/Ctrl+Shift+]: Bring to Front
-            onBringToFront();
-          } else if (onBringForward) {
-            // Cmd/Ctrl+]: Bring Forward
-            onBringForward();
-          }
-          return;
-        }
-
-        // Cmd/Ctrl+[: Send Backward (or Send to Back with Shift)
-        if (e.key === '[') {
-          e.preventDefault();
-          if (e.shiftKey && onSendToBack) {
-            // Cmd/Ctrl+Shift+[: Send to Back
-            onSendToBack();
-          } else if (onSendBackward) {
-            // Cmd/Ctrl+[: Send Backward
-            onSendBackward();
-          }
-          return;
-        }
+        // Layer Management Shortcuts - DISABLED due to browser conflicts
+        // The Cmd/Ctrl+[ and Cmd/Ctrl+Shift+[ shortcuts conflict with browser tab navigation
+        // Use the right-click context menu instead for layer operations
+        // 
+        // if (e.key === ']') {
+        //   e.preventDefault();
+        //   if (e.shiftKey && onBringToFront) {
+        //     onBringToFront();
+        //   } else if (onBringForward) {
+        //     onBringForward();
+        //   }
+        //   return;
+        // }
+        //
+        // if (e.key === '[') {
+        //   e.preventDefault();
+        //   if (e.shiftKey && onSendToBack) {
+        //     onSendToBack();
+        //   } else if (onSendBackward) {
+        //     onSendBackward();
+        //   }
+        //   return;
+        // }
       }
 
       // ========== ARROW KEYS (with Shift modifier) ==========
