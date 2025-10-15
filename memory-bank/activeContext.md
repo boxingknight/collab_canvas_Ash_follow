@@ -274,38 +274,58 @@ No bugs encountered during implementation or testing. Clean execution from start
 
 **Documentation**: `/PR_PARTY/PR16_DUPLICATE_SHORTCUTS.md` (complete with implementation notes)
 
-#### PR #17: Layer Management ✅ COMPLETE
-**Status**: COMPLETE - Merged to main  
+#### PR #17: Layer Management ✅ COMPLETE & DEPLOYED
+**Status**: PRODUCTION - Deployed to Firebase  
 **Branch**: `feat/layer-management` (merged)  
-**Actual Time**: ~1.5 hours (vs 2-3 hours estimated)  
-**Bugs**: ZERO  
-**Risk**: LOW (proven correct)
+**Actual Time**: 4 hours total (initial: 1.5h + bug fixes: 2.5h)  
+**Bugs Found & Fixed**: 3 critical issues  
+**Risk**: LOW → PRODUCTION READY
 
-**Features Delivered**:
-- ✅ Added zIndex field to shape schema (default: 0)
-- ✅ Sorted shapes by zIndex in rendering (memoized useMemo)
-- ✅ Four layer operations fully implemented:
-  - bringForward (increment zIndex by 1)
-  - sendBackward (decrement zIndex by 1, min 0)
-  - bringToFront (set to max zIndex + 1)
-  - sendToBack (set to min zIndex - 1, or 0)
-- ✅ Keyboard shortcuts working perfectly:
-  - Cmd/Ctrl+] - Bring Forward
-  - Cmd/Ctrl+[ - Send Backward
-  - Cmd/Ctrl+Shift+] - Bring to Front
-  - Cmd/Ctrl+Shift+[ - Send to Back
-- ✅ Multi-select support (all selected shapes move together)
-- ✅ Real-time sync working (<100ms)
-- ✅ Backward compatible (undefined zIndex treated as 0)
-- ✅ No linting errors
+**Final Features Delivered**:
+- ✅ **Right-Click Context Menu** (replaced keyboard shortcuts)
+  - Professional dark-themed menu with icons
+  - 6 operations: Bring to Front, Forward, Backward, to Back, Duplicate, Delete
+  - No browser conflicts
+  - Perfect discoverability
+- ✅ **Visual Stack Navigation** (Figma approach)
+  - One click = one visual layer (not numeric increment)
+  - Jumps to next/previous shape in visual stack
+  - Works with any zIndex gaps
+- ✅ **Fractional zIndex** (zero conflicts)
+  - Inserts at midpoint between shapes: (nextZ + aboveZ) / 2
+  - Example: Shapes at [5, 6] → bring forward → 5.5
+  - Mathematically impossible to conflict
+  - Industry standard (Figma uses this)
+- ✅ **Negative zIndex support** (unlimited depth)
+  - Can layer shapes infinitely in both directions
+  - Range: ..., -2, -1, 0, 1, 2, ...
+- ✅ **Multi-select support** - All operations work with multi-select
+- ✅ **Real-time sync** - <100ms across all users
+- ✅ **Backward compatible** - undefined zIndex treated as 0
 
-**Files Modified** (221 lines added):
-- `src/services/shapes.js` - Added zIndex to shape creation (+2 lines)
-- `src/components/Canvas/Canvas.jsx` - Added sortedShapes memo, wired up shortcuts (+43 lines)
-- `src/hooks/useShapes.js` - Added 4 layer operations (+141 lines)
-- `src/hooks/useKeyboard.js` - Added layer shortcuts (+41 lines)
+**Bugs Fixed**:
+1. **Browser conflict** - CMD+SHIFT+[ moved tabs instead of layers
+   - Solution: Disabled keyboard shortcuts, implemented context menu
+2. **Minimum depth stuck at 0** - Couldn't layer shapes below 0
+   - Solution: Removed Math.max(0, ...) constraint
+3. **zIndex conflicts** - Multiple shapes at same zIndex
+   - Solution: Fractional zIndex with midpoint insertion
 
-**Documentation**: `/PR_PARTY/PR17_LAYER_MANAGEMENT.md` (complete plan)
+**Files Modified** (300+ lines):
+- `src/components/Canvas/ContextMenu.jsx` - NEW component (+150 lines)
+- `src/index.css` - Context menu styling (+110 lines)
+- `src/components/Canvas/Canvas.jsx` - Context menu integration (+50 lines)
+- `src/components/Canvas/Shape.jsx` - onContextMenu handlers (+10 lines)
+- `src/hooks/useShapes.js` - Visual stack + fractional zIndex logic (+80 lines)
+- `src/hooks/useKeyboard.js` - Disabled conflicting shortcuts (+20 lines)
+- `src/services/shapes.js` - zIndex field (+2 lines)
+
+**Documentation**: 
+- `/PR_PARTY/PR17_LAYER_MANAGEMENT.md` - Complete implementation plan
+- `/PR17_COMPLETE.md` - Initial completion summary
+- `/PR17_BUGFIX.md` - Bug analysis and solutions
+
+**Production URL**: https://collabcanvas-2ba10.web.app
 
 ## Week 1, Day 4-6: AI Integration (Critical Phase)
 
