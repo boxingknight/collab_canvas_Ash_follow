@@ -1,6 +1,7 @@
 // src/services/canvasAPI.js
 import { addShape, updateShape, deleteShape, getAllShapes } from './shapes';
 import { CANVAS_CONFIG } from '../utils/constants';
+import { getCurrentUser } from './auth';
 
 /**
  * Validate common parameters
@@ -39,6 +40,17 @@ function validateColor(color) {
 }
 
 /**
+ * Get current user ID or throw error
+ */
+function getCurrentUserId() {
+  const user = getCurrentUser();
+  if (!user) {
+    throw new Error('User not authenticated. Please log in first.');
+  }
+  return user.uid;
+}
+
+/**
  * Canvas API - Unified interface for all canvas operations
  * Used by both manual interactions and AI agent
  */
@@ -46,7 +58,19 @@ export const canvasAPI = {
   /**
    * Create a rectangle
    */
-  async createRectangle(x, y, width, height, color, userId = 'ai-agent') {
+  async createRectangle(x, y, width, height, color, userId = null) {
+    // Get current user if not provided
+    if (!userId) {
+      try {
+        userId = getCurrentUserId();
+      } catch (error) {
+        return {
+          success: false,
+          error: 'NOT_AUTHENTICATED',
+          userMessage: 'You must be logged in to create shapes.'
+        };
+      }
+    }
     // Validate parameters
     const posValidation = validatePosition(x, y);
     if (!posValidation.valid) {
@@ -89,7 +113,19 @@ export const canvasAPI = {
   /**
    * Create a circle
    */
-  async createCircle(x, y, radius, color, userId = 'ai-agent') {
+  async createCircle(x, y, radius, color, userId = null) {
+    // Get current user if not provided
+    if (!userId) {
+      try {
+        userId = getCurrentUserId();
+      } catch (error) {
+        return {
+          success: false,
+          error: 'NOT_AUTHENTICATED',
+          userMessage: 'You must be logged in to create shapes.'
+        };
+      }
+    }
     // Validate parameters
     const posValidation = validatePosition(x, y);
     if (!posValidation.valid) {
@@ -131,7 +167,19 @@ export const canvasAPI = {
   /**
    * Create a line
    */
-  async createLine(x1, y1, x2, y2, strokeWidth, color, userId = 'ai-agent') {
+  async createLine(x1, y1, x2, y2, strokeWidth, color, userId = null) {
+    // Get current user if not provided
+    if (!userId) {
+      try {
+        userId = getCurrentUserId();
+      } catch (error) {
+        return {
+          success: false,
+          error: 'NOT_AUTHENTICATED',
+          userMessage: 'You must be logged in to create shapes.'
+        };
+      }
+    }
     // Validate parameters
     const pos1Validation = validatePosition(x1, y1);
     if (!pos1Validation.valid) {
@@ -179,7 +227,19 @@ export const canvasAPI = {
   /**
    * Create a text layer
    */
-  async createText(text, x, y, fontSize = 16, fontWeight = 'normal', color = '#000000', userId = 'ai-agent') {
+  async createText(text, x, y, fontSize = 16, fontWeight = 'normal', color = '#000000', userId = null) {
+    // Get current user if not provided
+    if (!userId) {
+      try {
+        userId = getCurrentUserId();
+      } catch (error) {
+        return {
+          success: false,
+          error: 'NOT_AUTHENTICATED',
+          userMessage: 'You must be logged in to create shapes.'
+        };
+      }
+    }
     // Validate parameters
     if (typeof text !== 'string' || text.length === 0) {
       return { success: false, error: 'INVALID_TEXT', userMessage: 'Text cannot be empty' };
