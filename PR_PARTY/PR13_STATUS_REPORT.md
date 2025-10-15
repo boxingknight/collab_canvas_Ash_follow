@@ -1,9 +1,10 @@
 # PR #13: Multi-Select - COMPLETION REPORT ✅
 
 **Date**: October 15, 2025  
-**Status**: ✅ **COMPLETE** (with BONUS features)  
-**Total Time**: ~3 hours  
-**Commits**: 7 commits  
+**Status**: ✅ **COMPLETE** (with BONUS features + all bugs fixed)  
+**Total Time**: ~5 hours (implementation + extensive debugging)  
+**Commits**: 13 commits  
+**Bugs Fixed**: 8 major issues (6 original + 2 edge cases discovered during testing)  
 
 ---
 
@@ -139,6 +140,23 @@
 **Fix**: Restrict marquee to move mode only  
 **Commit**: `fix: restrict marquee selection to move mode only`
 
+### Bug 7: Lines Not Moving in Multi-Select
+**Problem**: Lines didn't move with other shapes during multi-select drag  
+**Root Cause**: Lines were skipped in drag move handler + anchor positioning issues  
+**Fix**: Direct line point manipulation + hide anchors during multi-select (Figma pattern)  
+**Commits**: 
+- `fix: enable real-time line movement during multi-select drag`
+- `fix: proper line multi-select with direct point manipulation`
+
+### Bug 8: Intermittent Multi-Select Failure
+**Problem**: First multi-select drag: n-1 shapes move, one gets left behind. Works perfectly after first attempt.  
+**Root Cause**: Component mounting race condition - `useEffect` timing window allowed drag before refs registered  
+**Fix**: Callback refs + `useLayoutEffect` + redundant registration for 100% reliability  
+**Commits**:
+- `fix: race condition - callback refs for synchronous registration`
+- `fix: prevent stale closures and add diagnostic logging`
+- `fix: useLayoutEffect + redundant registration for 100% reliability`
+
 ---
 
 ## 📈 Performance Achievements
@@ -204,6 +222,11 @@
 6. `feat: add marquee selection (drag-to-select)`
 7. `fix: preserve marquee selection after mouse release`
 8. `fix: restrict marquee selection to move mode only`
+9. `fix: enable real-time line movement during multi-select drag`
+10. `fix: proper line multi-select with direct point manipulation`
+11. `fix: race condition - callback refs for synchronous registration`
+12. `fix: prevent stale closures and add diagnostic logging`
+13. `fix: useLayoutEffect + redundant registration for 100% reliability`
 
 ---
 
