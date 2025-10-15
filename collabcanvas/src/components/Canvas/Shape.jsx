@@ -713,6 +713,7 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
       prevProps.shape.endY === nextProps.shape.endY &&
       prevProps.shape.color === nextProps.shape.color &&
       prevProps.shape.strokeWidth === nextProps.shape.strokeWidth &&
+      prevProps.shape.rotation === nextProps.shape.rotation &&
       prevProps.shape.lockedBy === nextProps.shape.lockedBy &&
       prevProps.isSelected === nextProps.isSelected &&
       prevProps.isMultiSelect === nextProps.isMultiSelect &&
@@ -734,6 +735,7 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
       prevProps.shape.fontSize === nextProps.shape.fontSize &&
       prevProps.shape.fontWeight === nextProps.shape.fontWeight &&
       prevProps.shape.color === nextProps.shape.color &&
+      prevProps.shape.rotation === nextProps.shape.rotation &&
       prevProps.shape.lockedBy === nextProps.shape.lockedBy &&
       prevProps.isSelected === nextProps.isSelected &&
       prevProps.isMultiSelect === nextProps.isMultiSelect &&
@@ -752,6 +754,7 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
     prevProps.shape.height === nextProps.shape.height &&
     prevProps.shape.color === nextProps.shape.color &&
     prevProps.shape.type === nextProps.shape.type &&
+    prevProps.shape.rotation === nextProps.shape.rotation &&
     prevProps.shape.lockedBy === nextProps.shape.lockedBy &&
     prevProps.isSelected === nextProps.isSelected &&
     prevProps.isMultiSelect === nextProps.isMultiSelect &&
