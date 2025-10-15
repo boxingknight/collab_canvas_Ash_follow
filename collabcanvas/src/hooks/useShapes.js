@@ -374,7 +374,7 @@ function useShapes(user) {
   }, [user, shapes]);
 
   /**
-   * Send selected shapes backward by one layer (decrement zIndex by 1, min 0)
+   * Send selected shapes backward by one layer (decrement zIndex by 1)
    * @param {Array<string>} shapeIds - Array of shape IDs to send backward
    */
   const sendBackward = useCallback(async (shapeIds) => {
@@ -392,7 +392,8 @@ function useShapes(user) {
       const updates = shapeIds.map(id => {
         const shape = shapes.find(s => s.id === id);
         if (!shape) return null;
-        return { id, zIndex: Math.max(0, (shape.zIndex ?? 0) - 1) };
+        // Allow negative zIndex - no minimum constraint
+        return { id, zIndex: (shape.zIndex ?? 0) - 1 };
       }).filter(Boolean);
 
       // Batch update all shapes
@@ -441,7 +442,7 @@ function useShapes(user) {
   }, [user, shapes]);
 
   /**
-   * Send selected shapes to the back (set zIndex to min - 1, or 0)
+   * Send selected shapes to the back (set zIndex to min - 1)
    * @param {Array<string>} shapeIds - Array of shape IDs to send to back
    */
   const sendToBack = useCallback(async (shapeIds) => {
@@ -457,7 +458,8 @@ function useShapes(user) {
 
     try {
       const minZ = Math.min(...shapes.map(s => s.zIndex ?? 0));
-      const targetZ = Math.max(0, minZ - 1);
+      // Allow negative zIndex - no minimum constraint
+      const targetZ = minZ - 1;
 
       // Update all selected shapes to the same z-index (on bottom)
       await Promise.all(
