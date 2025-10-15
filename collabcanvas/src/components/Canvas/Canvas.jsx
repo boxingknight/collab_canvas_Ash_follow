@@ -362,7 +362,10 @@ function Canvas() {
 
   // Handle shape selection (supports shift-click for multi-select)
   function handleShapeSelect(shapeId, event) {
-    if (event?.shiftKey) {
+    // In Konva, the native DOM event is in event.evt
+    const isShiftPressed = event?.evt?.shiftKey;
+    
+    if (isShiftPressed) {
       // Shift-click: Toggle shape in selection
       toggleSelection(shapeId);
     } else {
