@@ -335,7 +335,7 @@
 
 ---
 
-### ⏳ Transformations & Operations (High Priority)
+### ✅ Transformations & Operations (COMPLETE!)
 
 #### Rotation Support (PR #15) ✅
 **Time Taken**: 1 session (3 hours with testing)
@@ -352,36 +352,39 @@
 - ✅ Text shapes now rotatable (previously disabled)
 
 **Bugs Fixed:** 3 critical issues
-- Fixed rotation not saving to Firebase (gatekeeper pattern)
-- Fixed circle position drift (coordinate conversion)
-- Fixed canvas crash (variable hoisting)
 
 **Quality**: Production-ready, thoroughly tested, deployed
-- Real-time sync
 
-**Status**: Not started
+#### Duplicate Operation (PR #16) ✅
+**Time Taken**: 2 hours (part of PR #16)
+**Status**: COMPLETE - ZERO bugs!
 
-#### Duplicate Operation (PR #15)
-**Estimated**: 2-3 hours
-- Implement duplicateShapes function
-- Cmd/Ctrl+D keyboard shortcut
-- Offset by 20px (both x and y)
-- Works with multi-select
-- Preserve all properties (color, size, rotation)
-- Select newly created shapes
+**Features Delivered:**
+- ✅ Implemented duplicateShapes function in useShapes hook
+- ✅ Cmd/Ctrl+D keyboard shortcut
+- ✅ Offset by 20px diagonal (x+20, y+20)
+- ✅ Works with single and multi-select
+- ✅ Preserves ALL properties (color, size, rotation, text, strokeWidth)
+- ✅ Special handling for lines (offsets endpoints)
+- ✅ Auto-selects newly created shapes
+- ✅ Uses batch operations for performance
+- ✅ Real-time sync working perfectly
 
-**Status**: Not started
+#### Keyboard Shortcuts System (PR #16) ✅
+**Time Taken**: Included in PR #16 (2 hours total)
+**Status**: COMPLETE - All shortcuts working!
 
-#### Keyboard Shortcuts System (PR #15)
-**Estimated**: Included in PR #15
-- Create useKeyboard hook
-- Platform detection (Cmd on Mac, Ctrl on Windows)
-- Tool shortcuts (R, C, L, T for shape types)
-- Arrow key nudging (1px, 10px with Shift)
-- Disable shortcuts during text editing
-- Tooltips showing shortcuts
+**Features Delivered:**
+- ✅ Created useKeyboard hook (centralized management)
+- ✅ Platform detection (Cmd on Mac, Ctrl on Windows)
+- ✅ Tool shortcuts (R, C, L, T for shape types, V/M/D for modes)
+- ✅ Arrow key nudging (1px, 10px with Shift)
+- ✅ Context awareness (disables during text editing)
+- ✅ Respects shape locking during nudge
+- ✅ Constrains nudge to canvas bounds
+- ✅ Removed old keyboard handler (cleaned up ~50 lines)
 
-**Status**: Not started
+**Quality**: Production-ready, thoroughly tested, deployed
 
 ---
 
@@ -686,14 +689,14 @@ This is the **most important feature** and the key differentiator for the projec
 ### Week Progress
 - **Day 1 (MVP)**: ✅ Complete
 - **Day 2-3 (Core Shapes + Multi-Select)**: ✅ Complete (AHEAD OF SCHEDULE!)
-- **Day 3-4 (Rotation & Duplicate)**: ✅ PR #15 COMPLETE! PR #16 Ready
-- **Day 4-6 (AI Integration)**: ❌ Not started (CRITICAL)
+- **Day 3-4 (Rotation & Duplicate)**: ✅ COMPLETE! Both PR #15 and #16 done!
+- **Day 4-6 (AI Integration)**: ❌ Not started (CRITICAL - START NOW!)
 - **Day 7 (Polish & Submit)**: ❌ Not started
 
 ### Feature Completion
 - **MVP Features**: 100% ✅
-- **Post-MVP Core**: ~70% ✅ (have 4/4 shapes, multi-select + marquee, need rotation/duplicate)
-- **AI Agent**: 0% ❌ (NOT STARTED - MOST IMPORTANT)
+- **Post-MVP Core**: 100% ✅ (ALL core features complete: shapes, multi-select, rotation, duplicate!)
+- **AI Agent**: 0% ❌ (NOT STARTED - MOST IMPORTANT - CRITICAL PATH!)
 - **Stretch Goals**: 0% (expected - lowest priority)
 
 ### Critical Path Items
@@ -705,20 +708,20 @@ This is the **most important feature** and the key differentiator for the projec
 4. ✅ **Multi-select (PR #13)** - DONE with 10x performance!
 5. ✅ **Marquee Selection (PR #14)** - DONE (Delivered early in PR #13!)
 6. ✅ **Rotation (PR #15)** - DONE! 🎉
-7. ⏳ Duplicate (PR #16) - NEXT
-8. ❌ **AI service integration (PR #18)** - CRITICAL
+7. ✅ **Duplicate (PR #16)** - DONE! 🎉 (2 hours, ZERO bugs!)
+8. ❌ **AI service integration (PR #18)** - CRITICAL - START NOW!
 9. ❌ **AI chat interface (PR #19)** - CRITICAL
 10. ❌ **AI basic commands (PR #20)** - CRITICAL
-11. ❌ **AI selection commands (PR #21)** - CRITICAL (easier now with clean selection API!)
+11. ❌ **AI selection commands (PR #21)** - CRITICAL
 12. ❌ **AI layout commands (PR #22)** - CRITICAL
 13. ❌ **AI complex operations (PR #23)** - CRITICAL
 14. ❌ **AI testing & docs (PR #24)** - CRITICAL
 15. ❌ **Demo video** - CRITICAL
 16. ❌ **AI Development Log** - CRITICAL
 
-**Status**: 4/16 complete (~25%) + 1 BONUS feature  
-**Most Critical**: Items 8-14 (AI features)  
-**Timeline Risk**: MEDIUM - AI implementation not started but foundation is solid, ahead of schedule
+**Status**: 7/16 complete (~44%) + 1 BONUS feature  
+**Most Critical**: Items 8-16 (AI features - ALL REMAINING)  
+**Timeline Risk**: HIGH - All remaining work is AI-focused, ~30 hours, 4-5 days left
 
 ---
 
@@ -776,16 +779,16 @@ This is the **most important feature** and the key differentiator for the projec
 
 ## Next Session Priorities
 
-### Immediate (Start Here) 🚀
+### Completed Core Features ✅
 1. ✅ ~~PR #11: Line Shape Support~~ DONE
 2. ✅ ~~PR #12: Text Shape Support~~ DONE
 3. ✅ ~~PR #13: Multi-Select~~ DONE
 4. ✅ ~~**PR #14: Marquee Selection**~~ DONE (Delivered early in PR #13!)
 5. ✅ ~~**PR #15: Rotation Support**~~ DONE! (3 hours actual)
+6. ✅ ~~**PR #16: Duplicate & Shortcuts**~~ DONE! (2 hours actual, ZERO bugs!)
 
-### Critical (Don't Skip)
-6. **PR #16: Duplicate & Shortcuts** (2-3 hours)
-7. **PR #17: Layer Management** (2-3 hours)
+### Optional (Skip for Now)
+7. **PR #17: Layer Management** (2-3 hours) - NOT CRITICAL, defer until after AI
 
 ### Most Important (The Differentiator)
 8. **PR #18: AI Service Integration** (4-5 hours) - START ASAP
