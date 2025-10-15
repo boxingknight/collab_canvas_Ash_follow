@@ -36,6 +36,9 @@ function Canvas() {
   // Track shapes currently being dragged by this user
   const activeDragRef = useRef(null);
   
+  // Track initial positions of all shapes during multi-select drag
+  const initialPositionsRef = useRef(null);
+  
   // Canvas mode: 'pan', 'move', or 'draw'
   const [mode, setMode] = useState('pan');
   
@@ -414,18 +417,66 @@ function Canvas() {
       const lockPromises = selectedShapeIds.map(id => lockShape(id));
       await Promise.all(lockPromises);
       activeDragRef.current = 'multi-select'; // Mark as multi-select drag
+      
+      // Store initial positions of all selected shapes for optimistic updates during drag
+      initialPositionsRef.current = {};
+      selectedShapeIds.forEach(id => {
+        const shape = shapes.find(s => s.id === id);
+        if (shape) {
+          initialPositionsRef.current[id] = {
+            x: shape.x,
+            y: shape.y,
+            endX: shape.endX, // For lines
+            endY: shape.endY  // For lines
+          };
+        }
+      });
     } else {
       // Single shape drag - lock just this shape
       const locked = await lockShape(shapeId);
       if (locked) {
         activeDragRef.current = shapeId;
       }
+      initialPositionsRef.current = null;
     }
   }
 
   // Handle shape drag move
-  function handleShapeDragMove() {
-    // Keep flag set during dragging
+  function handleShapeDragMove(data) {
+    // If this is a multi-select drag, update positions of all selected shapes optimistically
+    if (activeDragRef.current === 'multi-select' && initialPositionsRef.current && isMultiSelect) {
+      const initialPos = initialPositionsRef.current[data.id];
+      if (!initialPos) return;
+      
+      // Calculate offset from initial position
+      const dx = data.x - initialPos.x;
+      const dy = data.y - initialPos.y;
+      
+      // Update local state for all selected shapes (optimistic update)
+      setShapes(prevShapes => 
+        prevShapes.map(shape => {
+          if (selectedShapeIds.includes(shape.id)) {
+            const shapeInitial = initialPositionsRef.current[shape.id];
+            if (!shapeInitial) return shape;
+            
+            const updates = {
+              ...shape,
+              x: shapeInitial.x + dx,
+              y: shapeInitial.y + dy
+            };
+            
+            // For lines, also update endpoints
+            if (shape.endX !== undefined && shape.endY !== undefined) {
+              updates.endX = shapeInitial.endX + dx;
+              updates.endY = shapeInitial.endY + dy;
+            }
+            
+            return updates;
+          }
+          return shape;
+        })
+      );
+    }
   }
 
   // Handle shape drag end
@@ -468,6 +519,7 @@ function Canvas() {
       await Promise.all(unlockPromises);
       
       activeDragRef.current = null;
+      initialPositionsRef.current = null; // Clean up
     } else {
       // Single shape drag
       // Use immediate update (no debounce) to prevent ghost teleport effect

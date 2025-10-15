@@ -119,7 +119,38 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
     if (e.evt) {
       e.evt.stopPropagation();
     }
-    if (onDragMove) onDragMove();
+    
+    if (onDragMove) {
+      // Pass current position data for multi-select visual updates
+      if (isLine) {
+        // For lines, pass the group offset
+        const offsetX = e.target.x();
+        const offsetY = e.target.y();
+        onDragMove({
+          id: shape.id,
+          x: shape.x + offsetX,
+          y: shape.y + offsetY,
+          endX: shape.endX + offsetX,
+          endY: shape.endY + offsetY
+        });
+      } else {
+        // For rectangles/circles/text, pass current position
+        let newX = e.target.x();
+        let newY = e.target.y();
+        
+        // For circles, convert center to top-left
+        if (isCircle) {
+          newX = newX - shape.width / 2;
+          newY = newY - shape.height / 2;
+        }
+        
+        onDragMove({
+          id: shape.id,
+          x: newX,
+          y: newY
+        });
+      }
+    }
   }
 
   function handleDragEnd(e) {
