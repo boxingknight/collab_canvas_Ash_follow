@@ -339,7 +339,8 @@ function useShapes(user) {
   }, [user, shapes, addShapesBatch]);
 
   /**
-   * Bring selected shapes forward by one layer (increment zIndex by 1)
+   * Bring selected shapes forward by one visual layer
+   * Moves shapes to just above the next shape in the visual stack (Figma approach)
    * @param {Array<string>} shapeIds - Array of shape IDs to bring forward
    */
   const bringForward = useCallback(async (shapeIds) => {
@@ -354,10 +355,33 @@ function useShapes(user) {
     }
 
     try {
+      // Sort all shapes by zIndex to understand the visual stack
+      const sortedShapes = [...shapes].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
+      
       const updates = shapeIds.map(id => {
         const shape = shapes.find(s => s.id === id);
         if (!shape) return null;
-        return { id, zIndex: (shape.zIndex ?? 0) + 1 };
+        
+        const currentZ = shape.zIndex ?? 0;
+        
+        // Find the next shape above this one in the visual stack
+        const nextShapeAbove = sortedShapes.find(s => 
+          !shapeIds.includes(s.id) && // Not in selection
+          (s.zIndex ?? 0) > currentZ   // Above current shape
+        );
+        
+        let newZ;
+        if (nextShapeAbove) {
+          // Move to just above the next shape (same zIndex + 0.5, will be normalized)
+          // Actually, put it at the same level, then add 0.0001 to ensure it's on top
+          // Or better: put it 1 above the next shape's zIndex
+          newZ = (nextShapeAbove.zIndex ?? 0) + 1;
+        } else {
+          // No shape above, just increment by 1
+          newZ = currentZ + 1;
+        }
+        
+        return { id, zIndex: newZ };
       }).filter(Boolean);
 
       // Batch update all shapes
@@ -367,14 +391,15 @@ function useShapes(user) {
         )
       );
       
-      console.log(`Brought ${updates.length} shape(s) forward`);
+      console.log(`Brought ${updates.length} shape(s) forward to visual next layer`);
     } catch (error) {
       console.error('Failed to bring forward:', error);
     }
   }, [user, shapes]);
 
   /**
-   * Send selected shapes backward by one layer (decrement zIndex by 1)
+   * Send selected shapes backward by one visual layer
+   * Moves shapes to just below the previous shape in the visual stack (Figma approach)
    * @param {Array<string>} shapeIds - Array of shape IDs to send backward
    */
   const sendBackward = useCallback(async (shapeIds) => {
@@ -389,11 +414,32 @@ function useShapes(user) {
     }
 
     try {
+      // Sort all shapes by zIndex to understand the visual stack
+      const sortedShapes = [...shapes].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
+      
       const updates = shapeIds.map(id => {
         const shape = shapes.find(s => s.id === id);
         if (!shape) return null;
-        // Allow negative zIndex - no minimum constraint
-        return { id, zIndex: (shape.zIndex ?? 0) - 1 };
+        
+        const currentZ = shape.zIndex ?? 0;
+        
+        // Find the previous shape below this one in the visual stack
+        // Need to reverse to find from bottom up
+        const nextShapeBelow = [...sortedShapes].reverse().find(s => 
+          !shapeIds.includes(s.id) && // Not in selection
+          (s.zIndex ?? 0) < currentZ   // Below current shape
+        );
+        
+        let newZ;
+        if (nextShapeBelow) {
+          // Move to just below the previous shape
+          newZ = (nextShapeBelow.zIndex ?? 0) - 1;
+        } else {
+          // No shape below, just decrement by 1
+          newZ = currentZ - 1;
+        }
+        
+        return { id, zIndex: newZ };
       }).filter(Boolean);
 
       // Batch update all shapes
@@ -403,7 +449,7 @@ function useShapes(user) {
         )
       );
       
-      console.log(`Sent ${updates.length} shape(s) backward`);
+      console.log(`Sent ${updates.length} shape(s) backward to visual previous layer`);
     } catch (error) {
       console.error('Failed to send backward:', error);
     }
