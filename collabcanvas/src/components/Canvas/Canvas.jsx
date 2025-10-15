@@ -16,7 +16,7 @@ function Canvas() {
   const staticLayerRef = useRef(null); // For caching static grid/background
   const { user } = useAuth();
   const { position, scale, updatePosition, updateScale } = useCanvas();
-  const { shapes, isLoading, addShape, addShapesBatch, updateShape, updateShapeImmediate, deleteShape, lockShape, unlockShape, duplicateShapes } = useShapes(user);
+  const { shapes, isLoading, addShape, addShapesBatch, updateShape, updateShapeImmediate, deleteShape, lockShape, unlockShape, duplicateShapes, bringForward, sendBackward, bringToFront, sendToBack } = useShapes(user);
   const { remoteCursors, updateMyCursor } = useCursors(user);
   const { 
     selectedShapeIds, 
@@ -617,6 +617,27 @@ function Canvas() {
     onDeselect: handleDeselect,
     onNudge: handleNudge,
     onToolChange: handleToolChange,
+    // Layer management operations
+    onBringForward: () => {
+      if (selectedShapeIds.length > 0) {
+        bringForward(selectedShapeIds);
+      }
+    },
+    onSendBackward: () => {
+      if (selectedShapeIds.length > 0) {
+        sendBackward(selectedShapeIds);
+      }
+    },
+    onBringToFront: () => {
+      if (selectedShapeIds.length > 0) {
+        bringToFront(selectedShapeIds);
+      }
+    },
+    onSendToBack: () => {
+      if (selectedShapeIds.length > 0) {
+        sendToBack(selectedShapeIds);
+      }
+    },
     isTextEditing
   });
 

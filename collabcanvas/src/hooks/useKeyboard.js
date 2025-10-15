@@ -11,6 +11,10 @@ import { useEffect, useMemo } from 'react';
  * @param {Function} handlers.onDeselect - Called when Escape is pressed
  * @param {Function} handlers.onNudge - Called when arrow keys are pressed (direction, delta)
  * @param {Function} handlers.onToolChange - Called when tool shortcut is pressed (toolName)
+ * @param {Function} handlers.onBringForward - Called when Cmd/Ctrl+] is pressed
+ * @param {Function} handlers.onSendBackward - Called when Cmd/Ctrl+[ is pressed
+ * @param {Function} handlers.onBringToFront - Called when Cmd/Ctrl+Shift+] is pressed
+ * @param {Function} handlers.onSendToBack - Called when Cmd/Ctrl+Shift+[ is pressed
  * @param {boolean} isTextEditing - If true, most shortcuts are disabled (text input mode)
  * @returns {Object} Platform information (isMac, modKey)
  */
@@ -21,6 +25,10 @@ export default function useKeyboard({
   onDeselect,
   onNudge,
   onToolChange,
+  onBringForward,
+  onSendBackward,
+  onBringToFront,
+  onSendToBack,
   isTextEditing = false
 }) {
   // Platform detection - do once on mount
@@ -62,6 +70,33 @@ export default function useKeyboard({
           e.preventDefault();
           if (onSelectAll) {
             onSelectAll();
+          }
+          return;
+        }
+
+        // Layer Management Shortcuts
+        // Cmd/Ctrl+]: Bring Forward (or Bring to Front with Shift)
+        if (e.key === ']') {
+          e.preventDefault();
+          if (e.shiftKey && onBringToFront) {
+            // Cmd/Ctrl+Shift+]: Bring to Front
+            onBringToFront();
+          } else if (onBringForward) {
+            // Cmd/Ctrl+]: Bring Forward
+            onBringForward();
+          }
+          return;
+        }
+
+        // Cmd/Ctrl+[: Send Backward (or Send to Back with Shift)
+        if (e.key === '[') {
+          e.preventDefault();
+          if (e.shiftKey && onSendToBack) {
+            // Cmd/Ctrl+Shift+[: Send to Back
+            onSendToBack();
+          } else if (onSendBackward) {
+            // Cmd/Ctrl+[: Send Backward
+            onSendBackward();
           }
           return;
         }
@@ -141,7 +176,11 @@ export default function useKeyboard({
     onSelectAll,
     onDeselect,
     onNudge,
-    onToolChange
+    onToolChange,
+    onBringForward,
+    onSendBackward,
+    onBringToFront,
+    onSendToBack
   ]);
 
   return platformInfo;
