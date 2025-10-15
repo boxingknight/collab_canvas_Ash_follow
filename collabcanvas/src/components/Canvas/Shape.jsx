@@ -316,7 +316,8 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
         </Group>
         
         {/* Endpoint anchor circles - OUTSIDE the Group, update line in real-time */}
-        {isSelected && !isLockedByOther && (
+        {/* Only show anchors for single-select (not multi-select) - Figma pattern */}
+        {isSelected && !isMultiSelect && !isLockedByOther && (
           <>
             {/* Start point anchor */}
             <Circle

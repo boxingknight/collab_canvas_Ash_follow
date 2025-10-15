@@ -555,8 +555,8 @@ function Canvas() {
           initialPositionsRef.current[id] = {
             x: shape.x,
             y: shape.y,
-            endX: shape.endX,
-            endY: shape.endY,
+            endX: shape.endX || undefined,
+            endY: shape.endY || undefined,
             type: shape.type,
             width: shape.width,
             height: shape.height
@@ -564,13 +564,21 @@ function Canvas() {
           
           // Reset node position to match data (ensures clean starting state)
           if (node && id !== shapeId) { // Don't reset the shape being dragged
-            if (shape.type === 'circle') {
+            if (shape.type === 'line') {
+              // Lines: Reset Line points to initial absolute coordinates
+              // Also ensure Group is at origin
+              node.position({ x: 0, y: 0 });
+              const lineNode = node.findOne('Line');
+              if (lineNode) {
+                lineNode.points([shape.x, shape.y, shape.endX, shape.endY]);
+              }
+            } else if (shape.type === 'circle') {
               // Circles positioned at center
               node.position({ 
                 x: shape.x + shape.width / 2, 
                 y: shape.y + shape.height / 2 
               });
-            } else if (shape.type !== 'line') {
+            } else {
               // Rectangles and text positioned at top-left
               node.position({ x: shape.x, y: shape.y });
             }
@@ -601,6 +609,7 @@ function Canvas() {
   // Handle shape drag move
   function handleShapeDragMove(data) {
     // If this is a multi-select drag, directly update Konva node positions
+    // IMPORTANT: ALL shape types must be handled here for real-time visual movement!
     if (activeDragRef.current === 'multi-select' && initialPositionsRef.current && isMultiSelect) {
       const initialPos = initialPositionsRef.current[data.id];
       if (!initialPos) return;
@@ -617,9 +626,21 @@ function Canvas() {
         const shapeInitial = initialPositionsRef.current[shapeId];
         
         if (node && shapeInitial) {
+          // CRITICAL: Handle ALL shape types for real-time movement
+          // When adding new shape types, add their coordinate handling here!
           if (shapeInitial.type === 'line') {
-            // For lines, we don't move during drag, only on drag end
-            return;
+            // For lines, update the Line element's points directly (not Group position)
+            // This makes anchors follow automatically since they're positioned at the points
+            const lineNode = node.findOne('Line'); // Find Line element inside Group
+            if (lineNode && shapeInitial.endX !== undefined && shapeInitial.endY !== undefined) {
+              const newPoints = [
+                shapeInitial.x + dx,
+                shapeInitial.y + dy,
+                shapeInitial.endX + dx,
+                shapeInitial.endY + dy
+              ];
+              lineNode.points(newPoints);
+            }
           } else if (shapeInitial.type === 'circle') {
             // For circles, Konva positions at CENTER but we store as TOP-LEFT
             // Convert top-left to center position
