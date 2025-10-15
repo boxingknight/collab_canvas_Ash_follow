@@ -757,6 +757,11 @@ function Canvas() {
         updates.fontSize = data.fontSize;
       }
       
+      // If rotation is provided (from transform), include it
+      if (data.rotation !== undefined) {
+        updates.rotation = data.rotation;
+      }
+      
       console.log('[CANVAS] Updating shape:', data.id, updates);
       
       await updateShapeImmediate(data.id, updates);
