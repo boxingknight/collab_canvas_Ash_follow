@@ -45,6 +45,12 @@ function Canvas() {
   // Canvas mode: 'pan', 'move', or 'draw'
   const [mode, setMode] = useState('pan');
   
+  // Marquee selection state (drag-to-select multiple shapes)
+  const marqueeStartRef = useRef(null);
+  const marqueeCurrentRef = useRef(null);
+  const [isMarqueeActive, setIsMarqueeActive] = useState(false);
+  const justFinishedMarqueeRef = useRef(false); // Prevent stage click from clearing selection after marquee
+  
   // Shape type: 'rectangle' or 'circle'
   const [shapeType, setShapeType] = useState(SHAPE_TYPES.RECTANGLE);
   
@@ -148,8 +154,16 @@ function Canvas() {
           setMode('draw');
           break;
         case 'escape':
-          setMode('pan');
-          clearSelection();
+          // Cancel marquee selection if active
+          if (isMarqueeActive) {
+            setIsMarqueeActive(false);
+            marqueeStartRef.current = null;
+            marqueeCurrentRef.current = null;
+            clearSelection();
+          } else {
+            setMode('pan');
+            clearSelection();
+          }
           break;
         case 'delete':
         case 'backspace':
@@ -166,7 +180,7 @@ function Canvas() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [shapes, selectionCount, clearSelection, selectAll]);
+  }, [shapes, selectionCount, clearSelection, selectAll, isMarqueeActive]);
 
   // Handle window resize
   useEffect(() => {
@@ -181,10 +195,36 @@ function Canvas() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Helper: Check if a shape intersects with marquee selection rectangle
+  function isShapeInMarquee(shape, marqueeBox) {
+    // Calculate shape bounding box based on type
+    let shapeBox;
+    
+    if (shape.type === 'line') {
+      // For lines, create bounding box from start and end points
+      const minX = Math.min(shape.x, shape.endX);
+      const minY = Math.min(shape.y, shape.endY);
+      const maxX = Math.max(shape.x, shape.endX);
+      const maxY = Math.max(shape.y, shape.endY);
+      shapeBox = { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+    } else {
+      // For rectangles, circles, and text: use x, y, width, height
+      shapeBox = { x: shape.x, y: shape.y, width: shape.width, height: shape.height };
+    }
+    
+    // AABB (Axis-Aligned Bounding Box) intersection test
+    return !(
+      marqueeBox.x > shapeBox.x + shapeBox.width ||
+      marqueeBox.x + marqueeBox.width < shapeBox.x ||
+      marqueeBox.y > shapeBox.y + shapeBox.height ||
+      marqueeBox.y + marqueeBox.height < shapeBox.y
+    );
+  }
+  
   // Handle pan (drag)
   function handleDragStart(e) {
-    // CRITICAL: Only allow Stage drag in pan mode
-    if (mode !== 'pan') {
+    // CRITICAL: Only allow Stage drag in pan mode (and not during marquee)
+    if (mode !== 'pan' || isMarqueeActive) {
       e.target.stopDrag();
       return;
     }
@@ -231,8 +271,30 @@ function Canvas() {
 
   // Handle shape creation - mouse down
   function handleMouseDown(e) {
-    // Only create shapes in 'draw' mode and when clicking on the stage (empty canvas)
-    if (mode === 'draw' && e.target === e.target.getStage()) {
+    const isClickingStage = e.target === e.target.getStage();
+    
+    // MARQUEE SELECTION: Only in 'move' mode (not pan mode - that's for panning canvas)
+    if (isClickingStage && mode === 'move' && !isDrawing) {
+      const stage = stageRef.current;
+      const pos = stage.getRelativePointerPosition();
+      
+      // Store start position
+      marqueeStartRef.current = { x: pos.x, y: pos.y };
+      marqueeCurrentRef.current = { x: pos.x, y: pos.y };
+      setIsMarqueeActive(true);
+      
+      // Clear selection if not holding Shift (Shift = add to selection)
+      if (!e.evt.shiftKey) {
+        clearSelection();
+      }
+      
+      // Prevent stage drag during marquee
+      e.target.stopDrag();
+      return;
+    }
+    
+    // SHAPE CREATION: Only in 'draw' mode and when clicking on the stage (empty canvas)
+    if (mode === 'draw' && isClickingStage) {
       const stage = stageRef.current;
       const pos = stage.getRelativePointerPosition();
       
@@ -285,6 +347,38 @@ function Canvas() {
       updateMyCursor(pos.x, pos.y);
     }
     
+    // MARQUEE SELECTION: Update rectangle and detect intersections
+    if (isMarqueeActive && marqueeStartRef.current) {
+      marqueeCurrentRef.current = { x: pos.x, y: pos.y };
+      
+      // Calculate marquee bounding box (normalized for negative drags)
+      const marqueeBox = {
+        x: Math.min(marqueeStartRef.current.x, pos.x),
+        y: Math.min(marqueeStartRef.current.y, pos.y),
+        width: Math.abs(pos.x - marqueeStartRef.current.x),
+        height: Math.abs(pos.y - marqueeStartRef.current.y)
+      };
+      
+      // Find all shapes that intersect with marquee
+      const intersectingShapeIds = shapes
+        .filter(shape => isShapeInMarquee(shape, marqueeBox))
+        .map(shape => shape.id);
+      
+      // Update selection (merge with existing if Shift was held)
+      if (e.evt.shiftKey && hasSelection) {
+        // Add to existing selection
+        const newSelection = [...new Set([...selectedShapeIds, ...intersectingShapeIds])];
+        setSelection(newSelection);
+      } else {
+        // Replace selection
+        setSelection(intersectingShapeIds);
+      }
+      
+      // Force re-render to show marquee rectangle
+      // (The setSelection above triggers re-render, but we also need to update marquee visual)
+      return;
+    }
+    
     // Handle shape drawing
     if (!isDrawing || !newShape) return;
     
@@ -307,6 +401,23 @@ function Canvas() {
 
   // Handle shape creation - mouse up
   async function handleMouseUp() {
+    // MARQUEE SELECTION: Finalize selection
+    if (isMarqueeActive) {
+      setIsMarqueeActive(false);
+      marqueeStartRef.current = null;
+      marqueeCurrentRef.current = null;
+      
+      // Flag that we just finished a marquee to prevent stage click from clearing selection
+      justFinishedMarqueeRef.current = true;
+      // Reset flag after a short delay (click event will fire before this)
+      setTimeout(() => {
+        justFinishedMarqueeRef.current = false;
+      }, 50);
+      
+      // Selection is already updated in handleMouseMove
+      return;
+    }
+    
     if (!isDrawing || !newShape) return;
 
     if (newShape.type === 'line') {
@@ -698,6 +809,11 @@ function Canvas() {
 
   // Handle stage click (deselect)
   function handleStageClick(e) {
+    // Don't clear selection if we just finished a marquee selection
+    if (justFinishedMarqueeRef.current) {
+      return;
+    }
+    
     if (e.target === e.target.getStage()) {
       clearSelection();
     }
@@ -779,7 +895,8 @@ function Canvas() {
         onMouseUp={editingTextId ? undefined : handleMouseUp}
         onClick={editingTextId ? undefined : handleStageClick}
         style={{ 
-          cursor: isDrawing ? 'crosshair' 
+          cursor: isMarqueeActive ? 'crosshair'
+                : isDrawing ? 'crosshair' 
                 : mode === 'draw' ? 'crosshair'
                 : mode === 'move' ? 'move'
                 : isDraggingShape ? 'grabbing'
@@ -959,6 +1076,21 @@ function Canvas() {
                 listening={false}
               />
             )
+          )}
+          
+          {/* Render marquee selection rectangle */}
+          {isMarqueeActive && marqueeStartRef.current && marqueeCurrentRef.current && (
+            <Rect
+              x={Math.min(marqueeStartRef.current.x, marqueeCurrentRef.current.x)}
+              y={Math.min(marqueeStartRef.current.y, marqueeCurrentRef.current.y)}
+              width={Math.abs(marqueeCurrentRef.current.x - marqueeStartRef.current.x)}
+              height={Math.abs(marqueeCurrentRef.current.y - marqueeStartRef.current.y)}
+              fill="rgba(59, 130, 246, 0.1)"
+              stroke="#3b82f6"
+              strokeWidth={1.5 / scale}
+              dash={[5 / scale, 5 / scale]}
+              listening={false}
+            />
           )}
           
           {/* Render remote cursors from other users */}
