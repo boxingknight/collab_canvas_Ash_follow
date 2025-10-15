@@ -293,3 +293,22 @@ export function subscribeToShapes(callback) {
     throw error;
   }
 }
+
+/**
+ * Get all shapes (for AI queries)
+ * @returns {Promise<Array>} Array of all shapes
+ */
+export async function getAllShapes() {
+  try {
+    const shapesCollection = collection(db, SHAPES_COLLECTION);
+    const querySnapshot = await getDocs(shapesCollection);
+    
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting all shapes:', error.message);
+    throw error;
+  }
+}

@@ -2,6 +2,14 @@
 export const CANVAS_WIDTH = 5000;
 export const CANVAS_HEIGHT = 5000;
 
+// Canvas configuration (for AI Service)
+export const CANVAS_CONFIG = {
+  width: CANVAS_WIDTH,
+  height: CANVAS_HEIGHT,
+  centerX: CANVAS_WIDTH / 2,
+  centerY: CANVAS_HEIGHT / 2,
+};
+
 // Canvas viewport
 export const VIEWPORT_WIDTH = window.innerWidth;
 export const VIEWPORT_HEIGHT = window.innerHeight;
