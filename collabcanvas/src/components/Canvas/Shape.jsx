@@ -117,10 +117,22 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
           node.scaleX(1);
           node.scaleY(1);
           
+          // For circles, node.x() and node.y() are center coordinates
+          // We need to convert them back to top-left for consistent storage
+          let newX = node.x();
+          let newY = node.y();
+          
+          if (isCircle) {
+            // Circle is rendered at center, so convert back to top-left
+            newX = node.x() - newWidth / 2;
+            newY = node.y() - newHeight / 2;
+            console.log('[SHAPE TRANSFORM] Circle center:', node.x(), node.y(), '-> top-left:', newX, newY);
+          }
+          
           const updates = {
             id: shape.id,
-            x: node.x(),
-            y: node.y(),
+            x: newX,
+            y: newY,
             width: newWidth,
             height: newHeight,
             rotation: rotation
@@ -143,7 +155,7 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
         };
       }
     }
-  }, [isSelected, isText, shape.id, onDragEnd]);
+  }, [isSelected, isText, isCircle, shape.id, onDragEnd]);
 
   function handleClick(e) {
     // CRITICAL: Stop ALL event propagation
