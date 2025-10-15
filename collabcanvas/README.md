@@ -9,9 +9,11 @@ CollabCanvas is a real-time collaborative drawing application that allows multip
 - **Infinite Canvas**: Large 5000x5000px workspace with smooth pan and zoom
 - **Complete Shape Library**: Rectangles, circles, lines, and text shapes
 - **Advanced Selection**: Single-select, multi-select (shift-click), and marquee selection (drag-to-select)
-- **Shape Transformations**: Move, resize, rotate, and delete shapes with intuitive controls
+- **Shape Transformations**: Move, resize, rotate, duplicate, and delete shapes with intuitive controls
+- **Duplicate Shapes**: Cmd/Ctrl+D to duplicate selected shapes with 20px offset (preserves all properties)
 - **Text Editing**: Double-click to edit text inline with auto-resize and formatting
 - **Line Tools**: Draggable endpoint anchors for precise line positioning
+- **Arrow Key Nudging**: Precise positioning with 1px (or 10px with Shift) movement
 - **Selection-First Interaction**: Professional click-to-select, then drag-to-move pattern (like Figma/Sketch)
 - **Multiplayer Cursors**: See other users' cursor positions in real-time with names
 - **User Presence**: View list of currently online collaborators with avatars
@@ -25,27 +27,28 @@ CollabCanvas is a real-time collaborative drawing application that allows multip
 ### User Experience
 - **Three Interaction Modes**:
   - **Pan Mode (V)**: Drag canvas to navigate, scroll to zoom
-  - **Move Mode (M)**: Select, move, resize, and rotate shapes
-  - **Draw Mode (D)**: Create rectangles, circles, lines, or text shapes
-- **Rich Keyboard Shortcuts**: Mode switching, selection, deletion, and more
+  - **Move Mode (M)**: Select, move, resize, rotate, and duplicate shapes
+  - **Draw Mode (D/R/C/L/T)**: Create rectangles, circles, lines, or text shapes
+- **Comprehensive Keyboard Shortcuts**: 15+ shortcuts for modes, tools, selection, duplication, nudging, and more
 - **Visual Feedback**: Multi-colored selection borders, transformer handles with rotation, snap guides, and selection counts
 - **Smart Drag Detection**: 3px threshold prevents accidental drags on click
-- **Group Operations**: Move and delete multiple shapes simultaneously
+- **Group Operations**: Move, duplicate, and delete multiple shapes simultaneously
 - **Rotation Snapping**: Shapes snap to 45° increments for precise alignment
+- **Context Awareness**: Keyboard shortcuts automatically disable during text editing
 - **Dark Theme**: Eye-friendly dark interface
 
 ## 🚀 Live Demo
 
-**Production URL**: [Your Vercel URL here]
+**Production URL**: https://collabcanvas-2ba10.web.app
 
 Test with multiple browser windows to see real-time collaboration in action!
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: React 18 + Vite
-- **Canvas**: Konva.js + React-Konva
-- **Backend**: Firebase (Firestore + Authentication)
-- **Deployment**: Vercel
+- **Frontend**: React 19 + Vite 7
+- **Canvas**: Konva.js 10 + React-Konva 19
+- **Backend**: Firebase 12 (Firestore + Realtime Database + Authentication)
+- **Deployment**: Firebase Hosting
 - **Styling**: CSS3 with modern dark theme
 
 ## 📋 Prerequisites
@@ -173,16 +176,36 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ### Keyboard Shortcuts
 
+#### Mode Shortcuts
 | Key | Action |
 |-----|--------|
 | `V` | Switch to Pan Mode |
 | `M` | Switch to Move Mode |
-| `D` | Switch to Draw Mode |
+| `D` | Switch to Draw Mode (last used shape type) |
+| `R` | Draw Mode + Rectangle tool |
+| `C` | Draw Mode + Circle tool |
+| `L` | Draw Mode + Line tool |
+| `T` | Draw Mode + Text tool |
 | `Esc` | Return to Pan Mode + Deselect all shapes |
-| `Delete` / `Backspace` | Delete selected shape(s) |
+
+#### Selection Shortcuts
+| Key | Action |
+|-----|--------|
 | `Shift + Click` | Add/remove shapes from selection |
 | `Cmd/Ctrl + A` | Select all shapes |
-| Double-click text | Edit text inline |
+| `Drag marquee` | Select multiple shapes by drawing box |
+| `Shift + Drag marquee` | Add shapes to existing selection |
+
+#### Editing Shortcuts
+| Key | Action |
+|-----|--------|
+| `Cmd/Ctrl + D` | Duplicate selected shape(s) with 20px offset |
+| `Delete` / `Backspace` | Delete selected shape(s) |
+| `Arrow Keys` | Nudge selected shape(s) by 1px |
+| `Shift + Arrow Keys` | Nudge selected shape(s) by 10px |
+| `Double-click text` | Edit text inline |
+
+**Note**: All editing shortcuts are automatically disabled while editing text.
 
 ### Multiplayer Features
 
@@ -193,39 +216,47 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ## 🚢 Deployment
 
-### Deploy to Vercel
+### Deploy to Firebase Hosting
 
-1. **Install Vercel CLI** (optional):
+1. **Install Firebase CLI**:
    ```bash
-   npm i -g vercel
+   npm install -g firebase-tools
    ```
 
-2. **Connect to Vercel**:
-   - Push code to GitHub
-   - Go to [Vercel Dashboard](https://vercel.com/dashboard)
-   - Import your GitHub repository
-   - Vercel will auto-detect Vite configuration
-
-3. **Add Environment Variables**:
-   - In Vercel project settings > Environment Variables
-   - Add all `VITE_FIREBASE_*` variables from your `.env.local`
-   - Apply to Production, Preview, and Development
-
-4. **Deploy**:
+2. **Login to Firebase**:
    ```bash
-   git push origin main
+   firebase login
    ```
-   Vercel will automatically deploy on each push to main branch
+
+3. **Initialize Firebase** (if not already done):
+   ```bash
+   firebase init hosting
+   ```
+   - Select your Firebase project
+   - Public directory: `collabcanvas/dist`
+   - Configure as single-page app: Yes
+   - Set up automatic builds: No
+
+4. **Build and Deploy**:
+   ```bash
+   cd collabcanvas
+   npm run build
+   cd ..
+   firebase deploy --only hosting
+   ```
 
 5. **Update Firebase Authorized Domains**:
-   - Add your `*.vercel.app` domain to Firebase Authentication > Authorized domains
+   - Your `*.web.app` domain should be automatically authorized
+   - If needed, add it in Firebase Console > Authentication > Settings > Authorized domains
 
-### Manual Deployment
+### Automatic Deployment
 
-```bash
-npm run build
-vercel --prod
-```
+Set up GitHub Actions for automatic deployment on push to main:
+1. Add Firebase token to GitHub secrets
+2. Create `.github/workflows/deploy.yml`
+3. Every push to main triggers automatic build and deploy
+
+**Current Production URL**: https://collabcanvas-2ba10.web.app
 
 ## 📁 Project Structure
 
@@ -240,7 +271,9 @@ collabcanvas/
 │   ├── hooks/
 │   │   ├── useAuth.js         # Authentication state management
 │   │   ├── useCanvas.js       # Canvas viewport (pan/zoom)
-│   │   ├── useShapes.js       # Shape CRUD operations
+│   │   ├── useShapes.js       # Shape CRUD + duplicate operations
+│   │   ├── useSelection.js    # Multi-select state management
+│   │   ├── useKeyboard.js     # Centralized keyboard shortcuts
 │   │   ├── useCursors.js      # Multiplayer cursors
 │   │   └── usePresence.js     # User presence tracking
 │   ├── services/
@@ -436,7 +469,20 @@ npm run lint
 
 ### Recent Updates
 
-#### PR #15: Rotation Support (Latest)
+#### PR #16: Duplicate & Keyboard Shortcuts (Latest - October 2025)
+- ✅ **Duplicate functionality**: Cmd/Ctrl+D duplicates selected shapes with 20px offset
+- ✅ **Comprehensive keyboard shortcuts**: 15+ shortcuts for all operations
+- ✅ **Arrow key nudging**: 1px (or 10px with Shift) precise positioning
+- ✅ **Tool shortcuts**: R, C, L, T for quick shape type selection
+- ✅ **Context awareness**: Shortcuts automatically disabled during text editing
+- ✅ **Platform detection**: Cmd on Mac, Ctrl on Windows/Linux
+- ✅ **Centralized useKeyboard hook**: Clean, maintainable shortcut management
+- ✅ **Property preservation**: Duplicate maintains rotation, color, text content
+- ✅ **Special line handling**: Offsets both start and endpoints
+- ✅ **Group operations**: Duplicate multiple shapes simultaneously
+- **Time**: 2 hours implementation, **ZERO bugs**
+
+#### PR #15: Rotation Support
 - ✅ All shape types support rotation (rectangles, circles, text)
 - ✅ Rotation handle appears on selected shapes
 - ✅ Rotation snaps to 45° increments for precision
@@ -445,7 +491,7 @@ npm run lint
 - ✅ No position drift on rotation
 - ✅ Text shapes now rotatable
 
-#### PR #14: Marquee Selection
+#### PR #14: Marquee Selection (Bonus - delivered early)
 - ✅ Drag-to-select rectangle in Move mode
 - ✅ AABB collision detection for all shape types
 - ✅ Shift+marquee for additive selection
@@ -457,6 +503,7 @@ npm run lint
 - ✅ Group move with zero latency (optimistic locking)
 - ✅ Group delete with batch operations
 - ✅ 20x performance improvement on drag operations
+- ✅ Created useSelection hook for clean state management
 
 #### PR #12: Text Shape Support
 - ✅ Click-to-place text creation
