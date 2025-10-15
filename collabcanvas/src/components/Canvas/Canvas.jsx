@@ -39,6 +39,9 @@ function Canvas() {
   // Track initial positions of all shapes during multi-select drag
   const initialPositionsRef = useRef(null);
   
+  // Store refs to all shape Konva nodes for direct manipulation during drag
+  const shapeNodesRef = useRef({});
+  
   // Canvas mode: 'pan', 'move', or 'draw'
   const [mode, setMode] = useState('pan');
   
@@ -363,6 +366,15 @@ function Canvas() {
     setNewShape(null);
   }
 
+  // Register shape node ref for direct manipulation
+  function registerShapeNode(shapeId, node) {
+    if (node) {
+      shapeNodesRef.current[shapeId] = node;
+    } else {
+      delete shapeNodesRef.current[shapeId];
+    }
+  }
+
   // Handle shape selection (supports shift-click for multi-select)
   function handleShapeSelect(shapeId, event) {
     // In Konva, the native DOM event is in event.evt
@@ -418,19 +430,48 @@ function Canvas() {
       await Promise.all(lockPromises);
       activeDragRef.current = 'multi-select'; // Mark as multi-select drag
       
-      // Store initial positions of all selected shapes for optimistic updates during drag
+      // Store initial positions from shape data (source of truth)
+      // AND reset Konva node positions to ensure clean state
       initialPositionsRef.current = {};
       selectedShapeIds.forEach(id => {
         const shape = shapes.find(s => s.id === id);
+        const node = shapeNodesRef.current[id];
+        
         if (shape) {
           initialPositionsRef.current[id] = {
             x: shape.x,
             y: shape.y,
-            endX: shape.endX, // For lines
-            endY: shape.endY  // For lines
+            endX: shape.endX,
+            endY: shape.endY,
+            type: shape.type,
+            width: shape.width,
+            height: shape.height
           };
+          
+          // Reset node position to match data (ensures clean starting state)
+          if (node && id !== shapeId) { // Don't reset the shape being dragged
+            if (shape.type === 'circle') {
+              // Circles positioned at center
+              node.position({ 
+                x: shape.x + shape.width / 2, 
+                y: shape.y + shape.height / 2 
+              });
+            } else if (shape.type !== 'line') {
+              // Rectangles and text positioned at top-left
+              node.position({ x: shape.x, y: shape.y });
+            }
+          }
         }
       });
+      
+      // Trigger a redraw to show the reset positions
+      const firstNode = shapeNodesRef.current[selectedShapeIds[0]];
+      if (firstNode) {
+        const layer = firstNode.getLayer();
+        if (layer) {
+          layer.batchDraw();
+        }
+      }
     } else {
       // Single shape drag - lock just this shape
       const locked = await lockShape(shapeId);
@@ -443,39 +484,46 @@ function Canvas() {
 
   // Handle shape drag move
   function handleShapeDragMove(data) {
-    // If this is a multi-select drag, update positions of all selected shapes optimistically
+    // If this is a multi-select drag, directly update Konva node positions
     if (activeDragRef.current === 'multi-select' && initialPositionsRef.current && isMultiSelect) {
       const initialPos = initialPositionsRef.current[data.id];
       if (!initialPos) return;
       
-      // Calculate offset from initial position
+      // Calculate offset from initial position of the dragged shape
       const dx = data.x - initialPos.x;
       const dy = data.y - initialPos.y;
       
-      // Update local state for all selected shapes (optimistic update)
-      setShapes(prevShapes => 
-        prevShapes.map(shape => {
-          if (selectedShapeIds.includes(shape.id)) {
-            const shapeInitial = initialPositionsRef.current[shape.id];
-            if (!shapeInitial) return shape;
-            
-            const updates = {
-              ...shape,
-              x: shapeInitial.x + dx,
-              y: shapeInitial.y + dy
-            };
-            
-            // For lines, also update endpoints
-            if (shape.endX !== undefined && shape.endY !== undefined) {
-              updates.endX = shapeInitial.endX + dx;
-              updates.endY = shapeInitial.endY + dy;
-            }
-            
-            return updates;
+      // Directly update Konva nodes for all selected shapes (except the one being dragged)
+      selectedShapeIds.forEach(shapeId => {
+        if (shapeId === data.id) return; // Skip the dragged shape (it's already moving)
+        
+        const node = shapeNodesRef.current[shapeId];
+        const shapeInitial = initialPositionsRef.current[shapeId];
+        
+        if (node && shapeInitial) {
+          if (shapeInitial.type === 'line') {
+            // For lines, we don't move during drag, only on drag end
+            return;
+          } else if (shapeInitial.type === 'circle') {
+            // For circles, Konva positions at CENTER but we store as TOP-LEFT
+            // Convert top-left to center position
+            const centerX = shapeInitial.x + shapeInitial.width / 2 + dx;
+            const centerY = shapeInitial.y + shapeInitial.height / 2 + dy;
+            node.position({ x: centerX, y: centerY });
+          } else {
+            // For rectangles and text, position is top-left (matches our storage)
+            const newX = shapeInitial.x + dx;
+            const newY = shapeInitial.y + dy;
+            node.position({ x: newX, y: newY });
           }
-          return shape;
-        })
-      );
+        }
+      });
+      
+      // Trigger layer redraw to show the changes
+      const layer = shapeNodesRef.current[data.id]?.getLayer();
+      if (layer) {
+        layer.batchDraw();
+      }
     }
   }
 
@@ -851,6 +899,7 @@ function Canvas() {
                 isInteractive={mode !== 'draw'}
                 isLockedByOther={isLockedByOther}
                 currentUserId={user?.uid}
+                onNodeRef={(node) => registerShapeNode(shape.id, node)}
               />
             );
           })}

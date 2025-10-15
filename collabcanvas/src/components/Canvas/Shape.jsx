@@ -3,7 +3,7 @@ import { useRef, useEffect, memo } from 'react';
 import { SHAPE_TYPES, DEFAULT_STROKE_WIDTH, DEFAULT_LINE_HIT_WIDTH, DEFAULT_FONT_SIZE, DEFAULT_FONT_WEIGHT } from '../../utils/constants';
 
 // Memoized Shape component to prevent unnecessary re-renders
-const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, onSelect, onDragEnd, onDragStart, onDragMove, onTextEdit, isEditing = false, isDraggable = true, isInteractive = true, isLockedByOther = false, currentUserId }) {
+const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, onSelect, onDragEnd, onDragStart, onDragMove, onTextEdit, isEditing = false, isDraggable = true, isInteractive = true, isLockedByOther = false, currentUserId, onNodeRef }) {
   const shapeRef = useRef(null);
   const transformerRef = useRef(null);
   const lineRef = useRef(null);  // For direct line manipulation (used only for line shapes)
@@ -12,6 +12,18 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
   // Determine shape type early (needed for useEffect)
   const shapeType = shape.type || SHAPE_TYPES.RECTANGLE;
   const isText = shapeType === SHAPE_TYPES.TEXT;
+  
+  // Register this shape's node ref with parent for direct manipulation
+  useEffect(() => {
+    if (onNodeRef && shapeRef.current) {
+      onNodeRef(shapeRef.current);
+    }
+    return () => {
+      if (onNodeRef) {
+        onNodeRef(null);
+      }
+    };
+  }, [onNodeRef]);
 
   // Attach transformer to shape when selected
   useEffect(() => {
