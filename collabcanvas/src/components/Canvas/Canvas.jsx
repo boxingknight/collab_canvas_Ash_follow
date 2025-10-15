@@ -420,15 +420,18 @@ function Canvas() {
   }
 
   // Handle shape drag start
-  async function handleShapeDragStart(shapeId) {
+  function handleShapeDragStart(shapeId) {
     setIsDraggingShape(true);
     
     // If this shape is part of a multi-select, lock all selected shapes
     if (isMultiSelect && isSelected(shapeId)) {
-      // Lock all selected shapes
-      const lockPromises = selectedShapeIds.map(id => lockShape(id));
-      await Promise.all(lockPromises);
-      activeDragRef.current = 'multi-select'; // Mark as multi-select drag
+      activeDragRef.current = 'multi-select'; // Mark as multi-select drag immediately
+      
+      // OPTIMISTIC LOCKING: Lock in background (don't await)
+      // This eliminates latency - Figma/Miro use this pattern
+      Promise.all(selectedShapeIds.map(id => lockShape(id))).catch(err => {
+        console.error('Failed to lock shapes:', err);
+      });
       
       // Store initial positions from shape data (source of truth)
       // AND reset Konva node positions to ensure clean state
@@ -464,20 +467,22 @@ function Canvas() {
         }
       });
       
-      // Trigger a redraw to show the reset positions
-      const firstNode = shapeNodesRef.current[selectedShapeIds[0]];
-      if (firstNode) {
-        const layer = firstNode.getLayer();
-        if (layer) {
-          layer.batchDraw();
+      // Use requestAnimationFrame for smooth redraw (non-blocking)
+      requestAnimationFrame(() => {
+        const firstNode = shapeNodesRef.current[selectedShapeIds[0]];
+        if (firstNode) {
+          const layer = firstNode.getLayer();
+          if (layer) {
+            layer.batchDraw();
+          }
         }
-      }
+      });
     } else {
-      // Single shape drag - lock just this shape
-      const locked = await lockShape(shapeId);
-      if (locked) {
-        activeDragRef.current = shapeId;
-      }
+      // Single shape drag - also use optimistic locking
+      activeDragRef.current = shapeId;
+      lockShape(shapeId).catch(err => {
+        console.error('Failed to lock shape:', err);
+      });
       initialPositionsRef.current = null;
     }
   }
@@ -519,11 +524,14 @@ function Canvas() {
         }
       });
       
-      // Trigger layer redraw to show the changes
-      const layer = shapeNodesRef.current[data.id]?.getLayer();
-      if (layer) {
-        layer.batchDraw();
-      }
+      // Use requestAnimationFrame for smooth, non-blocking redraw
+      // This matches the 60 FPS performance target
+      requestAnimationFrame(() => {
+        const layer = shapeNodesRef.current[data.id]?.getLayer();
+        if (layer) {
+          layer.batchDraw();
+        }
+      });
     }
   }
 
