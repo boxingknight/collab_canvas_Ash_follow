@@ -1,7 +1,8 @@
 // src/services/canvasAPI.js
-import { addShape, updateShape, deleteShape, getAllShapes } from './shapes';
+import { addShape, updateShape, deleteShape as deleteShapeFromDB, getAllShapes } from './shapes';
 import { CANVAS_CONFIG } from '../utils/constants';
 import { getCurrentUser } from './auth';
+import { getCurrentSelection, getFirstSelectedId } from './selectionBridge';
 
 /**
  * Validate common parameters
@@ -290,30 +291,163 @@ export const canvasAPI = {
   },
 
   /**
-   * Move a shape
+   * Move a shape (or multiple selected shapes)
    */
-  async moveShape(shapeId, x, y) {
-    const posValidation = validatePosition(x, y);
+  async moveShape(shapeId, x, y, relative = false) {
+    // If no shapeId provided, use ALL selected shapes
+    if (!shapeId) {
+      const selection = getCurrentSelection();
+      if (!selection.selectedShapeIds || selection.selectedShapeIds.length === 0) {
+        return {
+          success: false,
+          error: 'NO_SELECTION',
+          userMessage: 'Please select a shape first before using move command.'
+        };
+      }
+      
+      // Handle multiple selected shapes
+      if (selection.selectedShapeIds.length > 1) {
+        const results = [];
+        const errors = [];
+        
+        for (const selectedId of selection.selectedShapeIds) {
+          const result = await canvasAPI.moveShape(selectedId, x, y, relative);
+          if (result.success) {
+            results.push(result.result);
+          } else {
+            errors.push({ shapeId: selectedId, error: result.userMessage });
+          }
+        }
+        
+        return {
+          success: true,
+          result: {
+            moved: results,
+            movedCount: results.length,
+            errors: errors,
+            errorCount: errors.length,
+            totalAttempted: selection.selectedShapeIds.length
+          },
+          userMessage: errors.length > 0
+            ? `Moved ${results.length} shape(s), ${errors.length} failed.`
+            : `Successfully moved ${results.length} shape(s)!`
+        };
+      }
+      
+      // Single selection
+      shapeId = selection.selectedShapeIds[0];
+    }
+    
+    // If relative is true, fetch current position and add offsets
+    let finalX = x;
+    let finalY = y;
+    
+    if (relative) {
+      try {
+        const shapes = await getAllShapes();
+        const shape = shapes.find(s => s.id === shapeId);
+        if (!shape) {
+          return {
+            success: false,
+            error: 'SHAPE_NOT_FOUND',
+            userMessage: 'Could not find the shape to move.'
+          };
+        }
+        
+        // Add relative offsets to current position
+        // If x or y is null/undefined, keep current position on that axis
+        finalX = (x !== null && x !== undefined) ? shape.x + x : shape.x;
+        finalY = (y !== null && y !== undefined) ? shape.y + y : shape.y;
+      } catch (error) {
+        return {
+          success: false,
+          error: 'FETCH_ERROR',
+          userMessage: 'Could not fetch current shape position.'
+        };
+      }
+    }
+    
+    const posValidation = validatePosition(finalX, finalY);
     if (!posValidation.valid) {
       return { success: false, error: 'INVALID_POSITION', userMessage: posValidation.error };
     }
 
     try {
-      await updateShape(shapeId, { x, y });
-      return { success: true, result: { shapeId, x, y } };
+      await updateShape(shapeId, { x: finalX, y: finalY });
+      return { success: true, result: { shapeId, x: finalX, y: finalY } };
     } catch (error) {
+      // If shape not found, try using selected shape as fallback
+      if (error.code === 'not-found') {
+        const fallbackId = getFirstSelectedId();
+        if (fallbackId && fallbackId !== shapeId) {
+          try {
+            await updateShape(fallbackId, { x: finalX, y: finalY });
+            return { success: true, result: { shapeId: fallbackId, x: finalX, y: finalY } };
+          } catch (fallbackError) {
+            return {
+              success: false,
+              error: fallbackError.code,
+              userMessage: 'Failed to move shape. Please select a shape first.'
+            };
+          }
+        }
+      }
       return {
         success: false,
         error: error.code,
-        userMessage: 'Failed to move shape. Please try again.'
+        userMessage: 'Failed to move shape. Please select a shape first.'
       };
     }
   },
 
   /**
-   * Resize a shape
+   * Resize a shape (or multiple selected shapes)
    */
   async resizeShape(shapeId, width, height) {
+    // If no shapeId provided, use ALL selected shapes
+    if (!shapeId) {
+      const selection = getCurrentSelection();
+      if (!selection.selectedShapeIds || selection.selectedShapeIds.length === 0) {
+        return {
+          success: false,
+          error: 'NO_SELECTION',
+          userMessage: 'Please select a shape first before using resize command.'
+        };
+      }
+      
+      // Handle multiple selected shapes
+      if (selection.selectedShapeIds.length > 1) {
+        const results = [];
+        const errors = [];
+        
+        for (const selectedId of selection.selectedShapeIds) {
+          const result = await canvasAPI.resizeShape(selectedId, width, height);
+          if (result.success) {
+            results.push(result.result);
+          } else {
+            errors.push({ shapeId: selectedId, error: result.userMessage });
+          }
+        }
+        
+        return {
+          success: true,
+          result: {
+            resized: results,
+            resizedCount: results.length,
+            errors: errors,
+            errorCount: errors.length,
+            totalAttempted: selection.selectedShapeIds.length
+          },
+          userMessage: errors.length > 0
+            ? `Resized ${results.length} shape(s), ${errors.length} failed.`
+            : `Successfully resized ${results.length} shape(s)!`
+        };
+      }
+      
+      // Single selection
+      shapeId = selection.selectedShapeIds[0];
+    }
+    
     const sizeValidation = validateSize(width, height);
     if (!sizeValidation.valid) {
       return { success: false, error: 'INVALID_SIZE', userMessage: sizeValidation.error };
@@ -323,41 +457,204 @@ export const canvasAPI = {
       await updateShape(shapeId, { width, height });
       return { success: true, result: { shapeId, width, height } };
     } catch (error) {
+      // If shape not found, try using selected shape as fallback
+      if (error.code === 'not-found') {
+        const fallbackId = getFirstSelectedId();
+        if (fallbackId && fallbackId !== shapeId) {
+          try {
+            await updateShape(fallbackId, { width, height });
+            return { success: true, result: { shapeId: fallbackId, width, height } };
+          } catch (fallbackError) {
+            return {
+              success: false,
+              error: fallbackError.code,
+              userMessage: 'Failed to resize shape. Please select a shape first.'
+            };
+          }
+        }
+      }
       return {
         success: false,
         error: error.code,
-        userMessage: 'Failed to resize shape. Please try again.'
+        userMessage: 'Failed to resize shape. Please select a shape first.'
       };
     }
   },
 
   /**
-   * Rotate a shape
+   * Rotate a shape (or multiple selected shapes)
+   * @param {string} shapeId - Optional shape ID (uses selected if omitted)
+   * @param {number} degrees - Rotation amount in degrees
+   * @param {boolean} relative - If true, adds to current rotation; if false, sets absolute rotation
    */
-  async rotateShape(shapeId, degrees) {
+  async rotateShape(shapeId, degrees, relative = false) {
+    console.log('[canvasAPI] rotateShape called:', { shapeId, degrees, relative });
+    
+    // If no shapeId provided, use ALL selected shapes
+    if (!shapeId) {
+      const selection = getCurrentSelection();
+      console.log('[canvasAPI] rotateShape selection:', selection);
+      
+      if (!selection.selectedShapeIds || selection.selectedShapeIds.length === 0) {
+        return {
+          success: false,
+          error: 'NO_SELECTION',
+          userMessage: 'Please select a shape first before using rotate command.'
+        };
+      }
+      
+      // Handle multiple selected shapes
+      if (selection.selectedShapeIds.length > 1) {
+        console.log(`[canvasAPI] Rotating ${selection.selectedShapeIds.length} shapes`);
+        const results = [];
+        const errors = [];
+        
+        for (const selectedId of selection.selectedShapeIds) {
+          console.log(`[canvasAPI] Rotating shape ${selectedId}`);
+          const result = await canvasAPI.rotateShape(selectedId, degrees, relative);
+          console.log(`[canvasAPI] Rotate result for ${selectedId}:`, result);
+          if (result.success) {
+            results.push(result.result);
+          } else {
+            errors.push({ shapeId: selectedId, error: result.userMessage });
+          }
+        }
+        
+        console.log('[canvasAPI] Batch rotate complete:', { results, errors });
+        return {
+          success: true,
+          result: {
+            rotated: results,
+            rotatedCount: results.length,
+            errors: errors,
+            errorCount: errors.length,
+            totalAttempted: selection.selectedShapeIds.length
+          },
+          userMessage: errors.length > 0
+            ? `Rotated ${results.length} shape(s), ${errors.length} failed.`
+            : `Successfully rotated ${results.length} shape(s)!`
+        };
+      }
+      
+      // Single selection
+      shapeId = selection.selectedShapeIds[0];
+      console.log(`[canvasAPI] Single selection: ${shapeId}`);
+    }
+    
     if (typeof degrees !== 'number') {
       return { success: false, error: 'INVALID_ROTATION', userMessage: 'Rotation must be a number' };
     }
 
-    // Normalize to 0-359
-    const normalizedRotation = ((degrees % 360) + 360) % 360;
-
     try {
+      let finalRotation = degrees;
+      
+      // If relative rotation, get current rotation and add to it
+      if (relative) {
+        const shapes = await getAllShapes();
+        const currentShape = shapes.find(s => s.id === shapeId);
+        if (currentShape) {
+          const currentRotation = currentShape.rotation || 0;
+          finalRotation = currentRotation + degrees;
+        }
+      }
+      
+      // Normalize to 0-359
+      const normalizedRotation = ((finalRotation % 360) + 360) % 360;
+
       await updateShape(shapeId, { rotation: normalizedRotation });
-      return { success: true, result: { shapeId, rotation: normalizedRotation } };
+      return { 
+        success: true, 
+        result: { 
+          shapeId, 
+          rotation: normalizedRotation,
+          wasRelative: relative 
+        } 
+      };
     } catch (error) {
+      // If shape not found, try using selected shape as fallback
+      if (error.code === 'not-found') {
+        const fallbackId = getFirstSelectedId();
+        if (fallbackId && fallbackId !== shapeId) {
+          try {
+            let finalRotation = degrees;
+            
+            if (relative) {
+              const shapes = await getAllShapes();
+              const currentShape = shapes.find(s => s.id === fallbackId);
+              if (currentShape) {
+                const currentRotation = currentShape.rotation || 0;
+                finalRotation = currentRotation + degrees;
+              }
+            }
+            
+            const normalizedRotation = ((finalRotation % 360) + 360) % 360;
+            await updateShape(fallbackId, { rotation: normalizedRotation });
+            return { success: true, result: { shapeId: fallbackId, rotation: normalizedRotation } };
+          } catch (fallbackError) {
+            return {
+              success: false,
+              error: fallbackError.code,
+              userMessage: 'Failed to rotate shape. Please select a shape first.'
+            };
+          }
+        }
+      }
       return {
         success: false,
         error: error.code,
-        userMessage: 'Failed to rotate shape. Please try again.'
+        userMessage: 'Failed to rotate shape. Please select a shape first.'
       };
     }
   },
 
   /**
-   * Change shape color
+   * Change shape color (or multiple selected shapes)
    */
   async changeShapeColor(shapeId, color) {
+    // If no shapeId provided, use ALL selected shapes
+    if (!shapeId) {
+      const selection = getCurrentSelection();
+      if (!selection.selectedShapeIds || selection.selectedShapeIds.length === 0) {
+        return {
+          success: false,
+          error: 'NO_SELECTION',
+          userMessage: 'Please select a shape first before using color change command.'
+        };
+      }
+      
+      // Handle multiple selected shapes
+      if (selection.selectedShapeIds.length > 1) {
+        const results = [];
+        const errors = [];
+        
+        for (const selectedId of selection.selectedShapeIds) {
+          const result = await canvasAPI.changeShapeColor(selectedId, color);
+          if (result.success) {
+            results.push(result.result);
+          } else {
+            errors.push({ shapeId: selectedId, error: result.userMessage });
+          }
+        }
+        
+        return {
+          success: true,
+          result: {
+            colorChanged: results,
+            colorChangedCount: results.length,
+            errors: errors,
+            errorCount: errors.length,
+            totalAttempted: selection.selectedShapeIds.length
+          },
+          userMessage: errors.length > 0
+            ? `Changed color of ${results.length} shape(s), ${errors.length} failed.`
+            : `Successfully changed color of ${results.length} shape(s)!`
+        };
+      }
+      
+      // Single selection
+      shapeId = selection.selectedShapeIds[0];
+    }
+    
     const colorValidation = validateColor(color);
     if (!colorValidation.valid) {
       return { success: false, error: 'INVALID_COLOR', userMessage: colorValidation.error };
@@ -367,30 +664,121 @@ export const canvasAPI = {
       await updateShape(shapeId, { color });
       return { success: true, result: { shapeId, color } };
     } catch (error) {
+      // If shape not found, try using selected shape as fallback
+      if (error.code === 'not-found') {
+        const fallbackId = getFirstSelectedId();
+        if (fallbackId && fallbackId !== shapeId) {
+          try {
+            await updateShape(fallbackId, { color });
+            return { success: true, result: { shapeId: fallbackId, color } };
+          } catch (fallbackError) {
+            return {
+              success: false,
+              error: fallbackError.code,
+              userMessage: 'Failed to change color. Please select a shape first.'
+            };
+          }
+        }
+      }
       return {
         success: false,
         error: error.code,
-        userMessage: 'Failed to change color. Please try again.'
+        userMessage: 'Failed to change color. Please select a shape first.'
       };
     }
   },
 
   /**
-   * Delete a shape
+   * Delete a shape (or multiple selected shapes)
    */
   async deleteShape(shapeId) {
-    if (!shapeId || typeof shapeId !== 'string') {
+    console.log('[canvasAPI] deleteShape called:', { shapeId });
+    
+    // If no shapeId provided, use ALL selected shapes
+    if (!shapeId) {
+      const selection = getCurrentSelection();
+      console.log('[canvasAPI] deleteShape selection:', selection);
+      
+      if (!selection.selectedShapeIds || selection.selectedShapeIds.length === 0) {
+        return {
+          success: false,
+          error: 'NO_SELECTION',
+          userMessage: 'Please select a shape first before using delete command.'
+        };
+      }
+      
+      // Handle multiple selected shapes
+      if (selection.selectedShapeIds.length > 1) {
+        console.log(`[canvasAPI] Deleting ${selection.selectedShapeIds.length} shapes`);
+        const results = [];
+        const errors = [];
+        
+        for (const selectedId of selection.selectedShapeIds) {
+          console.log(`[canvasAPI] Deleting shape ${selectedId}`);
+          const result = await canvasAPI.deleteShape(selectedId);
+          console.log(`[canvasAPI] Delete result for ${selectedId}:`, result);
+          if (result.success) {
+            results.push(result.result);
+          } else {
+            errors.push({ shapeId: selectedId, error: result.userMessage });
+          }
+        }
+        
+        console.log('[canvasAPI] Batch delete complete:', { results, errors });
+        return {
+          success: true,
+          result: {
+            deleted: results,
+            deletedCount: results.length,
+            errors: errors,
+            errorCount: errors.length,
+            totalAttempted: selection.selectedShapeIds.length
+          },
+          userMessage: errors.length > 0
+            ? `Deleted ${results.length} shape(s), ${errors.length} failed.`
+            : `Successfully deleted ${results.length} shape(s)!`
+        };
+      }
+      
+      // Single selection
+      shapeId = selection.selectedShapeIds[0];
+      console.log(`[canvasAPI] Single selection: ${shapeId}`);
+    }
+    
+    if (typeof shapeId !== 'string') {
+      console.log('[canvasAPI] Invalid shapeId type:', typeof shapeId);
       return { success: false, error: 'INVALID_SHAPE_ID', userMessage: 'Invalid shape ID' };
     }
 
     try {
-      await deleteShape(shapeId);
+      console.log(`[canvasAPI] Calling deleteShapeFromDB for ${shapeId}`);
+      await deleteShapeFromDB(shapeId);
+      console.log(`[canvasAPI] Successfully deleted ${shapeId}`);
       return { success: true, result: { shapeId } };
     } catch (error) {
+      console.log(`[canvasAPI] Delete error for ${shapeId}:`, error);
+      // If shape not found, try using selected shape as fallback
+      if (error.code === 'not-found') {
+        const fallbackId = getFirstSelectedId();
+        if (fallbackId && fallbackId !== shapeId) {
+          console.log(`[canvasAPI] Trying fallback ID: ${fallbackId}`);
+          try {
+            await deleteShapeFromDB(fallbackId);
+            return { success: true, result: { shapeId: fallbackId } };
+          } catch (fallbackError) {
+            console.log('[canvasAPI] Fallback also failed:', fallbackError);
+            return {
+              success: false,
+              error: fallbackError.code,
+              userMessage: 'Failed to delete shape. Please select a shape first.'
+            };
+          }
+        }
+      }
       return {
         success: false,
         error: error.code,
-        userMessage: 'Failed to delete shape. Please try again.'
+        userMessage: 'Failed to delete shape. Please select a shape first.'
       };
     }
   },
@@ -413,14 +801,13 @@ export const canvasAPI = {
 
   /**
    * Get currently selected shapes
-   * Note: This will need to be connected to selection state in PR #21
    */
   async getSelectedShapes() {
-    // TODO: Connect to useSelection hook in PR #21
+    const selection = getCurrentSelection();
     return {
       success: true,
-      result: [],
-      note: 'Selection query will be implemented in PR #21'
+      result: selection.shapes,
+      count: selection.selectedShapeIds.length
     };
   },
 
@@ -434,6 +821,233 @@ export const canvasAPI = {
         x: CANVAS_CONFIG.centerX,
         y: CANVAS_CONFIG.centerY
       }
+    };
+  },
+
+  /**
+   * Generate multiple shapes programmatically (pattern-based)
+   * @param {Object} config - Generation configuration
+   * Supports: count, type, pattern (random, grid, row, column, circle-pattern)
+   */
+  async generateShapes(config, userId = null) {
+    // Get current user if not provided
+    if (!userId) {
+      try {
+        userId = getCurrentUserId();
+      } catch (error) {
+        return {
+          success: false,
+          error: 'NOT_AUTHENTICATED',
+          userMessage: 'You must be logged in to create shapes.'
+        };
+      }
+    }
+
+    const {
+      count = 10,
+      type = 'circle',
+      pattern = 'random',
+      startX = 500,
+      startY = 500,
+      width = 100,
+      height = 100,
+      radius = 50,
+      color = '#3b82f6',
+      spacing = 150,
+      columns = 10
+    } = config;
+
+    // Limit to 1000 shapes max
+    const shapeCount = Math.min(count, 1000);
+    const shapes = [];
+
+    // Generate shapes based on pattern
+    for (let i = 0; i < shapeCount; i++) {
+      let x, y;
+
+      switch (pattern) {
+        case 'random':
+          // Random placement across canvas
+          x = Math.random() * (CANVAS_CONFIG.width - 200) + 100;
+          y = Math.random() * (CANVAS_CONFIG.height - 200) + 100;
+          break;
+
+        case 'grid':
+          // Grid pattern
+          const col = i % columns;
+          const row = Math.floor(i / columns);
+          x = startX + (col * spacing);
+          y = startY + (row * spacing);
+          break;
+
+        case 'row':
+          // Horizontal row
+          x = startX + (i * spacing);
+          y = startY;
+          break;
+
+        case 'column':
+          // Vertical column
+          x = startX;
+          y = startY + (i * spacing);
+          break;
+
+        case 'circle-pattern':
+          // Circular arrangement
+          const angle = (i / shapeCount) * 2 * Math.PI;
+          const patternRadius = Math.min(CANVAS_CONFIG.width, CANVAS_CONFIG.height) / 3;
+          x = CANVAS_CONFIG.centerX + patternRadius * Math.cos(angle);
+          y = CANVAS_CONFIG.centerY + patternRadius * Math.sin(angle);
+          break;
+
+        case 'spiral':
+          // Spiral pattern
+          const spiralAngle = i * 0.5;
+          const spiralRadius = i * 10;
+          x = CANVAS_CONFIG.centerX + spiralRadius * Math.cos(spiralAngle);
+          y = CANVAS_CONFIG.centerY + spiralRadius * Math.sin(spiralAngle);
+          break;
+
+        default:
+          // Default to random
+          x = Math.random() * (CANVAS_CONFIG.width - 200) + 100;
+          y = Math.random() * (CANVAS_CONFIG.height - 200) + 100;
+      }
+
+      // Add shape definition
+      shapes.push({
+        type,
+        x,
+        y,
+        width: type === 'rectangle' ? width : undefined,
+        height: type === 'rectangle' ? height : undefined,
+        radius: type === 'circle' ? radius : undefined,
+        color
+      });
+    }
+
+    // Use existing batch creation
+    return this.createShapesBatch(shapes, userId);
+  },
+
+  /**
+   * Create multiple shapes at once (batch operation)
+   * @param {Array} shapes - Array of shape definitions
+   * Each shape should have: { type, x, y, ...other params }
+   * Supported types: 'rectangle', 'circle', 'line', 'text'
+   */
+  async createShapesBatch(shapes, userId = null) {
+    // Get current user if not provided
+    if (!userId) {
+      try {
+        userId = getCurrentUserId();
+      } catch (error) {
+        return {
+          success: false,
+          error: 'NOT_AUTHENTICATED',
+          userMessage: 'You must be logged in to create shapes.'
+        };
+      }
+    }
+
+    if (!Array.isArray(shapes) || shapes.length === 0) {
+      return {
+        success: false,
+        error: 'INVALID_INPUT',
+        userMessage: 'Shapes must be a non-empty array.'
+      };
+    }
+
+    const results = [];
+    const errors = [];
+
+    // Create all shapes
+    for (const shape of shapes) {
+      try {
+        let result;
+
+        switch (shape.type) {
+          case 'rectangle':
+            result = await this.createRectangle(
+              shape.x,
+              shape.y,
+              shape.width || 200,
+              shape.height || 150,
+              shape.color || '#3b82f6',
+              userId
+            );
+            break;
+
+          case 'circle':
+            result = await this.createCircle(
+              shape.x,
+              shape.y,
+              shape.radius || 75,
+              shape.color || '#3b82f6',
+              userId
+            );
+            break;
+
+          case 'line':
+            result = await this.createLine(
+              shape.x || shape.x1,
+              shape.y || shape.y1,
+              shape.endX || shape.x2,
+              shape.endY || shape.y2,
+              shape.strokeWidth || 2,
+              shape.color || '#3b82f6',
+              userId
+            );
+            break;
+
+          case 'text':
+            result = await this.createText(
+              shape.text || 'Text',
+              shape.x,
+              shape.y,
+              shape.fontSize || 16,
+              shape.fontWeight || 'normal',
+              shape.color || '#000000',
+              userId
+            );
+            break;
+
+          default:
+            errors.push({
+              shape: shape,
+              error: `Unknown shape type: ${shape.type}`
+            });
+            continue;
+        }
+
+        if (result.success) {
+          results.push(result.result);
+        } else {
+          errors.push({
+            shape: shape,
+            error: result.userMessage
+          });
+        }
+      } catch (error) {
+        errors.push({
+          shape: shape,
+          error: error.message
+        });
+      }
+    }
+
+    return {
+      success: true,
+      result: {
+        created: results,
+        createdCount: results.length,
+        errors: errors,
+        errorCount: errors.length,
+        totalAttempted: shapes.length
+      },
+      userMessage: errors.length > 0
+        ? `Created ${results.length} shape(s), ${errors.length} failed.`
+        : `Successfully created ${results.length} shape(s)!`
     };
   }
 };

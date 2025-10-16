@@ -1,5 +1,6 @@
 import usePresence from '../../hooks/usePresence';
 import UserList from '../Presence/UserList';
+import AIChat from '../AI/AIChat';
 
 function AppLayout({ children, user, onLogout }) {
   const { onlineUsers } = usePresence(user);
@@ -25,6 +26,7 @@ function AppLayout({ children, user, onLogout }) {
       <main className="app-main">
         {children}
       </main>
+      <AIChat />
     </div>
   );
 }

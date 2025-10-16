@@ -44,7 +44,22 @@ export default function useKeyboard({
      * @param {KeyboardEvent} e - Keyboard event
      */
     function handleKeyDown(e) {
-      // During text editing, only allow Escape to exit
+      // Don't trigger shortcuts if user is typing in any input/textarea
+      // (including AI chat, search boxes, etc.)
+      const target = e.target;
+      const isTypingInInput = 
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable ||
+        target.closest('.ai-input'); // Specifically check for AI chat input
+      
+      if (isTypingInInput) {
+        // Allow all native input behavior (typing, delete, arrows, etc.)
+        // Don't prevent any keys when user is in an input field
+        return;
+      }
+
+      // During text editing on canvas, only allow Escape to exit
       if (isTextEditing) {
         if (e.key === 'Escape' && onDeselect) {
           onDeselect();

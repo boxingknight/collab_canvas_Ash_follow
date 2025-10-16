@@ -26,6 +26,7 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
   const shapeType = shape.type || SHAPE_TYPES.RECTANGLE;
   const isText = shapeType === SHAPE_TYPES.TEXT;
   const isCircle = shapeType === SHAPE_TYPES.CIRCLE;
+  const isRect = shapeType === SHAPE_TYPES.RECTANGLE;  // Use RECTANGLE, not RECT
   const isLine = shapeType === SHAPE_TYPES.LINE;
   
   // CRITICAL: Use callback ref for SYNCHRONOUS registration
@@ -119,16 +120,16 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
           node.scaleX(1);
           node.scaleY(1);
           
-          // For circles, node.x() and node.y() are center coordinates
+          // For circles and rectangles, node.x() and node.y() are center coordinates
+          // (because they use offsetX/offsetY for center-based rotation)
           // We need to convert them back to top-left for consistent storage
           let newX = node.x();
           let newY = node.y();
           
-          if (isCircle) {
-            // Circle is rendered at center, so convert back to top-left
+          if (isCircle || isRect) {
+            // Shape is rendered at center, so convert back to top-left
             newX = node.x() - newWidth / 2;
             newY = node.y() - newHeight / 2;
-            console.log('[SHAPE TRANSFORM] Circle center:', node.x(), node.y(), '-> top-left:', newX, newY);
           }
           
           const updates = {
@@ -220,8 +221,9 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
         let newX = e.target.x();
         let newY = e.target.y();
         
-        // For circles, convert center to top-left
-        if (isCircle) {
+        // For circles, rectangles, and text, convert center to top-left
+        // (because they all use offsetX/offsetY for center-based rotation)
+        if (isCircle || isRect || isText) {
           newX = newX - shape.width / 2;
           newY = newY - shape.height / 2;
         }
@@ -275,9 +277,10 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
       let newX = e.target.x();
       let newY = e.target.y();
       
-      // For circles, e.target.x/y returns the CENTER position
+      // For circles, rectangles, and text, e.target.x/y returns the CENTER position
+      // (because they all use offsetX/offsetY for center-based rotation)
       // We need to convert it back to top-left corner for consistent storage
-      if (isCircle) {
+      if (isCircle || isRect || isText) {
         newX = newX - shape.width / 2;
         newY = newY - shape.height / 2;
       }
@@ -537,8 +540,10 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
           <Text
             ref={handleShapeRef}
             id={shape.id}
-            x={shape.x}
-            y={shape.y}
+            x={shape.x + shape.width / 2}
+            y={shape.y + shape.height / 2}
+            offsetX={shape.width / 2}
+            offsetY={shape.height / 2}
             width={shape.width}
             height={shape.height}
             text={shape.text}
@@ -657,8 +662,10 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
         ) : (
           <Rect
             {...commonProps}
-            x={shape.x}
-            y={shape.y}
+            x={shape.x + shape.width / 2}
+            y={shape.y + shape.height / 2}
+            offsetX={shape.width / 2}
+            offsetY={shape.height / 2}
             width={shape.width}
             height={shape.height}
             rotation={shape.rotation || 0}
