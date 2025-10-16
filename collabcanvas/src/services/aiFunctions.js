@@ -411,6 +411,86 @@ export const functionSchemas = [
       properties: {},
       required: []
     }
+  },
+
+  // ===== SELECTION FUNCTIONS =====
+  {
+    name: 'selectShapesByType',
+    description: 'Selects all shapes of a specific type on the canvas. Use this for "select all rectangles", "select all circles", etc.',
+    parameters: {
+      type: 'object',
+      properties: {
+        type: {
+          type: 'string',
+          enum: ['rectangle', 'circle', 'line', 'text'],
+          description: 'The type of shapes to select'
+        }
+      },
+      required: ['type']
+    }
+  },
+  {
+    name: 'selectShapesByColor',
+    description: 'Selects all shapes with a specific color. Use this for "select all red shapes", "select all blue circles" (combine with type filtering if needed).',
+    parameters: {
+      type: 'object',
+      properties: {
+        color: {
+          type: 'string',
+          description: 'Hex color code including # (e.g., "#FF0000" for red, "#0000FF" for blue)'
+        }
+      },
+      required: ['color']
+    }
+  },
+  {
+    name: 'selectShapesInRegion',
+    description: 'Selects all shapes within a rectangular region on the canvas. Useful for "select shapes in top-left", "select everything in the center", etc.',
+    parameters: {
+      type: 'object',
+      properties: {
+        x: {
+          type: 'number',
+          description: 'X coordinate of region top-left corner (0-5000)'
+        },
+        y: {
+          type: 'number',
+          description: 'Y coordinate of region top-left corner (0-5000)'
+        },
+        width: {
+          type: 'number',
+          description: 'Width of selection region in pixels'
+        },
+        height: {
+          type: 'number',
+          description: 'Height of selection region in pixels'
+        }
+      },
+      required: ['x', 'y', 'width', 'height']
+    }
+  },
+  {
+    name: 'selectShapes',
+    description: 'Selects specific shapes by their IDs. Use this when you have shape IDs from getCanvasState() and want to select specific ones.',
+    parameters: {
+      type: 'object',
+      properties: {
+        shapeIds: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Array of shape IDs to select'
+        }
+      },
+      required: ['shapeIds']
+    }
+  },
+  {
+    name: 'deselectAll',
+    description: 'Clears all shape selections. Use for "clear selection", "deselect all", "unselect everything".',
+    parameters: {
+      type: 'object',
+      properties: {}
+    }
   }
 ];
 
@@ -436,7 +516,14 @@ export const functionRegistry = {
   // Queries
   'getCanvasState': canvasAPI.getCanvasState,
   'getSelectedShapes': canvasAPI.getSelectedShapes,
-  'getCanvasCenter': canvasAPI.getCanvasCenter
+  'getCanvasCenter': canvasAPI.getCanvasCenter,
+
+  // Selection
+  'selectShapesByType': canvasAPI.selectShapesByType,
+  'selectShapesByColor': canvasAPI.selectShapesByColor,
+  'selectShapesInRegion': canvasAPI.selectShapesInRegion,
+  'selectShapes': canvasAPI.selectShapes,
+  'deselectAll': canvasAPI.deselectAll
 };
 
 /**
@@ -567,6 +654,38 @@ export async function executeAIFunction(functionName, parameters) {
       case 'getCanvasState':
       case 'getSelectedShapes':
       case 'getCanvasCenter':
+        result = await functionRegistry[functionName]();
+        break;
+      
+      // Selection functions
+      case 'selectShapesByType':
+        result = await functionRegistry[functionName](
+          parameters.type
+        );
+        break;
+      
+      case 'selectShapesByColor':
+        result = await functionRegistry[functionName](
+          parameters.color
+        );
+        break;
+      
+      case 'selectShapesInRegion':
+        result = await functionRegistry[functionName](
+          parameters.x,
+          parameters.y,
+          parameters.width,
+          parameters.height
+        );
+        break;
+      
+      case 'selectShapes':
+        result = await functionRegistry[functionName](
+          parameters.shapeIds
+        );
+        break;
+      
+      case 'deselectAll':
         result = await functionRegistry[functionName]();
         break;
       

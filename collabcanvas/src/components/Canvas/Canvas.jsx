@@ -6,7 +6,7 @@ import useCursors from '../../hooks/useCursors';
 import useAuth from '../../hooks/useAuth';
 import useSelection from '../../hooks/useSelection';
 import useKeyboard from '../../hooks/useKeyboard';
-import { setCurrentSelection as updateSelectionBridge } from '../../services/selectionBridge';
+import { setCurrentSelection as updateSelectionBridge, registerSetSelection } from '../../services/selectionBridge';
 import Shape from './Shape';
 import RemoteCursor from './RemoteCursor';
 import ContextMenu from './ContextMenu';
@@ -55,6 +55,16 @@ function Canvas() {
     const selectedShapes = shapes.filter(s => selectedShapeIds.includes(s.id));
     updateSelectionBridge(selectedShapeIds, selectedShapes);
   }, [selectedShapeIds, shapes]);
+  
+  // Register setSelection function with bridge (for AI to call)
+  useEffect(() => {
+    registerSetSelection(setSelection);
+    
+    // Cleanup on unmount
+    return () => {
+      registerSetSelection(null);
+    };
+  }, [setSelection]);
   
   // Track shapes currently being dragged by this user
   const activeDragRef = useRef(null);

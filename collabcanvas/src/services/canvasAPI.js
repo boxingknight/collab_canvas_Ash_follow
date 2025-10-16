@@ -2,7 +2,7 @@
 import { addShape, updateShape, deleteShape as deleteShapeFromDB, getAllShapes } from './shapes';
 import { CANVAS_CONFIG } from '../utils/constants';
 import { getCurrentUser } from './auth';
-import { getCurrentSelection, getFirstSelectedId } from './selectionBridge';
+import { getCurrentSelection, getFirstSelectedId, updateSelection } from './selectionBridge';
 
 /**
  * Validate common parameters
@@ -49,6 +49,90 @@ function getCurrentUserId() {
     throw new Error('User not authenticated. Please log in first.');
   }
   return user.uid;
+}
+
+/**
+ * Validate shape type parameter
+ */
+function validateShapeType(type) {
+  const validTypes = ['rectangle', 'circle', 'line', 'text'];
+  if (!validTypes.includes(type)) {
+    return {
+      valid: false,
+      error: `Invalid type "${type}". Must be one of: ${validTypes.join(', ')}`
+    };
+  }
+  return { valid: true };
+}
+
+/**
+ * Get bounding box for any shape type
+ * Handles rectangles, circles, lines, and text
+ * @param {Object} shape - Shape object with type and position data
+ * @returns {Object} Bounding box with left, right, top, bottom
+ */
+function getShapeBounds(shape) {
+  switch (shape.type) {
+    case 'rectangle':
+    case 'text':
+      return {
+        left: shape.x,
+        right: shape.x + shape.width,
+        top: shape.y,
+        bottom: shape.y + shape.height
+      };
+    
+    case 'circle':
+      // Circles store center as x, y but in storage they use top-left
+      // So we need to handle both cases
+      const radius = shape.width / 2; // width is diameter
+      return {
+        left: shape.x,
+        right: shape.x + shape.width,
+        top: shape.y,
+        bottom: shape.y + shape.height
+      };
+    
+    case 'line':
+      const minX = Math.min(shape.x, shape.endX);
+      const maxX = Math.max(shape.x, shape.endX);
+      const minY = Math.min(shape.y, shape.endY);
+      const maxY = Math.max(shape.y, shape.endY);
+      return {
+        left: minX,
+        right: maxX,
+        top: minY,
+        bottom: maxY
+      };
+    
+    default:
+      return { left: 0, right: 0, top: 0, bottom: 0 };
+  }
+}
+
+/**
+ * Check if shape overlaps with region (AABB intersection)
+ * Note: Uses axis-aligned bounding box, which may include rotated shapes
+ * that visually appear outside the region. This is acceptable for MVP.
+ * @param {Object} shape - Shape object
+ * @param {number} x - Region top-left X
+ * @param {number} y - Region top-left Y
+ * @param {number} width - Region width
+ * @param {number} height - Region height
+ * @returns {boolean} True if shape overlaps with region
+ */
+function isShapeInRegion(shape, x, y, width, height) {
+  const regionRight = x + width;
+  const regionBottom = y + height;
+  const shapeBounds = getShapeBounds(shape);
+  
+  // AABB intersection test (any overlap counts)
+  return !(
+    shapeBounds.right < x ||
+    shapeBounds.left > regionRight ||
+    shapeBounds.bottom < y ||
+    shapeBounds.top > regionBottom
+  );
 }
 
 /**
@@ -1049,6 +1133,222 @@ export const canvasAPI = {
         ? `Created ${results.length} shape(s), ${errors.length} failed.`
         : `Successfully created ${results.length} shape(s)!`
     };
+  },
+
+  // ===== SELECTION COMMANDS =====
+
+  /**
+   * Select all shapes of a specific type
+   * @param {string} type - 'rectangle', 'circle', 'line', or 'text'
+   * @returns {Promise<{success: boolean, selectedCount: number, selectedIds: array, message: string}>}
+   */
+  async selectShapesByType(type) {
+    // Validate type parameter
+    const typeValidation = validateShapeType(type);
+    if (!typeValidation.valid) {
+      return { 
+        success: false, 
+        error: 'INVALID_TYPE', 
+        userMessage: typeValidation.error 
+      };
+    }
+
+    try {
+      // Get all shapes from Firestore
+      const shapes = await getAllShapes();
+      
+      // Filter by type
+      const matchingShapes = shapes.filter(s => s.type === type);
+      const matchingIds = matchingShapes.map(s => s.id);
+      
+      // Update selection via bridge
+      updateSelection(matchingIds);
+      
+      return {
+        success: true,
+        selectedCount: matchingIds.length,
+        selectedIds: matchingIds,
+        message: `Selected ${matchingIds.length} ${type}(s)`
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.code,
+        userMessage: 'Failed to select shapes by type. Please try again.'
+      };
+    }
+  },
+
+  /**
+   * Select all shapes with a specific color
+   * @param {string} color - Hex color code (e.g., '#FF0000')
+   * @returns {Promise<{success: boolean, selectedCount: number, selectedIds: array, message: string}>}
+   */
+  async selectShapesByColor(color) {
+    // Validate color parameter
+    const colorValidation = validateColor(color);
+    if (!colorValidation.valid) {
+      return { 
+        success: false, 
+        error: 'INVALID_COLOR', 
+        userMessage: colorValidation.error 
+      };
+    }
+
+    try {
+      // Get all shapes from Firestore
+      const shapes = await getAllShapes();
+      
+      // Filter by color (case-insensitive hex match)
+      const matchingShapes = shapes.filter(s => 
+        s.color && s.color.toLowerCase() === color.toLowerCase()
+      );
+      const matchingIds = matchingShapes.map(s => s.id);
+      
+      // Update selection via bridge
+      updateSelection(matchingIds);
+      
+      return {
+        success: true,
+        selectedCount: matchingIds.length,
+        selectedIds: matchingIds,
+        message: `Selected ${matchingIds.length} ${color} shape(s)`
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.code,
+        userMessage: 'Failed to select shapes by color. Please try again.'
+      };
+    }
+  },
+
+  /**
+   * Select all shapes within a rectangular region
+   * @param {number} x - Region top-left X
+   * @param {number} y - Region top-left Y
+   * @param {number} width - Region width
+   * @param {number} height - Region height
+   * @returns {Promise<{success: boolean, selectedCount: number, selectedIds: array, message: string}>}
+   */
+  async selectShapesInRegion(x, y, width, height) {
+    // Validate region parameters
+    const posValidation = validatePosition(x, y);
+    if (!posValidation.valid) {
+      return { 
+        success: false, 
+        error: 'INVALID_POSITION', 
+        userMessage: posValidation.error 
+      };
+    }
+
+    if (typeof width !== 'number' || typeof height !== 'number' || width <= 0 || height <= 0) {
+      return {
+        success: false,
+        error: 'INVALID_SIZE',
+        userMessage: 'Region width and height must be positive numbers'
+      };
+    }
+
+    try {
+      // Get all shapes from Firestore
+      const shapes = await getAllShapes();
+      
+      // Filter shapes that intersect with region
+      const matchingShapes = shapes.filter(s => isShapeInRegion(s, x, y, width, height));
+      const matchingIds = matchingShapes.map(s => s.id);
+      
+      // Update selection via bridge
+      updateSelection(matchingIds);
+      
+      return {
+        success: true,
+        selectedCount: matchingIds.length,
+        selectedIds: matchingIds,
+        message: `Selected ${matchingIds.length} shape(s) in region`
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.code,
+        userMessage: 'Failed to select shapes in region. Please try again.'
+      };
+    }
+  },
+
+  /**
+   * Select specific shapes by their IDs
+   * @param {string[]} shapeIds - Array of shape IDs to select
+   * @returns {Promise<{success: boolean, selectedCount: number, selectedIds: array, message: string}>}
+   */
+  async selectShapes(shapeIds) {
+    // Validate input
+    if (!Array.isArray(shapeIds)) {
+      return {
+        success: false,
+        error: 'INVALID_INPUT',
+        userMessage: 'Shape IDs must be provided as an array'
+      };
+    }
+
+    if (shapeIds.length === 0) {
+      return {
+        success: false,
+        error: 'EMPTY_SELECTION',
+        userMessage: 'No shape IDs provided'
+      };
+    }
+
+    try {
+      // Get all shapes to verify IDs exist
+      const shapes = await getAllShapes();
+      const existingIds = shapes.map(s => s.id);
+      
+      // Filter to only include IDs that actually exist
+      const validIds = shapeIds.filter(id => existingIds.includes(id));
+      
+      // Update selection via bridge
+      updateSelection(validIds);
+      
+      const skippedCount = shapeIds.length - validIds.length;
+      
+      return {
+        success: true,
+        selectedCount: validIds.length,
+        selectedIds: validIds,
+        message: skippedCount > 0
+          ? `Selected ${validIds.length} shape(s), ${skippedCount} not found`
+          : `Selected ${validIds.length} shape(s)`
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.code,
+        userMessage: 'Failed to select shapes. Please try again.'
+      };
+    }
+  },
+
+  /**
+   * Clear all selections
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  async deselectAll() {
+    try {
+      // Clear selection via bridge
+      updateSelection([]);
+      
+      return {
+        success: true,
+        message: 'Selection cleared'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.code,
+        userMessage: 'Failed to clear selection. Please try again.'
+      };
+    }
   }
 };
 

@@ -24,10 +24,23 @@ AVAILABLE SHAPES:
 
 AVAILABLE FUNCTIONS:
 You can call these functions to manipulate the canvas:
+
+CREATION:
 - createRectangle, createCircle, createLine, createText (single shapes)
 - generateShapes (10-1000 shapes with patterns - USE THIS for large quantities!)
 - createShapesBatch (5-10 shapes with custom positions)
+
+MANIPULATION:
 - moveShape, resizeShape, rotateShape, changeShapeColor, deleteShape
+
+SELECTION (NEW - powerful targeting capabilities):
+- selectShapesByType(type) - Select all shapes of a type ('rectangle', 'circle', 'line', 'text')
+- selectShapesByColor(color) - Select all shapes with hex color (e.g., '#FF0000')
+- selectShapesInRegion(x, y, width, height) - Select shapes in rectangular region
+- selectShapes(shapeIds) - Select specific shapes by their IDs
+- deselectAll() - Clear all selections
+
+QUERIES:
 - getCanvasState, getSelectedShapes, getCanvasCenter
 
 GUIDELINES:
@@ -72,6 +85,30 @@ GUIDELINES:
      * "delete these" → deleteShape() [NO shapeId - all 3 deleted]
    - Only provide shapeId when user specifically targets one shape: "move THE CIRCLE" or "THIS shape"
    - When in doubt about singular vs plural intent, check with getSelectedShapes() first
+
+12. SELECTION COMMANDS (NEW - game-changing capability):
+   - You can now PROGRAMMATICALLY select shapes before manipulating them!
+   - Common patterns:
+     * "Select all rectangles" → selectShapesByType('rectangle')
+     * "Select all red shapes" → selectShapesByColor('#FF0000')
+     * "Select shapes in top-left" → selectShapesInRegion(0, 0, 2500, 2500)
+     * "Clear selection" → deselectAll()
+   - CHAIN operations for powerful workflows:
+     * "Select all rectangles and make them blue":
+       1. selectShapesByType('rectangle')
+       2. changeShapeColor('#0000FF') [no shapeId - affects selected]
+     * "Delete all circles":
+       1. selectShapesByType('circle')
+       2. deleteShape() [no shapeId - deletes all selected]
+     * "Move all shapes in top-left to center":
+       1. selectShapesInRegion(0, 0, 2500, 2500)
+       2. moveShape(2500, 2500, false) [no shapeId - moves all selected]
+   - Region helper (canvas quadrants):
+     * Top-left: (0, 0, 2500, 2500)
+     * Top-right: (2500, 0, 2500, 2500)
+     * Bottom-left: (0, 2500, 2500, 2500)
+     * Bottom-right: (2500, 2500, 2500, 2500)
+     * Center: (1250, 1250, 2500, 2500)
 
 RESPONSE STYLE:
 - Confirm what you created/changed
