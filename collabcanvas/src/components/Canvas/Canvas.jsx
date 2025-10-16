@@ -73,6 +73,7 @@ function Canvas() {
   const marqueeCurrentRef = useRef(null);
   const [isMarqueeActive, setIsMarqueeActive] = useState(false);
   const justFinishedMarqueeRef = useRef(false); // Prevent stage click from clearing selection after marquee
+  const justFinishedDragRef = useRef(false); // Prevent stage click from clearing selection after shape drag
   
   // Shape type: 'rectangle' or 'circle'
   const [shapeType, setShapeType] = useState(SHAPE_TYPES.RECTANGLE);
@@ -83,6 +84,7 @@ function Canvas() {
   
   // Shape dragging state
   const [isDraggingShape, setIsDraggingShape] = useState(false);
+  const isDraggingShapeRef = useRef(false); // Ref for synchronous access (avoids React state timing issues)
   
   // Text editing state
   const [editingTextId, setEditingTextId] = useState(null);
@@ -465,8 +467,9 @@ function Canvas() {
   // Handle shape selection (supports shift-click for multi-select)
   function handleShapeSelect(shapeId, event) {
     // Don't allow selection changes during drag
+    // Use REF for synchronous check (avoids React state timing issues)
     // (Matches Figma behavior: selection is locked during drag)
-    if (isDraggingShape) {
+    if (isDraggingShapeRef.current) {
       return;
     }
     
@@ -477,6 +480,13 @@ function Canvas() {
       // Shift-click: Toggle shape in selection
       toggleSelection(shapeId);
     } else {
+      // FIX: If clicking an already-selected shape in a multi-select,
+      // DON'T clear the selection (user might be about to drag)
+      // This prevents the onClick-before-onDragStart race condition
+      if (isMultiSelect && isSelected(shapeId)) {
+        console.log('[MULTI-SELECT FIX] Preserving multi-select on click of selected shape:', shapeId);
+        return; // Preserve multi-select
+      }
       // Normal click: Replace selection with this shape
       setSelection([shapeId]);
     }
@@ -752,20 +762,37 @@ function Canvas() {
   // Handle shape drag start
   function handleShapeDragStart(shapeId) {
     setIsDraggingShape(true);
+    isDraggingShapeRef.current = true; // Synchronous update (no React delay)
+    
+    // FIX: SNAPSHOT PATTERN - Capture selection state IMMEDIATELY at drag start
+    // This prevents reactive state from being read mid-execution if React re-renders
+    // (Completes the snapshot pattern introduced in PR19 Bug #4)
+    const selectionSnapshot = [...selectedShapeIds];
+    const isMultiSelectSnapshot = selectionSnapshot.length > 1;
+    const isShapeSelectedSnapshot = selectionSnapshot.includes(shapeId);
+    
+    console.log('[DRAG START] Snapshot captured:', {
+      shapeId,
+      selectionSnapshot,
+      isMultiSelectSnapshot,
+      isShapeSelectedSnapshot
+    });
     
     // If this shape is part of a multi-select, lock all selected shapes
-    if (isMultiSelect && isSelected(shapeId)) {
+    if (isMultiSelectSnapshot && isShapeSelectedSnapshot) {
       activeDragRef.current = 'multi-select'; // Mark as multi-select drag immediately
       
       // OPTIMISTIC LOCKING: Lock in background (don't await)
       // This eliminates latency - Figma/Miro use this pattern
-      Promise.all(selectedShapeIds.map(id => lockShape(id))).catch(err => {
+      // USE SNAPSHOT, not reactive state
+      Promise.all(selectionSnapshot.map(id => lockShape(id))).catch(err => {
         console.error('Failed to lock shapes:', err);
       });
       
       // Debug: Check which nodes are registered
-      const registeredNodes = selectedShapeIds.filter(id => shapeNodesRef.current[id]);
-      const missingNodes = selectedShapeIds.filter(id => !shapeNodesRef.current[id]);
+      // USE SNAPSHOT, not reactive state
+      const registeredNodes = selectionSnapshot.filter(id => shapeNodesRef.current[id]);
+      const missingNodes = selectionSnapshot.filter(id => !shapeNodesRef.current[id]);
       if (missingNodes.length > 0) {
         console.warn('[MULTI-SELECT] Missing node refs at drag start:', missingNodes);
         console.log('[MULTI-SELECT] Registered nodes:', registeredNodes);
@@ -774,8 +801,9 @@ function Canvas() {
       
       // Store initial positions from shape data (source of truth)
       // AND reset Konva node positions to ensure clean state
+      // CRITICAL: USE SNAPSHOT, not reactive state
       initialPositionsRef.current = {};
-      selectedShapeIds.forEach(id => {
+      selectionSnapshot.forEach(id => {
         const shape = shapes.find(s => s.id === id);
         const node = shapeNodesRef.current[id];
         
@@ -916,6 +944,23 @@ function Canvas() {
 
   // Handle shape drag end
   async function handleShapeDragEnd(data) {
+    // FIX Option 1: Reset UI lock IMMEDIATELY (synchronous)
+    // This allows user to interact with canvas right away, without waiting for async operations
+    // Background operations (Firebase writes, unlocking) continue without blocking UI
+    // We still use activeDragRef to prevent overlapping operations
+    setIsDraggingShape(false);
+    isDraggingShapeRef.current = false; // Synchronous update (no React delay)
+    
+    // Post-drag click guard: Prevent Konva's post-drag click event from clearing selection
+    // Konva can fire multiple click events after dragEnd at varying times
+    // Extended to 200ms to catch late events on slow devices/heavy load
+    justFinishedDragRef.current = true;
+    setTimeout(() => {
+      justFinishedDragRef.current = false;
+    }, 200);
+    
+    console.log('[DRAG END] UI lock released immediately, 200ms click guard active');
+    
     // Check if this was a multi-select drag
     // Use activeDragRef (snapshot at start) NOT isMultiSelect (reactive state)
     if (activeDragRef.current === 'multi-select' && initialPositionsRef.current) {
@@ -1000,8 +1045,7 @@ function Canvas() {
       }
     }
     
-    setIsDraggingShape(false);
-    
+    // Note: setIsDraggingShape(false) is now at TOP of function for immediate UI unlock
     // Keep shape selected after dragging so user can continue interacting
     // (User can click elsewhere or press Esc to deselect)
   }
@@ -1091,9 +1135,19 @@ function Canvas() {
     }
     
     // Don't clear selection during any drag operation
+    // Use REF for synchronous check (avoids React state timing issues)
     // This prevents selection from being cleared mid-drag if a click event fires
     // (Matches Figma behavior: selection is locked during drag)
-    if (isDraggingShape) {
+    if (isDraggingShapeRef.current) {
+      console.log('[STAGE CLICK] Blocked - drag in progress (ref check)');
+      return;
+    }
+    
+    // Don't clear selection if we just finished a drag (within 200ms)
+    // This prevents Konva's post-drag click event from clearing selection
+    // Extended timeout catches late events on slow devices
+    if (justFinishedDragRef.current) {
+      console.log('[STAGE CLICK] Blocked - just finished drag');
       return;
     }
     

@@ -283,13 +283,13 @@ export const functionSchemas = [
   // ===== MANIPULATION FUNCTIONS =====
   {
     name: 'moveShape',
-    description: 'Moves an existing shape to a new position. If no shapeId is provided, uses the currently selected shape. User should select a shape first. Supports both absolute and relative positioning.',
+    description: 'Moves shape(s) to a new position. If shapeId is OMITTED, moves ALL currently selected shapes (multi-select support). If shapeId is PROVIDED, moves only that specific shape. User should select shape(s) first. Supports both absolute and relative positioning.',
     parameters: {
       type: 'object',
       properties: {
         shapeId: {
           type: 'string',
-          description: 'OPTIONAL: The ID of the shape to move. Omit this to use the currently selected shape.'
+          description: 'OPTIONAL: The ID of a specific shape to move. OMIT THIS ENTIRELY to move ALL currently selected shapes. Only provide this when targeting a single specific shape.'
         },
         x: {
           type: 'number',
@@ -309,13 +309,13 @@ export const functionSchemas = [
   },
   {
     name: 'resizeShape',
-    description: 'Resizes an existing shape to new dimensions. If no shapeId is provided, uses the currently selected shape. User should select a shape first.',
+    description: 'Resizes shape(s) to new dimensions. If shapeId is OMITTED, resizes ALL currently selected shapes (multi-select support). If shapeId is PROVIDED, resizes only that specific shape. User should select shape(s) first.',
     parameters: {
       type: 'object',
       properties: {
         shapeId: {
           type: 'string',
-          description: 'OPTIONAL: The ID of the shape to resize. Omit this to use the currently selected shape.'
+          description: 'OPTIONAL: The ID of a specific shape to resize. OMIT THIS ENTIRELY to resize ALL currently selected shapes. Only provide this when targeting a single specific shape.'
         },
         width: {
           type: 'number',
@@ -331,13 +331,13 @@ export const functionSchemas = [
   },
   {
     name: 'rotateShape',
-    description: 'Rotates an existing shape. If no shapeId is provided, uses the currently selected shape. IMPORTANT: Use relative=true for "rotate BY X degrees" (adds to current rotation) and relative=false for "rotate TO X degrees" (sets absolute rotation). User should select a shape first.',
+    description: 'Rotates shape(s). If shapeId is OMITTED, rotates ALL currently selected shapes (multi-select support). If shapeId is PROVIDED, rotates only that specific shape. IMPORTANT: Use relative=true for "rotate BY X degrees" (adds to current rotation) and relative=false for "rotate TO X degrees" (sets absolute rotation). User should select shape(s) first.',
     parameters: {
       type: 'object',
       properties: {
         shapeId: {
           type: 'string',
-          description: 'OPTIONAL: The ID of the shape to rotate. Omit this to use the currently selected shape.'
+          description: 'OPTIONAL: The ID of a specific shape to rotate. OMIT THIS ENTIRELY to rotate ALL currently selected shapes. Only provide this when targeting a single specific shape.'
         },
         degrees: {
           type: 'number',
@@ -353,13 +353,13 @@ export const functionSchemas = [
   },
   {
     name: 'changeShapeColor',
-    description: 'Changes the color of an existing shape. If no shapeId is provided, uses the currently selected shape. User should select a shape first.',
+    description: 'Changes the color of shape(s). If shapeId is OMITTED, changes color of ALL currently selected shapes (multi-select support). If shapeId is PROVIDED, changes color of only that specific shape. User should select shape(s) first.',
     parameters: {
       type: 'object',
       properties: {
         shapeId: {
           type: 'string',
-          description: 'OPTIONAL: The ID of the shape to recolor. Omit this to use the currently selected shape.'
+          description: 'OPTIONAL: The ID of a specific shape to recolor. OMIT THIS ENTIRELY to change color of ALL currently selected shapes. Only provide this when targeting a single specific shape.'
         },
         color: {
           type: 'string',
@@ -371,13 +371,13 @@ export const functionSchemas = [
   },
   {
     name: 'deleteShape',
-    description: 'Deletes an existing shape from the canvas. If no shapeId is provided, uses the currently selected shape. User should select a shape first.',
+    description: 'Deletes shape(s) from the canvas. If shapeId is OMITTED, deletes ALL currently selected shapes (multi-select support). If shapeId is PROVIDED, deletes only that specific shape. User should select shape(s) first.',
     parameters: {
       type: 'object',
       properties: {
         shapeId: {
           type: 'string',
-          description: 'OPTIONAL: The ID of the shape to delete. Omit this to use the currently selected shape.'
+          description: 'OPTIONAL: The ID of a specific shape to delete. OMIT THIS ENTIRELY to delete ALL currently selected shapes. Only provide this when targeting a single specific shape.'
         }
       },
       required: []

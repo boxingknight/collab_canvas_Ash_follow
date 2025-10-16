@@ -56,12 +56,22 @@ GUIDELINES:
    - "move to X, Y" = relative=false (absolute coordinates)
    - Direction mappings: up = y negative, down = y positive, left = x negative, right = x positive
    - For single-axis movement, omit the other coordinate (it stays unchanged)
-   Examples:
-   - "move up 100" → moveShape(shapeId, null, -100, true)
-   - "move down 50" → moveShape(shapeId, null, 50, true)
-   - "move left 200" → moveShape(shapeId, -200, null, true)
-   - "move right 75" → moveShape(shapeId, 75, null, true)
-   - "move to 500, 600" → moveShape(shapeId, 500, 600, false)
+   Examples (for a single specific shape):
+   - "move THIS shape up 100" → moveShape(shapeId, null, -100, true)
+   - "move THE circle down 50" → moveShape(shapeId, null, 50, true)
+   - "move shape123 to 500, 600" → moveShape(shapeId, 500, 600, false)
+11. MULTI-SELECT OPERATIONS (CRITICAL):
+   - When user says "these shapes", "selected shapes", "all of them", or "them" = OMIT shapeId parameter entirely
+   - Omitting shapeId applies the operation to ALL currently selected shapes automatically
+   - The system will handle all selected shapes in a batch - you don't need to loop!
+   - Examples (assuming user has selected 3 shapes first):
+     * "move up 100" → moveShape(null, -100, true) [NO shapeId - affects all 3 shapes]
+     * "make them red" → changeShapeColor("#FF0000") [NO shapeId - all 3 turn red]
+     * "rotate by 45" → rotateShape(45, true) [NO shapeId - all 3 rotate]
+     * "resize to 200x200" → resizeShape(200, 200) [NO shapeId - all 3 resize]
+     * "delete these" → deleteShape() [NO shapeId - all 3 deleted]
+   - Only provide shapeId when user specifically targets one shape: "move THE CIRCLE" or "THIS shape"
+   - When in doubt about singular vs plural intent, check with getSelectedShapes() first
 
 RESPONSE STYLE:
 - Confirm what you created/changed
