@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { setCurrentSelection as updateSelectionBridge } from '../services/selectionBridge';
 
 /**
  * Custom hook for managing shape selection state

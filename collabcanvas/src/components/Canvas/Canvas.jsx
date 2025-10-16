@@ -6,6 +6,7 @@ import useCursors from '../../hooks/useCursors';
 import useAuth from '../../hooks/useAuth';
 import useSelection from '../../hooks/useSelection';
 import useKeyboard from '../../hooks/useKeyboard';
+import { setCurrentSelection as updateSelectionBridge } from '../../services/selectionBridge';
 import Shape from './Shape';
 import RemoteCursor from './RemoteCursor';
 import ContextMenu from './ContextMenu';
@@ -48,6 +49,12 @@ function Canvas() {
       return aTime - bTime;
     });
   }, [shapes]);
+
+  // Sync selection to selection bridge (for AI access)
+  useEffect(() => {
+    const selectedShapes = shapes.filter(s => selectedShapeIds.includes(s.id));
+    updateSelectionBridge(selectedShapeIds, selectedShapes);
+  }, [selectedShapeIds, shapes]);
   
   // Track shapes currently being dragged by this user
   const activeDragRef = useRef(null);
@@ -66,6 +73,7 @@ function Canvas() {
   const marqueeCurrentRef = useRef(null);
   const [isMarqueeActive, setIsMarqueeActive] = useState(false);
   const justFinishedMarqueeRef = useRef(false); // Prevent stage click from clearing selection after marquee
+  const justFinishedDragRef = useRef(false); // Prevent stage click from clearing selection after shape drag
   
   // Shape type: 'rectangle' or 'circle'
   const [shapeType, setShapeType] = useState(SHAPE_TYPES.RECTANGLE);
@@ -76,6 +84,7 @@ function Canvas() {
   
   // Shape dragging state
   const [isDraggingShape, setIsDraggingShape] = useState(false);
+  const isDraggingShapeRef = useRef(false); // Ref for synchronous access (avoids React state timing issues)
   
   // Text editing state
   const [editingTextId, setEditingTextId] = useState(null);
@@ -457,6 +466,13 @@ function Canvas() {
 
   // Handle shape selection (supports shift-click for multi-select)
   function handleShapeSelect(shapeId, event) {
+    // Don't allow selection changes during drag
+    // Use REF for synchronous check (avoids React state timing issues)
+    // (Matches Figma behavior: selection is locked during drag)
+    if (isDraggingShapeRef.current) {
+      return;
+    }
+    
     // In Konva, the native DOM event is in event.evt
     const isShiftPressed = event?.evt?.shiftKey;
     
@@ -464,6 +480,13 @@ function Canvas() {
       // Shift-click: Toggle shape in selection
       toggleSelection(shapeId);
     } else {
+      // FIX: If clicking an already-selected shape in a multi-select,
+      // DON'T clear the selection (user might be about to drag)
+      // This prevents the onClick-before-onDragStart race condition
+      if (isMultiSelect && isSelected(shapeId)) {
+        console.log('[MULTI-SELECT FIX] Preserving multi-select on click of selected shape:', shapeId);
+        return; // Preserve multi-select
+      }
       // Normal click: Replace selection with this shape
       setSelection([shapeId]);
     }
@@ -703,23 +726,73 @@ function Canvas() {
     isTextEditing
   });
 
+  /**
+   * COORDINATE SYSTEM REFERENCE (CRITICAL - READ BEFORE MODIFYING):
+   * 
+   * STORAGE (Firestore): ALL shapes use TOP-LEFT (x, y) as origin
+   * 
+   * KONVA RENDERING (after PR#15 rotation fix):
+   * - Circle: CENTER position (x + width/2, y + height/2) with radius
+   * - Rectangle: CENTER position (x + width/2, y + height/2) with offsetX/offsetY
+   * - Text: CENTER position (x + width/2, y + height/2) with offsetX/offsetY  
+   * - Line: Special (Group wrapper at origin with relative points)
+   * 
+   * WHY: Shapes with offsetX/offsetY rotate around their visual center.
+   * Without offset, they'd rotate around top-left corner (bad UX).
+   * 
+   * CONVERSION RULES:
+   * - Storage → Konva: Add width/2 and height/2 (for center-based shapes)
+   * - Konva → Storage: Subtract width/2 and height/2 (for center-based shapes)
+   * - Lines: Store absolute coords, render with relative points in Group
+   * 
+   * WHEN TO CONVERT:
+   * - handleDragEnd: Konva node position → Firestore (convert center to top-left)
+   * - handleShapeDragStart: Firestore → Konva node (convert top-left to center)
+   * - handleShapeDragMove: Apply offsets in correct coordinate system
+   * - handleTransform: Konva transform → Firestore (convert center to top-left)
+   * 
+   * IF YOU CHANGE HOW SHAPES RENDER:
+   * 1. Update Shape.jsx rendering logic
+   * 2. Update ALL drag handlers (start, move, end)
+   * 3. Update transform handlers
+   * 4. Update this documentation
+   * 5. Test multi-select drag thoroughly!
+   */
+  
   // Handle shape drag start
   function handleShapeDragStart(shapeId) {
     setIsDraggingShape(true);
+    isDraggingShapeRef.current = true; // Synchronous update (no React delay)
+    
+    // FIX: SNAPSHOT PATTERN - Capture selection state IMMEDIATELY at drag start
+    // This prevents reactive state from being read mid-execution if React re-renders
+    // (Completes the snapshot pattern introduced in PR19 Bug #4)
+    const selectionSnapshot = [...selectedShapeIds];
+    const isMultiSelectSnapshot = selectionSnapshot.length > 1;
+    const isShapeSelectedSnapshot = selectionSnapshot.includes(shapeId);
+    
+    console.log('[DRAG START] Snapshot captured:', {
+      shapeId,
+      selectionSnapshot,
+      isMultiSelectSnapshot,
+      isShapeSelectedSnapshot
+    });
     
     // If this shape is part of a multi-select, lock all selected shapes
-    if (isMultiSelect && isSelected(shapeId)) {
+    if (isMultiSelectSnapshot && isShapeSelectedSnapshot) {
       activeDragRef.current = 'multi-select'; // Mark as multi-select drag immediately
       
       // OPTIMISTIC LOCKING: Lock in background (don't await)
       // This eliminates latency - Figma/Miro use this pattern
-      Promise.all(selectedShapeIds.map(id => lockShape(id))).catch(err => {
+      // USE SNAPSHOT, not reactive state
+      Promise.all(selectionSnapshot.map(id => lockShape(id))).catch(err => {
         console.error('Failed to lock shapes:', err);
       });
       
       // Debug: Check which nodes are registered
-      const registeredNodes = selectedShapeIds.filter(id => shapeNodesRef.current[id]);
-      const missingNodes = selectedShapeIds.filter(id => !shapeNodesRef.current[id]);
+      // USE SNAPSHOT, not reactive state
+      const registeredNodes = selectionSnapshot.filter(id => shapeNodesRef.current[id]);
+      const missingNodes = selectionSnapshot.filter(id => !shapeNodesRef.current[id]);
       if (missingNodes.length > 0) {
         console.warn('[MULTI-SELECT] Missing node refs at drag start:', missingNodes);
         console.log('[MULTI-SELECT] Registered nodes:', registeredNodes);
@@ -728,8 +801,9 @@ function Canvas() {
       
       // Store initial positions from shape data (source of truth)
       // AND reset Konva node positions to ensure clean state
+      // CRITICAL: USE SNAPSHOT, not reactive state
       initialPositionsRef.current = {};
-      selectedShapeIds.forEach(id => {
+      selectionSnapshot.forEach(id => {
         const shape = shapes.find(s => s.id === id);
         const node = shapeNodesRef.current[id];
         
@@ -754,14 +828,15 @@ function Canvas() {
               if (lineNode) {
                 lineNode.points([shape.x, shape.y, shape.endX, shape.endY]);
               }
-            } else if (shape.type === 'circle') {
-              // Circles positioned at center
+            } else if (shape.type === 'circle' || shape.type === 'rectangle' || shape.type === 'text') {
+              // Circles, rectangles, and text: positioned at CENTER (with offsetX/offsetY)
+              // This matches how they render after rotation fix
               node.position({ 
                 x: shape.x + shape.width / 2, 
                 y: shape.y + shape.height / 2 
               });
             } else {
-              // Rectangles and text positioned at top-left
+              // Other shapes (if any) positioned at top-left
               node.position({ x: shape.x, y: shape.y });
             }
           }
@@ -770,7 +845,9 @@ function Canvas() {
       
       // Use requestAnimationFrame for smooth redraw (non-blocking)
       requestAnimationFrame(() => {
-        const firstNode = shapeNodesRef.current[selectedShapeIds[0]];
+        // Get any shape from the drag (use snapshot, not reactive state)
+        const firstShapeId = Object.keys(initialPositionsRef.current)[0];
+        const firstNode = shapeNodesRef.current[firstShapeId];
         if (firstNode) {
           const layer = firstNode.getLayer();
           if (layer) {
@@ -792,7 +869,9 @@ function Canvas() {
   function handleShapeDragMove(data) {
     // If this is a multi-select drag, directly update Konva node positions
     // IMPORTANT: ALL shape types must be handled here for real-time visual movement!
-    if (activeDragRef.current === 'multi-select' && initialPositionsRef.current && isMultiSelect) {
+    // NOTE: We check activeDragRef (set at drag start) NOT isMultiSelect (reactive state)
+    // This prevents race conditions where React state updates mid-drag break the multi-select
+    if (activeDragRef.current === 'multi-select' && initialPositionsRef.current) {
       const initialPos = initialPositionsRef.current[data.id];
       if (!initialPos) {
         console.warn('[MULTI-SELECT] No initial position for shape:', data.id);
@@ -804,7 +883,8 @@ function Canvas() {
       const dy = data.y - initialPos.y;
       
       // Directly update Konva nodes for all selected shapes (except the one being dragged)
-      selectedShapeIds.forEach(shapeId => {
+      // Use initialPositionsRef (snapshot at drag start) NOT selectedShapeIds (reactive state)
+      Object.keys(initialPositionsRef.current).forEach(shapeId => {
         if (shapeId === data.id) return; // Skip the dragged shape (it's already moving)
         
         const node = shapeNodesRef.current[shapeId];
@@ -835,14 +915,15 @@ function Canvas() {
               ];
               lineNode.points(newPoints);
             }
-          } else if (shapeInitial.type === 'circle') {
-            // For circles, Konva positions at CENTER but we store as TOP-LEFT
-            // Convert top-left to center position
+          } else if (shapeInitial.type === 'circle' || shapeInitial.type === 'rectangle' || shapeInitial.type === 'text') {
+            // For circles, rectangles, and text: Konva positions at CENTER (with offsetX/offsetY)
+            // We store as TOP-LEFT, so convert to center position
+            // This matches how they render after rotation fix (PR#15)
             const centerX = shapeInitial.x + shapeInitial.width / 2 + dx;
             const centerY = shapeInitial.y + shapeInitial.height / 2 + dy;
             node.position({ x: centerX, y: centerY });
           } else {
-            // For rectangles and text, position is top-left (matches our storage)
+            // For other shapes (if any), position is top-left (matches our storage)
             const newX = shapeInitial.x + dx;
             const newY = shapeInitial.y + dy;
             node.position({ x: newX, y: newY });
@@ -863,8 +944,26 @@ function Canvas() {
 
   // Handle shape drag end
   async function handleShapeDragEnd(data) {
+    // FIX Option 1: Reset UI lock IMMEDIATELY (synchronous)
+    // This allows user to interact with canvas right away, without waiting for async operations
+    // Background operations (Firebase writes, unlocking) continue without blocking UI
+    // We still use activeDragRef to prevent overlapping operations
+    setIsDraggingShape(false);
+    isDraggingShapeRef.current = false; // Synchronous update (no React delay)
+    
+    // Post-drag click guard: Prevent Konva's post-drag click event from clearing selection
+    // Konva can fire multiple click events after dragEnd at varying times
+    // Extended to 200ms to catch late events on slow devices/heavy load
+    justFinishedDragRef.current = true;
+    setTimeout(() => {
+      justFinishedDragRef.current = false;
+    }, 200);
+    
+    console.log('[DRAG END] UI lock released immediately, 200ms click guard active');
+    
     // Check if this was a multi-select drag
-    if (activeDragRef.current === 'multi-select' && isMultiSelect) {
+    // Use activeDragRef (snapshot at start) NOT isMultiSelect (reactive state)
+    if (activeDragRef.current === 'multi-select' && initialPositionsRef.current) {
       // Calculate the offset from the dragged shape
       const draggedShape = shapes.find(s => s.id === data.id);
       if (!draggedShape) return;
@@ -874,8 +973,10 @@ function Canvas() {
       
       console.log('[CANVAS] Group drag end. Offset:', dx, dy);
       
-      // Update all selected shapes with the same offset
-      const updatePromises = selectedShapeIds.map(async (id) => {
+      // Update all shapes that were selected at drag start
+      // Use initialPositionsRef (snapshot) NOT selectedShapeIds (reactive state)
+      const shapesInDrag = Object.keys(initialPositionsRef.current);
+      const updatePromises = shapesInDrag.map(async (id) => {
         const shape = shapes.find(s => s.id === id);
         if (!shape) return;
         
@@ -896,8 +997,8 @@ function Canvas() {
       
       await Promise.all(updatePromises);
       
-      // Unlock all selected shapes
-      const unlockPromises = selectedShapeIds.map(id => unlockShape(id));
+      // Unlock all shapes that were in the drag
+      const unlockPromises = shapesInDrag.map(id => unlockShape(id));
       await Promise.all(unlockPromises);
       
       activeDragRef.current = null;
@@ -944,8 +1045,7 @@ function Canvas() {
       }
     }
     
-    setIsDraggingShape(false);
-    
+    // Note: setIsDraggingShape(false) is now at TOP of function for immediate UI unlock
     // Keep shape selected after dragging so user can continue interacting
     // (User can click elsewhere or press Esc to deselect)
   }
@@ -1031,6 +1131,23 @@ function Canvas() {
   function handleStageClick(e) {
     // Don't clear selection if we just finished a marquee selection
     if (justFinishedMarqueeRef.current) {
+      return;
+    }
+    
+    // Don't clear selection during any drag operation
+    // Use REF for synchronous check (avoids React state timing issues)
+    // This prevents selection from being cleared mid-drag if a click event fires
+    // (Matches Figma behavior: selection is locked during drag)
+    if (isDraggingShapeRef.current) {
+      console.log('[STAGE CLICK] Blocked - drag in progress (ref check)');
+      return;
+    }
+    
+    // Don't clear selection if we just finished a drag (within 200ms)
+    // This prevents Konva's post-drag click event from clearing selection
+    // Extended timeout catches late events on slow devices
+    if (justFinishedDragRef.current) {
+      console.log('[STAGE CLICK] Blocked - just finished drag');
       return;
     }
     
