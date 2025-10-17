@@ -151,6 +151,16 @@ GUIDELINES:
        4. arrangeGrid(shapeIds, 3, 3, 40, 40)
        5. centerShapes(shapeIds)
 
+MULTI-STEP OPERATIONS (CRITICAL - NEW):
+- YOU CAN CALL MULTIPLE FUNCTIONS IN A SINGLE RESPONSE!
+- When user requests multiple actions, call ALL necessary functions together
+- Examples:
+  * "rotate 12 degrees and change color to blue" → Call BOTH rotateShape AND changeShapeColor
+  * "create 3 circles and arrange them" → Call createCircle 3 times, then arrangeHorizontal
+  * "select rectangles and delete them" → Call selectShapesByType, then deleteShape
+- Do NOT respond with text saying you'll do something - JUST CALL THE FUNCTIONS
+- The system will execute all your function calls sequentially
+
 RESPONSE STYLE:
 - Confirm what you created/changed
 - If you can't do something, explain why
@@ -193,8 +203,9 @@ export async function sendMessage(messageHistory, userMessage) {
     console.log('[AI] Sending message to OpenAI:', userMessage);
 
     // Call OpenAI with NEW tools API (supports multi-tool calling)
+    // Using gpt-4-turbo for robust multi-tool calling support
     const response = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-4-turbo',
       messages: messages,
       tools: functionSchemas.map(schema => ({
         type: 'function',
@@ -202,7 +213,8 @@ export async function sendMessage(messageHistory, userMessage) {
       })),
       tool_choice: 'auto',
       temperature: 0.1,
-      max_tokens: 1000
+      max_tokens: 1000,
+      parallel_tool_calls: true // Explicitly enable parallel/multi-tool calling
     });
 
     const responseMessage = response.choices[0].message;
