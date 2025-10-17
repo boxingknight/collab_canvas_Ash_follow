@@ -68,13 +68,32 @@ export function useAI() {
         { role: 'assistant', content: response.message }
       ]);
       
-      // Add AI response to UI history
+      // Add AI response to UI history - NEW: handle different response types
       const aiMessage = {
         id: `ai-${Date.now()}`,
         role: 'assistant',
         content: response.message,
-        timestamp: new Date()
+        timestamp: new Date(),
+        type: response.type || 'text' // 'text', 'function', 'function_chain', or 'error'
       };
+      
+      // Add multi-function chain data if present
+      if (response.type === 'function_chain') {
+        aiMessage.executionCount = response.executionCount;
+        aiMessage.totalCalls = response.totalCalls;
+        aiMessage.results = response.results; // Array of {functionName, functionArgs, result}
+      }
+      
+      // Add single function data if present (backwards compatible)
+      if (response.type === 'function' || response.functionCalled) {
+        aiMessage.functionCalled = response.functionCalled;
+        aiMessage.functionResult = response.functionResult;
+        // Also include results array for consistency
+        if (response.results) {
+          aiMessage.results = response.results;
+        }
+      }
+      
       setMessages(prev => [...prev, aiMessage]);
       
       setIsProcessing(false);

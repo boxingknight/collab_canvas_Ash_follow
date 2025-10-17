@@ -163,6 +163,24 @@ RESPONSE STYLE:
  * @param {string} userMessage - New message from user
  * @returns {Promise<Object>} Response with success status and message
  */
+/**
+ * Determines if execution should stop when this function fails
+ * @param {string} functionName - Name of the failed function
+ * @returns {boolean} True if execution should stop
+ */
+function shouldStopOnError(functionName) {
+  // Critical functions that should stop execution chain if they fail
+  const criticalFunctions = [
+    'getSelectedShapes',  // If selection fails, later ops might be invalid
+    'selectShapesByType', // Same - selection is often prerequisite
+    'selectShapesByColor',
+    'selectShapesInRegion',
+    'selectShapes'
+  ];
+  
+  return criticalFunctions.includes(functionName);
+}
+
 export async function sendMessage(messageHistory, userMessage) {
   try {
     // Build messages array
@@ -174,69 +192,111 @@ export async function sendMessage(messageHistory, userMessage) {
 
     console.log('[AI] Sending message to OpenAI:', userMessage);
 
-    // Call OpenAI with function calling
+    // Call OpenAI with NEW tools API (supports multi-tool calling)
     const response = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: messages,
-      functions: functionSchemas,
-      function_call: 'auto',
+      tools: functionSchemas.map(schema => ({
+        type: 'function',
+        function: schema
+      })),
+      tool_choice: 'auto',
       temperature: 0.1,
       max_tokens: 1000
     });
 
     const responseMessage = response.choices[0].message;
 
-    // Check if AI wants to call a function
-    if (responseMessage.function_call) {
-      const functionName = responseMessage.function_call.name;
-      const functionArgs = JSON.parse(responseMessage.function_call.arguments);
-
-      console.log('[AI] Function call requested:', functionName, functionArgs);
-
-      // Execute the function
-      const functionResult = await executeAIFunction(functionName, functionArgs);
-
-      // If function failed, return error
-      if (!functionResult.success) {
+    // Check if AI wants to call function(s) - NEW: handles multiple tool calls
+    if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+      const toolCalls = responseMessage.tool_calls;
+      console.log(`[AI] ${toolCalls.length} function call(s) requested`);
+      
+      const results = [];
+      let stoppedEarly = false;
+      
+      // Execute each tool call sequentially
+      for (let i = 0; i < toolCalls.length; i++) {
+        const toolCall = toolCalls[i];
+        const functionName = toolCall.function.name;
+        
+        let functionArgs;
+        try {
+          functionArgs = JSON.parse(toolCall.function.arguments);
+        } catch (parseError) {
+          console.error('[AI] Failed to parse function arguments:', parseError);
+          results.push({
+            functionName,
+            functionArgs: {},
+            result: { 
+              success: false, 
+              error: 'INVALID_ARGUMENTS',
+              userMessage: 'Failed to parse function arguments'
+            }
+          });
+          continue; // Skip this function, continue with others
+        }
+        
+        console.log(`[AI] Executing function ${i + 1}/${toolCalls.length}:`, functionName);
+        
+        // Execute the function
+        const functionResult = await executeAIFunction(functionName, functionArgs);
+        
+        results.push({
+          functionName,
+          functionArgs,
+          result: functionResult
+        });
+        
+        // Stop execution if critical function fails
+        if (!functionResult.success && shouldStopOnError(functionName)) {
+          console.warn('[AI] Critical function failed, stopping execution chain');
+          stoppedEarly = true;
+          break;
+        }
+      }
+      
+      // Check if ALL functions failed
+      const anySuccess = results.some(r => r.result.success);
+      if (!anySuccess) {
         return {
           success: false,
-          message: functionResult.userMessage,
-          error: functionResult.error
+          message: results[0].result.userMessage || 'All operations failed',
+          error: results[0].result.error,
+          type: 'error',
+          executionCount: results.length,
+          totalCalls: toolCalls.length,
+          results
         };
       }
-
-      // Get AI's final response after function execution
-      const followUpMessages = [
-        ...messages,
-        responseMessage,
-        {
-          role: 'function',
-          name: functionName,
-          content: JSON.stringify(functionResult)
-        }
-      ];
-
-      console.log('[AI] Getting follow-up response after function execution');
-
-      const finalResponse = await openai.chat.completions.create({
-        model: 'gpt-4',
-        messages: followUpMessages,
-        temperature: 0.1,
-        max_tokens: 500
-      });
-
+      
+      // Build summary message
+      const successCount = results.filter(r => r.result.success).length;
+      const summaryMessage = results.length === 1
+        ? results[0].result.userMessage || 'Operation completed'
+        : stoppedEarly
+        ? `Completed ${successCount} of ${toolCalls.length} operations (stopped due to error)`
+        : `Successfully completed ${successCount} of ${results.length} operations`;
+      
+      // Return multi-tool result
       return {
         success: true,
-        message: finalResponse.choices[0].message.content,
-        functionCalled: functionName,
-        functionResult: functionResult.result
+        message: summaryMessage,
+        type: results.length > 1 ? 'function_chain' : 'function',
+        executionCount: results.length,
+        totalCalls: toolCalls.length,
+        results,
+        // Backwards compatibility for single function
+        functionCalled: results.length === 1 ? results[0].functionName : undefined,
+        functionResult: results.length === 1 ? results[0].result.result : undefined
       };
     }
 
     // No function call, just return AI's message
     return {
       success: true,
-      message: responseMessage.content
+      message: responseMessage.content,
+      type: 'text'
     };
 
   } catch (error) {
@@ -247,7 +307,8 @@ export async function sendMessage(messageHistory, userMessage) {
       return {
         success: false,
         message: 'AI service is not configured. Please check your OpenAI API key.',
-        error: 'INVALID_API_KEY'
+        error: 'INVALID_API_KEY',
+        type: 'error'
       };
     }
     
@@ -255,7 +316,8 @@ export async function sendMessage(messageHistory, userMessage) {
       return {
         success: false,
         message: 'OpenAI quota exceeded. Please check your billing settings.',
-        error: 'QUOTA_EXCEEDED'
+        error: 'QUOTA_EXCEEDED',
+        type: 'error'
       };
     }
     
@@ -263,14 +325,16 @@ export async function sendMessage(messageHistory, userMessage) {
       return {
         success: false,
         message: 'Too many requests. Please wait a moment and try again.',
-        error: 'RATE_LIMIT'
+        error: 'RATE_LIMIT',
+        type: 'error'
       };
     }
     
     return {
       success: false,
       message: 'Sorry, I encountered an error. Please try again.',
-      error: error.message
+      error: error.message,
+      type: 'error'
     };
   }
 }
