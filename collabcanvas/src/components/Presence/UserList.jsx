@@ -48,6 +48,38 @@ function UserList({ users = [], currentUser }) {
     return user.userName;
   }
 
+  // Helper to calculate and format "last seen" time
+  function getLastSeenText(user) {
+    // Current user is always "Active now"
+    if (user.userId === currentUser?.uid) {
+      return 'Active now';
+    }
+    
+    // If no lastSeen timestamp, assume they're online
+    if (!user.lastSeen || !user.lastSeen.toMillis) {
+      return 'Active now';
+    }
+    
+    const now = Date.now();
+    const lastSeenTime = user.lastSeen.toMillis();
+    const timeDiff = now - lastSeenTime;
+    
+    // Less than 1 minute
+    if (timeDiff < 60 * 1000) {
+      return 'Active now';
+    }
+    
+    // Less than 1 hour (show minutes)
+    if (timeDiff < 60 * 60 * 1000) {
+      const minutes = Math.floor(timeDiff / (60 * 1000));
+      return `Last seen ${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+    }
+    
+    // 1 hour or more (show hours)
+    const hours = Math.floor(timeDiff / (60 * 60 * 1000));
+    return `Last seen ${hours} hour${hours !== 1 ? 's' : ''} ago`;
+  }
+
   // Debug logging
   console.log('👥 UserList render:', {
     usersCount: safeUsers.length,
@@ -72,8 +104,8 @@ function UserList({ users = [], currentUser }) {
       allUsers.push({
         userId: currentUser.uid,
         userName: currentUser.displayName || currentUser.email || 'You',
-        userEmail: currentUser.email,
         status: 'online'
+        // Note: No userEmail for privacy
       });
     }
   }
@@ -290,17 +322,15 @@ function UserList({ users = [], currentUser }) {
                     }}>
                       {formatUserName(user)}
                     </div>
-                    {user.userEmail && (
-                      <div style={{
-                        color: '#888',
-                        fontSize: '11px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        {user.userEmail}
-                      </div>
-                    )}
+                    <div style={{
+                      color: '#888',
+                      fontSize: '11px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {getLastSeenText(user)}
+                    </div>
                   </div>
 
                   {/* Status indicator */}

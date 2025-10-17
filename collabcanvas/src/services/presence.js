@@ -79,13 +79,33 @@ export function subscribeToPresence(callback) {
       presenceCollection,
       (snapshot) => {
         const onlineUsers = [];
+        const now = Date.now();
+        const SIX_HOURS_MS = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
         
         snapshot.forEach((doc) => {
           const user = doc.data();
-          onlineUsers.push({
-            id: doc.id,
-            ...user
-          });
+          
+          // Check if user has a lastSeen timestamp
+          if (user.lastSeen && user.lastSeen.toMillis) {
+            const lastSeenTime = user.lastSeen.toMillis();
+            const timeSinceLastSeen = now - lastSeenTime;
+            
+            // Only include users who were seen within the last 6 hours
+            if (timeSinceLastSeen <= SIX_HOURS_MS) {
+              onlineUsers.push({
+                id: doc.id,
+                ...user
+              });
+            } else {
+              console.log(`👥 Filtering out ${user.userName} - last seen ${Math.round(timeSinceLastSeen / (60 * 60 * 1000))} hours ago`);
+            }
+          } else {
+            // If no timestamp, include them (just came online)
+            onlineUsers.push({
+              id: doc.id,
+              ...user
+            });
+          }
         });
         
         // Sort by joinedAt (earliest first)
