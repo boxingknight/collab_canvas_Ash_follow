@@ -168,6 +168,15 @@ Each PR document follows this template:
 - ✅ PR #21: AI Selection Commands - **COMPLETE**
 
 ### Phase 6: AI Commands - Advanced
+- ✅ PR #22.5: Multi-Tool Calling - **COMPLETE** 🚀 **GAME CHANGER**
+  - ✅ Multi-function execution in single response (AI chains operations automatically)
+  - ✅ Upgraded to GPT-4 Turbo (robust multi-tool support)
+  - ✅ Sequential execution with error handling (critical vs non-critical failures)
+  - ✅ Natural conversational UI (no technical breakdowns)
+  - ✅ Smart message generation (combines operation results naturally)
+  - ✅ 2 hours implementation + UI refinement
+  - 📄 Documentation: PR22.5_MULTI_TOOL_CALLING.md, PR22.5_IMPLEMENTATION_COMPLETE.md
+  - 🎯 Impact: 23 functions → 529 possible 2-step combos, unlimited chains
 - ✅ PR #22: AI Layout Commands - **COMPLETE** 🎉
   - ✅ 6 layout functions: arrangeHorizontal, arrangeVertical, arrangeGrid, distributeEvenly, centerShape, centerShapes
   - ✅ New geometry.js utility module (13 helper functions)

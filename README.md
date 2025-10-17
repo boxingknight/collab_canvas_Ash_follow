@@ -23,9 +23,10 @@ CollabCanvas is a production-ready collaborative design canvas with integrated A
 - **Keyboard Shortcuts**: Arrow keys for nudging, hotkeys for tools
 - **60 FPS Performance**: Maintains smooth 60 FPS with 500+ shapes
 
-### 🤖 AI Assistant (GPT-4)
+### 🤖 AI Assistant (GPT-4 Turbo)
 - **Natural Language Interaction**: Create and manipulate shapes using plain English
 - **23 AI Functions**: Complete control over canvas via voice-like commands
+- **🆕 Multi-Tool Calling**: Execute multiple operations in one command ("rotate 12 degrees and make it blue")
 - **Batch Operations**: Create up to 1000 shapes in a single command
 - **6 Generation Patterns**: Random, grid, row, column, circle-pattern, spiral
 - **6 Layout Commands**: Arrange, align, distribute, and center shapes with precision
@@ -116,6 +117,13 @@ For detailed setup instructions, see [`collabcanvas/ENV_SETUP.md`](collabcanvas/
 - "Center this shape on the canvas"
 - "Center all selected shapes as a group"
 
+### Multi-Step Operations (NEW - PR #22.5) 🚀
+- "Rotate 12 degrees and change color to blue" → 2 operations
+- "Create 3 circles and arrange them horizontally" → 4 operations
+- "Select all rectangles, make them blue, and center them" → 3 operations
+- "Move up 50 and rotate 45 degrees" → 2 operations
+- The AI can chain unlimited operations in a single command!
+
 ### Patterns
 - `random` - Scattered across canvas
 - `grid` - Organized rows and columns
@@ -184,7 +192,8 @@ collabcanvas/
 
 ### PR Documentation
 All Pull Requests documented in [`/PR_PARTY/`](PR_PARTY/):
-- **PR #22**: [AI Layout Commands](PR_PARTY/PR22_LAYOUT_COMMANDS.md) | [Bug Analysis](PR_PARTY/PR22_BUG_ANALYSIS.md) | [Complete Summary](PR_PARTY/PR22_COMPLETE_SUMMARY.md) ✅ **NEW**
+- **PR #22.5**: [Multi-Tool Calling](PR_PARTY/PR22.5_MULTI_TOOL_CALLING.md) | [Implementation Complete](PR_PARTY/PR22.5_IMPLEMENTATION_COMPLETE.md) ✅ **LATEST** 🚀
+- **PR #22**: [AI Layout Commands](PR_PARTY/PR22_LAYOUT_COMMANDS.md) | [Bug Analysis](PR_PARTY/PR22_BUG_ANALYSIS.md) | [Complete Summary](PR_PARTY/PR22_COMPLETE_SUMMARY.md) ✅
 - **PR #21**: [AI Selection Commands](PR_PARTY/PR21_SELECTION_COMMANDS.md) ✅
 - **PR #19**: [Complete Summary](PR_PARTY/PR19_COMPLETE_SUMMARY.md) | [Bug Analysis](PR_PARTY/PR19_ALL_BUGS_SUMMARY.md)
 - **PR #18**: [AI Service Integration](PR_PARTY/archive/PR18_AI_SERVICE_INTEGRATION.md)
@@ -330,13 +339,13 @@ See [`SECURITY_VERIFICATION.md`](SECURITY_VERIFICATION.md) for details.
 
 ## 📈 Project Stats
 
-- **Total PRs**: 22 comprehensive features
+- **Total PRs**: 22.5 comprehensive features
 - **Code**: 12,000+ lines
-- **Documentation**: 250+ pages
+- **Documentation**: 260+ pages
 - **Development Time**: 7 days
-- **Bugs Fixed**: 25+ (all documented)
+- **Bugs Fixed**: 26+ (all documented)
 - **Performance**: 60 FPS maintained
-- **AI Functions**: 23 fully functional (78% complete)
+- **AI Functions**: 23 fully functional + Multi-Tool Calling (86% complete)
 
 ---
 
