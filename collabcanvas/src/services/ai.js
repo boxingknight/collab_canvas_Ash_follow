@@ -282,13 +282,31 @@ export async function sendMessage(messageHistory, userMessage) {
         };
       }
       
-      // Build summary message
+      // Build natural, conversational summary message
       const successCount = results.filter(r => r.result.success).length;
-      const summaryMessage = results.length === 1
-        ? results[0].result.userMessage || 'Operation completed'
-        : stoppedEarly
-        ? `Completed ${successCount} of ${toolCalls.length} operations (stopped due to error)`
-        : `Successfully completed ${successCount} of ${results.length} operations`;
+      let summaryMessage;
+      
+      if (results.length === 1) {
+        // Single function - use its natural message
+        summaryMessage = results[0].result.userMessage || 'Done!';
+      } else {
+        // Multi-function - combine the user messages naturally
+        const messages = results
+          .filter(r => r.result.success && r.result.userMessage)
+          .map(r => r.result.userMessage);
+        
+        if (messages.length === 0) {
+          summaryMessage = stoppedEarly 
+            ? 'Completed some operations, but encountered an error'
+            : 'Done!';
+        } else if (messages.length === 1) {
+          summaryMessage = messages[0];
+        } else {
+          // Combine messages with "and"
+          const lastMessage = messages.pop();
+          summaryMessage = messages.join(', ') + ' and ' + lastMessage.toLowerCase();
+        }
+      }
       
       // Return multi-tool result
       return {

@@ -51,55 +51,20 @@ export default function AIHistory({ messages }) {
 function AIMessage({ message }) {
   const { role, content, timestamp, type, executionCount, totalCalls, results } = message;
   
-  // Multi-function chain
+  // Multi-function chain - show natural, conversational message
   if (type === 'function_chain' && results && results.length > 1) {
+    // Check if any operations failed
+    const hasErrors = results.some(r => !r.result.success);
+    
     return (
-      <div className={`ai-message ${role} function-chain`}>
+      <div className={`ai-message ${role}`}>
         <div className="ai-message-content">
-          <div className="chain-header">{content}</div>
-          
-          <div className="chain-summary">
-            Executed {executionCount} of {totalCalls} operations
-          </div>
-          
-          <div className="chain-operations">
-            {results.map((operation, index) => (
-              <div 
-                key={index} 
-                className={`operation ${operation.result.success ? 'success' : 'error'}`}
-              >
-                <div className="operation-header">
-                  <span className="operation-number">{index + 1}.</span>
-                  <strong>{operation.functionName}</strong>
-                  {operation.result.success ? (
-                    <span className="status-icon">✓</span>
-                  ) : (
-                    <span className="status-icon error">✗</span>
-                  )}
-                </div>
-                
-                {/* Show user-friendly message */}
-                {operation.result.userMessage && (
-                  <div className="operation-result">
-                    {operation.result.userMessage}
-                  </div>
-                )}
-                
-                {/* Show error if failed */}
-                {!operation.result.success && operation.result.error && (
-                  <div className="operation-error">
-                    Error: {operation.result.error}
-                  </div>
-                )}
-                
-                {/* Collapsible details */}
-                <details className="operation-details">
-                  <summary>View details</summary>
-                  <pre>{JSON.stringify(operation.functionArgs, null, 2)}</pre>
-                </details>
-              </div>
-            ))}
-          </div>
+          {content}
+          {hasErrors && (
+            <div className="ai-error-note">
+              (Note: Some operations encountered errors)
+            </div>
+          )}
         </div>
         <div className="ai-message-timestamp">
           {timestamp.toLocaleTimeString()}
@@ -108,24 +73,12 @@ function AIMessage({ message }) {
     );
   }
   
-  // Single function (backwards compatible)
+  // Single function - show natural message
   if ((type === 'function' || message.functionCalled) && results && results.length === 1) {
-    const operation = results[0];
     return (
-      <div className={`ai-message ${role} function-single`}>
+      <div className={`ai-message ${role}`}>
         <div className="ai-message-content">
-          <div className="function-header">
-            <strong>✓ {operation.functionName}</strong>
-          </div>
-          {operation.result.userMessage && (
-            <div className="function-result">
-              {operation.result.userMessage}
-            </div>
-          )}
-          <details className="function-details">
-            <summary>View details</summary>
-            <pre>{JSON.stringify(operation.functionArgs, null, 2)}</pre>
-          </details>
+          {content}
         </div>
         <div className="ai-message-timestamp">
           {timestamp.toLocaleTimeString()}
