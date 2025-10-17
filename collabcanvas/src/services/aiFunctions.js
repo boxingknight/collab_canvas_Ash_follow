@@ -415,15 +415,22 @@ export const functionSchemas = [
 
   // ===== SELECTION FUNCTIONS =====
   {
+    name: 'selectAllShapes',
+    description: 'Selects ALL shapes on the canvas, regardless of type. Use this for "select all shapes", "select everything", "select all".',
+    parameters: {
+      type: 'object',
+      properties: {}
+    }
+  },
+  {
     name: 'selectShapesByType',
-    description: 'Selects all shapes of a specific type on the canvas. Use this for "select all rectangles", "select all circles", etc.',
+    description: 'Selects all shapes of a specific type on the canvas. Use this for "select all rectangles", "select all circles", etc. Accepts both singular and plural forms.',
     parameters: {
       type: 'object',
       properties: {
         type: {
           type: 'string',
-          enum: ['rectangle', 'circle', 'line', 'text'],
-          description: 'The type of shapes to select'
+          description: 'The type of shapes to select: rectangle/rectangles, circle/circles, line/lines, text/texts (singular or plural both work)'
         }
       },
       required: ['type']
@@ -639,6 +646,7 @@ export const functionRegistry = {
   'getCanvasCenter': canvasAPI.getCanvasCenter,
 
   // Selection
+  'selectAllShapes': canvasAPI.selectAllShapes,
   'selectShapesByType': canvasAPI.selectShapesByType,
   'selectShapesByColor': canvasAPI.selectShapesByColor,
   'selectShapesInRegion': canvasAPI.selectShapesInRegion,
@@ -786,6 +794,10 @@ export async function executeAIFunction(functionName, parameters) {
         break;
       
       // Selection functions
+      case 'selectAllShapes':
+        result = await functionRegistry[functionName]();
+        break;
+      
       case 'selectShapesByType':
         result = await functionRegistry[functionName](
           parameters.type

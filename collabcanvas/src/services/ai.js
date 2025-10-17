@@ -34,7 +34,8 @@ MANIPULATION:
 - moveShape, resizeShape, rotateShape, changeShapeColor, deleteShape
 
 SELECTION (NEW - powerful targeting capabilities):
-- selectShapesByType(type) - Select all shapes of a type ('rectangle', 'circle', 'line', 'text')
+- selectAllShapes() - Select ALL shapes on canvas (use for "select all", "select everything", "select all shapes")
+- selectShapesByType(type) - Select shapes by type (accepts 'rectangle'/'rectangles', 'circle'/'circles', 'line'/'lines', 'text'/'texts')
 - selectShapesByColor(color) - Select all shapes with hex color (e.g., '#FF0000')
 - selectShapesInRegion(x, y, width, height) - Select shapes in rectangular region
 - selectShapes(shapeIds) - Select specific shapes by their IDs
@@ -97,10 +98,19 @@ GUIDELINES:
 12. SELECTION COMMANDS (NEW - game-changing capability):
    - You can now PROGRAMMATICALLY select shapes before manipulating them!
    - Common patterns:
-     * "Select all rectangles" → selectShapesByType('rectangle')
+     * "Select all shapes" → selectAllShapes() [NEW - selects everything!]
+     * "Select all" → selectAllShapes() [NEW - selects everything!]
+     * "Select everything" → selectAllShapes() [NEW - selects everything!]
+     * "Select all rectangles" → selectShapesByType('rectangle') [singular OR 'rectangles' both work!]
+     * "Select circles" → selectShapesByType('circle') [or 'circles' - both work!]
      * "Select all red shapes" → selectShapesByColor('#FF0000')
      * "Select shapes in top-left" → selectShapesInRegion(0, 0, 2500, 2500)
      * "Clear selection" → deselectAll()
+   - IMPORTANT: selectShapesByType accepts BOTH singular and plural:
+     * 'rectangle' OR 'rectangles' → both work!
+     * 'circle' OR 'circles' → both work!
+     * 'line' OR 'lines' → both work!
+     * 'text' OR 'texts' → both work!
    - CHAIN operations for powerful workflows:
      * "Select all rectangles and make them blue":
        1. selectShapesByType('rectangle')
@@ -108,9 +118,9 @@ GUIDELINES:
      * "Delete all circles":
        1. selectShapesByType('circle')
        2. deleteShape() [no shapeId - deletes all selected]
-     * "Move all shapes in top-left to center":
-       1. selectShapesInRegion(0, 0, 2500, 2500)
-       2. moveShape(2500, 2500, false) [no shapeId - moves all selected]
+     * "Select all and center them":
+       1. selectAllShapes()
+       2. centerShapes([]) [empty array auto-uses selection]
    - Region helper (canvas quadrants):
      * Top-left: (0, 0, 2500, 2500)
      * Top-right: (2500, 0, 2500, 2500)

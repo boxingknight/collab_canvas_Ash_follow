@@ -68,14 +68,31 @@ function getCurrentUserId() {
  * Validate shape type parameter
  */
 function validateShapeType(type) {
-  const validTypes = ['rectangle', 'circle', 'line', 'text'];
-  if (!validTypes.includes(type)) {
+  // Map both singular and plural forms to singular
+  const typeMap = {
+    'rectangle': 'rectangle',
+    'rectangles': 'rectangle',
+    'circle': 'circle',
+    'circles': 'circle',
+    'line': 'line',
+    'lines': 'line',
+    'text': 'text',
+    'texts': 'text'
+  };
+  
+  const normalized = typeMap[type?.toLowerCase()];
+  
+  if (!normalized) {
     return {
       valid: false,
-      error: `Invalid type "${type}". Must be one of: ${validTypes.join(', ')}`
+      error: `Invalid type "${type}". Must be one of: rectangle, circle, line, text (singular or plural)`
     };
   }
-  return { valid: true };
+  
+  return { 
+    valid: true, 
+    normalizedType: normalized 
+  };
 }
 
 /**
@@ -1555,12 +1572,42 @@ export const canvasAPI = {
   // ===== SELECTION COMMANDS =====
 
   /**
+   * Select ALL shapes on the canvas (regardless of type)
+   * @returns {Promise<{success: boolean, selectedCount: number, selectedIds: array, message: string}>}
+   */
+  async selectAllShapes() {
+    try {
+      // Get all shapes from Firestore
+      const shapes = await getAllShapes();
+      const allIds = shapes.map(s => s.id);
+      
+      // Update selection via bridge
+      updateSelection(allIds);
+      
+      return {
+        success: true,
+        selectedCount: allIds.length,
+        selectedIds: allIds,
+        userMessage: `Selected all ${allIds.length} shape(s)`,
+        result: { count: allIds.length, ids: allIds }
+      };
+    } catch (error) {
+      console.error('[canvasAPI] selectAllShapes error:', error);
+      return {
+        success: false,
+        error: error.code,
+        userMessage: 'Failed to select all shapes. Please try again.'
+      };
+    }
+  },
+
+  /**
    * Select all shapes of a specific type
-   * @param {string} type - 'rectangle', 'circle', 'line', or 'text'
+   * @param {string} type - 'rectangle', 'circle', 'line', or 'text' (accepts singular or plural)
    * @returns {Promise<{success: boolean, selectedCount: number, selectedIds: array, message: string}>}
    */
   async selectShapesByType(type) {
-    // Validate type parameter
+    // Validate type parameter (now handles singular/plural)
     const typeValidation = validateShapeType(type);
     if (!typeValidation.valid) {
       return { 
@@ -1570,12 +1617,15 @@ export const canvasAPI = {
       };
     }
 
+    // Use normalized type (singular form)
+    const normalizedType = typeValidation.normalizedType;
+
     try {
       // Get all shapes from Firestore
       const shapes = await getAllShapes();
       
-      // Filter by type
-      const matchingShapes = shapes.filter(s => s.type === type);
+      // Filter by type (using normalized type)
+      const matchingShapes = shapes.filter(s => s.type === normalizedType);
       const matchingIds = matchingShapes.map(s => s.id);
       
       // Update selection via bridge
@@ -1585,9 +1635,11 @@ export const canvasAPI = {
         success: true,
         selectedCount: matchingIds.length,
         selectedIds: matchingIds,
-        message: `Selected ${matchingIds.length} ${type}(s)`
+        userMessage: `Selected ${matchingIds.length} ${normalizedType}(s)`,
+        result: { count: matchingIds.length, type: normalizedType, ids: matchingIds }
       };
     } catch (error) {
+      console.error('[canvasAPI] selectShapesByType error:', error);
       return {
         success: false,
         error: error.code,
