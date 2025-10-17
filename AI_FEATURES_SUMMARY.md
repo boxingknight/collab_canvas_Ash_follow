@@ -46,13 +46,13 @@
 | **Batch & Pattern** | 2 ✅ | 0 | 0 | 2 |
 | **Manipulation** | 5 ✅ | 0 | 0 | 5 |
 | **Query** | 3 ✅ | 0 | 0 | 3 |
-| **Selection** | 5 ✅ | 0 | 0 | 5 |
+| **Selection** | 6 ✅ | 0 | 0 | 6 |
 | **Layout** | 6 ✅ | 0 | 0 | 6 |
 | **Multi-Tool** | ✅ **NEW** | 0 | 0 | 1 |
 | **Complex Ops** | 0 | 0 | 4 📋 | 4 |
-| **TOTAL** | **23+1** | **0** | **4** | **28** |
+| **TOTAL** | **24+1** | **0** | **4** | **29** |
 
-**Completion**: 24/28 (86%) implemented! 🎉 Multi-tool calling unlocked!
+**Completion**: 25/29 (86%) implemented! 🎉 Multi-tool calling + selectAllShapes unlocked!
 
 ---
 
@@ -164,31 +164,39 @@
 
 ---
 
-### Category 5: Selection Commands (5 functions)
+### Category 5: Selection Commands (6 functions)
 
-#### 15. `selectShapesByType(type)`
+#### 15. `selectAllShapes()` 🆕
+- Selects ALL shapes on canvas regardless of type
+- **No parameters needed**
+- **Example**: "Select all shapes", "Select everything", "Select all"
+- **Status**: ✅ Complete (Bug Fix - October 2025)
+- **Why Added**: Critical bug - users couldn't select all shapes at once
+
+#### 16. `selectShapesByType(type)`
 - Selects all shapes of specified type
-- **Types**: 'rectangle', 'circle', 'line', 'text'
-- **Example**: "Select all rectangles"
-- **Status**: ✅ Complete (PR #21)
+- **Types**: 'rectangle'/'rectangles', 'circle'/'circles', 'line'/'lines', 'text'/'texts'
+- **Plural Support**: ✅ Now accepts both singular AND plural forms
+- **Example**: "Select all rectangles" (plural now works!)
+- **Status**: ✅ Complete (PR #21, Bug Fix - October 2025)
 
-#### 16. `selectShapesByColor(color)`
+#### 17. `selectShapesByColor(color)`
 - Selects all shapes with matching color
 - **Example**: "Select all red shapes"
 - **Status**: ✅ Complete (PR #21)
 
-#### 17. `selectShapesInRegion(x, y, width, height)`
+#### 18. `selectShapesInRegion(x, y, width, height)`
 - Selects shapes within rectangular area
 - **Algorithm**: AABB intersection detection
 - **Example**: "Select shapes in top-left quadrant"
 - **Status**: ✅ Complete (PR #21)
 
-#### 18. `selectShapes(shapeIds)`
+#### 19. `selectShapes(shapeIds)`
 - Selects shapes by explicit IDs
 - **Example**: AI gets IDs from getCanvasState(), then selects specific ones
 - **Status**: ✅ Complete (PR #21)
 
-#### 19. `deselectAll()`
+#### 20. `deselectAll()`
 - Clears all selections
 - **Example**: "Clear selection"
 - **Status**: ✅ Complete (PR #21)
