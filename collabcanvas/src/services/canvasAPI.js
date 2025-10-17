@@ -3,6 +3,19 @@ import { addShape, updateShape, deleteShape as deleteShapeFromDB, getAllShapes }
 import { CANVAS_CONFIG } from '../utils/constants';
 import { getCurrentUser } from './auth';
 import { getCurrentSelection, getFirstSelectedId, updateSelection } from './selectionBridge';
+import { 
+  getShapeBounds,
+  calculateBoundingBox,
+  calculateHorizontalLayout,
+  calculateVerticalLayout,
+  calculateGridLayout,
+  calculateEvenDistribution,
+  calculateCenterPosition,
+  calculateGroupCenterOffset,
+  validateLayoutSize
+} from '../utils/geometry';
+import { writeBatch, doc, serverTimestamp } from 'firebase/firestore';
+import { db } from './firebase';
 
 /**
  * Validate common parameters
@@ -66,54 +79,8 @@ function validateShapeType(type) {
 }
 
 /**
- * Get bounding box for any shape type
- * Handles rectangles, circles, lines, and text
- * @param {Object} shape - Shape object with type and position data
- * @returns {Object} Bounding box with left, right, top, bottom
- */
-function getShapeBounds(shape) {
-  switch (shape.type) {
-    case 'rectangle':
-    case 'text':
-      return {
-        left: shape.x,
-        right: shape.x + shape.width,
-        top: shape.y,
-        bottom: shape.y + shape.height
-      };
-    
-    case 'circle':
-      // Circles store center as x, y but in storage they use top-left
-      // So we need to handle both cases
-      const radius = shape.width / 2; // width is diameter
-      return {
-        left: shape.x,
-        right: shape.x + shape.width,
-        top: shape.y,
-        bottom: shape.y + shape.height
-      };
-    
-    case 'line':
-      const minX = Math.min(shape.x, shape.endX);
-      const maxX = Math.max(shape.x, shape.endX);
-      const minY = Math.min(shape.y, shape.endY);
-      const maxY = Math.max(shape.y, shape.endY);
-      return {
-        left: minX,
-        right: maxX,
-        top: minY,
-        bottom: maxY
-      };
-    
-    default:
-      return { left: 0, right: 0, top: 0, bottom: 0 };
-  }
-}
-
-/**
  * Check if shape overlaps with region (AABB intersection)
- * Note: Uses axis-aligned bounding box, which may include rotated shapes
- * that visually appear outside the region. This is acceptable for MVP.
+ * Uses geometry.js getShapeBounds which correctly handles rotation
  * @param {Object} shape - Shape object
  * @param {number} x - Region top-left X
  * @param {number} y - Region top-left Y
@@ -124,15 +91,465 @@ function getShapeBounds(shape) {
 function isShapeInRegion(shape, x, y, width, height) {
   const regionRight = x + width;
   const regionBottom = y + height;
-  const shapeBounds = getShapeBounds(shape);
+  const shapeBounds = getShapeBounds(shape); // From geometry.js - handles rotation
+  const shapeRight = shapeBounds.x + shapeBounds.width;
+  const shapeBottom = shapeBounds.y + shapeBounds.height;
   
   // AABB intersection test (any overlap counts)
   return !(
-    shapeBounds.right < x ||
-    shapeBounds.left > regionRight ||
-    shapeBounds.bottom < y ||
-    shapeBounds.top > regionBottom
+    shapeRight < x ||
+    shapeBounds.x > regionRight ||
+    shapeBottom < y ||
+    shapeBounds.y > regionBottom
   );
+}
+
+/**
+ * ===== LAYOUT COMMANDS =====
+ * PR #22: AI Layout Commands with bug fixes
+ * These functions must be defined BEFORE canvasAPI object
+ */
+
+/**
+ * Helper: Resolve shape IDs (fallback to selection if invalid)
+ * FIX: Auto-use current selection when AI forgets to call getSelectedShapes()
+ * @param {Array<string>} shapeIds - Shape IDs (might be invalid/fake)
+ * @returns {Array<string>} Valid shape IDs from selection
+ */
+function resolveShapeIds(shapeIds) {
+  // Check if shapeIds are likely fake (AI invented them)
+  const areFakeIds = shapeIds && shapeIds.length > 0 && 
+    (shapeIds[0] === 'shape1' || 
+     shapeIds[0] === 'shape2' ||
+     shapeIds.some(id => typeof id === 'string' && id.startsWith('shape')));
+  
+  // If no IDs, empty array, or fake IDs, use current selection
+  if (!shapeIds || shapeIds.length === 0 || areFakeIds) {
+    const selection = getCurrentSelection();
+    console.log('[Layout] Using current selection:', selection.selectedShapeIds.length, 'shapes');
+    return selection.selectedShapeIds;
+  }
+  
+  return shapeIds;
+}
+
+/**
+ * Batch update shape positions atomically
+ * FIX: Bug #4 - Uses Firestore batch writes for atomic operations
+ * @param {Array} updates - Array of {id, x, y, ...} objects
+ * @returns {Promise<Object>} Success result
+ */
+async function batchUpdateShapePositions(updates) {
+  if (!updates || updates.length === 0) {
+    return { success: true, count: 0 };
+  }
+  
+  try {
+    const BATCH_SIZE = 500; // Firestore batch limit
+    
+    // Handle > 500 shapes by chunking
+    if (updates.length > BATCH_SIZE) {
+      const chunks = [];
+      for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+        chunks.push(updates.slice(i, i + BATCH_SIZE));
+      }
+      
+      // Process each chunk atomically
+      for (const chunk of chunks) {
+        await batchUpdateChunk(chunk);
+      }
+      
+      return { success: true, count: updates.length };
+    }
+    
+    // Single batch (most common case)
+    await batchUpdateChunk(updates);
+    return { success: true, count: updates.length };
+    
+  } catch (error) {
+    console.error('Batch update failed:', error);
+    throw new Error(`Failed to update ${updates.length} shapes: ${error.message}`);
+  }
+}
+
+/**
+ * Update a single chunk of shapes atomically
+ * @param {Array} updates - Array of updates (max 500)
+ * @returns {Promise}
+ */
+async function batchUpdateChunk(updates) {
+  const batch = writeBatch(db);
+  
+  updates.forEach(({ id, ...data }) => {
+    const shapeRef = doc(db, 'shapes', id);
+    batch.update(shapeRef, {
+      ...data,
+      updatedAt: serverTimestamp()
+    });
+  });
+  
+  await batch.commit();
+}
+
+/**
+ * Arrange shapes in horizontal row
+ * @param {Array<string>} shapeIds - Array of shape IDs to arrange
+ * @param {number} spacing - Space between shapes in pixels (default: 20)
+ * @returns {Promise<Object>} Success result
+ */
+async function arrangeHorizontal(shapeIds, spacing = 20) {
+  try {
+    // Resolve shape IDs (fallback to selection if needed)
+    shapeIds = resolveShapeIds(shapeIds);
+    
+    // Validation
+    if (!Array.isArray(shapeIds) || shapeIds.length === 0) {
+      throw new Error('No shapes to arrange. Please select shapes first.');
+    }
+    if (typeof spacing !== 'number' || spacing < 0) {
+      throw new Error('spacing must be a non-negative number');
+    }
+    
+    // Get shapes
+    const allShapes = await getAllShapes();
+    const shapes = shapeIds.map(id => allShapes.find(s => s.id === id)).filter(Boolean);
+    
+    if (shapes.length === 0) {
+      throw new Error('No valid shapes found');
+    }
+    if (shapes.length !== shapeIds.length) {
+      throw new Error(`Some shapes not found: ${shapeIds.length - shapes.length} missing`);
+    }
+    
+    // Calculate new positions
+    const newPositions = calculateHorizontalLayout(shapes, spacing);
+    
+    // Build update array
+    const updates = shapes.map((shape, i) => ({
+      id: shape.id,
+      ...newPositions[i]
+    }));
+    
+    // Batch update (atomic)
+    await batchUpdateShapePositions(updates);
+    
+      return {
+      success: true,
+      message: `Arranged ${shapes.length} shapes horizontally with ${spacing}px spacing`,
+      count: shapes.length
+    };
+    
+  } catch (error) {
+    console.error('arrangeHorizontal error:', error);
+    throw new Error(`Failed to arrange shapes horizontally: ${error.message}`);
+  }
+}
+
+/**
+ * Arrange shapes in vertical column
+ * @param {Array<string>} shapeIds - Array of shape IDs to arrange
+ * @param {number} spacing - Space between shapes in pixels (default: 20)
+ * @returns {Promise<Object>} Success result
+ */
+async function arrangeVertical(shapeIds, spacing = 20) {
+  try {
+    // Resolve shape IDs (fallback to selection if needed)
+    shapeIds = resolveShapeIds(shapeIds);
+    
+    // Validation
+    if (!Array.isArray(shapeIds) || shapeIds.length === 0) {
+      throw new Error('No shapes to arrange. Please select shapes first.');
+    }
+    if (typeof spacing !== 'number' || spacing < 0) {
+      throw new Error('spacing must be a non-negative number');
+    }
+    
+    // Get shapes
+    const allShapes = await getAllShapes();
+    const shapes = shapeIds.map(id => allShapes.find(s => s.id === id)).filter(Boolean);
+    
+    if (shapes.length === 0) {
+      throw new Error('No valid shapes found');
+    }
+    if (shapes.length !== shapeIds.length) {
+      throw new Error(`Some shapes not found: ${shapeIds.length - shapes.length} missing`);
+    }
+    
+    // Calculate new positions
+    const newPositions = calculateVerticalLayout(shapes, spacing);
+    
+    // Build update array
+    const updates = shapes.map((shape, i) => ({
+      id: shape.id,
+      ...newPositions[i]
+    }));
+    
+    // Batch update (atomic)
+    await batchUpdateShapePositions(updates);
+    
+      return {
+      success: true,
+      message: `Arranged ${shapes.length} shapes vertically with ${spacing}px spacing`,
+      count: shapes.length
+    };
+    
+  } catch (error) {
+    console.error('arrangeVertical error:', error);
+    throw new Error(`Failed to arrange shapes vertically: ${error.message}`);
+  }
+}
+
+/**
+ * Arrange shapes in grid pattern
+ * FIX: Bug #5 - Pre-validates layout size before execution
+ * @param {Array<string>} shapeIds - Array of shape IDs to arrange
+ * @param {number} rows - Number of rows
+ * @param {number} cols - Number of columns
+ * @param {number} spacingX - Horizontal spacing (default: 20)
+ * @param {number} spacingY - Vertical spacing (default: 20)
+ * @returns {Promise<Object>} Success result
+ */
+async function arrangeGrid(shapeIds, rows, cols, spacingX = 20, spacingY = 20) {
+  try {
+    // Resolve shape IDs (fallback to selection if needed)
+    shapeIds = resolveShapeIds(shapeIds);
+    
+    // Validation
+    if (!Array.isArray(shapeIds) || shapeIds.length === 0) {
+      throw new Error('No shapes to arrange. Please select shapes first.');
+    }
+    if (typeof rows !== 'number' || rows < 1) {
+      throw new Error('rows must be a positive number');
+    }
+    if (typeof cols !== 'number' || cols < 1) {
+      throw new Error('cols must be a positive number');
+    }
+    if (rows * cols < shapeIds.length) {
+      throw new Error(
+        `Grid too small: ${rows}x${cols} grid has ${rows*cols} cells but you have ${shapeIds.length} shapes. ` +
+        `Use at least ${Math.ceil(shapeIds.length / cols)}x${cols} or ${rows}x${Math.ceil(shapeIds.length / rows)}.`
+      );
+    }
+    
+    // Get shapes
+    const allShapes = await getAllShapes();
+    const shapes = shapeIds.map(id => allShapes.find(s => s.id === id)).filter(Boolean);
+    
+    if (shapes.length === 0) {
+      throw new Error('No valid shapes found');
+    }
+    if (shapes.length !== shapeIds.length) {
+      throw new Error(`Some shapes not found: ${shapeIds.length - shapes.length} missing`);
+    }
+    
+    // FIX: Bug #5 - Pre-validate layout size
+    const bounds = shapes.map(getShapeBounds);
+    const maxWidth = Math.max(...bounds.map(b => b.width), 10);
+    const maxHeight = Math.max(...bounds.map(b => b.height), 10);
+    
+    const gridWidth = (cols * maxWidth) + ((cols - 1) * spacingX);
+    const gridHeight = (rows * maxHeight) + ((rows - 1) * spacingY);
+    
+    validateLayoutSize(gridWidth, gridHeight, {
+      rows,
+      cols,
+      spacingX,
+      spacingY,
+      cellWidth: maxWidth,
+      cellHeight: maxHeight
+    });
+    
+    // Calculate new positions
+    const newPositions = calculateGridLayout(shapes, rows, cols, spacingX, spacingY);
+    
+    // Build update array
+    const updates = shapes.map((shape, i) => ({
+      id: shape.id,
+      ...newPositions[i]
+    }));
+    
+    // Batch update (atomic)
+    await batchUpdateShapePositions(updates);
+    
+      return {
+      success: true,
+      message: `Arranged ${shapes.length} shapes in ${rows}x${cols} grid`,
+      count: shapes.length,
+      rows,
+      cols
+    };
+    
+  } catch (error) {
+    console.error('arrangeGrid error:', error);
+    throw new Error(`Failed to arrange shapes in grid: ${error.message}`);
+  }
+}
+
+/**
+ * Distribute shapes evenly along an axis
+ * FIX: Bug #2 - Uses precision-safe calculation from origin
+ * @param {Array<string>} shapeIds - Array of shape IDs to distribute
+ * @param {string} direction - 'horizontal' or 'vertical'
+ * @returns {Promise<Object>} Success result
+ */
+async function distributeEvenly(shapeIds, direction = 'horizontal') {
+  try {
+    // Resolve shape IDs (fallback to selection if needed)
+    shapeIds = resolveShapeIds(shapeIds);
+    
+    // Validation
+    if (!Array.isArray(shapeIds) || shapeIds.length === 0) {
+      throw new Error('No shapes to distribute. Please select shapes first.');
+    }
+    if (shapeIds.length < 2) {
+      throw new Error('Need at least 2 shapes to distribute');
+    }
+    if (direction !== 'horizontal' && direction !== 'vertical') {
+      throw new Error('direction must be "horizontal" or "vertical"');
+    }
+    
+    // Get shapes
+    const allShapes = await getAllShapes();
+    const shapes = shapeIds.map(id => allShapes.find(s => s.id === id)).filter(Boolean);
+    
+    if (shapes.length === 0) {
+      throw new Error('No valid shapes found');
+    }
+    if (shapes.length !== shapeIds.length) {
+      throw new Error(`Some shapes not found: ${shapeIds.length - shapes.length} missing`);
+    }
+    
+    // Calculate new positions
+    const newPositions = calculateEvenDistribution(shapes, direction);
+    
+    // Build update array
+    const updates = shapes.map((shape, i) => ({
+      id: shape.id,
+      ...newPositions[i]
+    }));
+    
+    // Batch update (atomic)
+    await batchUpdateShapePositions(updates);
+    
+    return {
+      success: true,
+      message: `Distributed ${shapes.length} shapes evenly ${direction}`,
+      count: shapes.length,
+      direction
+    };
+    
+  } catch (error) {
+    console.error('distributeEvenly error:', error);
+    throw new Error(`Failed to distribute shapes: ${error.message}`);
+  }
+}
+
+/**
+ * Center single shape on canvas
+ * @param {string} shapeId - Shape ID to center
+ * @returns {Promise<Object>} Success result
+ */
+async function centerShape(shapeId) {
+  try {
+    // Validation
+    if (!shapeId) {
+      throw new Error('shapeId is required');
+    }
+    
+    // Get shape
+    const allShapes = await getAllShapes();
+    const shape = allShapes.find(s => s.id === shapeId);
+    
+    if (!shape) {
+      throw new Error(`Shape not found: ${shapeId}`);
+    }
+    
+    // Calculate center position
+    const newPosition = calculateCenterPosition(shape);
+    
+    // Update shape
+    await updateShape(shapeId, {
+      ...newPosition,
+      updatedAt: serverTimestamp()
+    });
+    
+    return {
+      success: true,
+      message: `Centered ${shape.type} at canvas center`,
+      shapeId
+    };
+    
+  } catch (error) {
+    console.error('centerShape error:', error);
+    throw new Error(`Failed to center shape: ${error.message}`);
+  }
+}
+
+/**
+ * Center group of shapes on canvas (preserves relative positions)
+ * @param {Array<string>} shapeIds - Array of shape IDs to center as group
+ * @returns {Promise<Object>} Success result
+ */
+async function centerShapes(shapeIds) {
+  try {
+    // Resolve shape IDs (fallback to selection if needed)
+    shapeIds = resolveShapeIds(shapeIds);
+    
+    // Validation
+    if (!Array.isArray(shapeIds) || shapeIds.length === 0) {
+      throw new Error('No shapes to center. Please select shapes first.');
+    }
+    
+    // Get shapes
+    const allShapes = await getAllShapes();
+    const shapes = shapeIds.map(id => allShapes.find(s => s.id === id)).filter(Boolean);
+    
+    if (shapes.length === 0) {
+      throw new Error('No valid shapes found');
+    }
+    if (shapes.length !== shapeIds.length) {
+      throw new Error(`Some shapes not found: ${shapeIds.length - shapes.length} missing`);
+    }
+    
+    // Calculate offset to center group
+    const { offsetX, offsetY } = calculateGroupCenterOffset(shapes);
+    
+    // Build update array (move all shapes by offset)
+    const updates = shapes.map(shape => {
+      const newPosition = {
+        x: Math.round(shape.x + offsetX),
+        y: Math.round(shape.y + offsetY)
+      };
+      
+      // For lines, offset both endpoints
+      if (shape.type === 'line') {
+        newPosition.x1 = Math.round(shape.x1 + offsetX);
+        newPosition.y1 = Math.round(shape.y1 + offsetY);
+        newPosition.x2 = Math.round(shape.x2 + offsetX);
+        newPosition.y2 = Math.round(shape.y2 + offsetY);
+        delete newPosition.x;
+        delete newPosition.y;
+      }
+      
+      return {
+        id: shape.id,
+        ...newPosition
+      };
+    });
+    
+    // Batch update (atomic)
+    await batchUpdateShapePositions(updates);
+    
+    return {
+      success: true,
+      message: `Centered group of ${shapes.length} shapes at canvas center`,
+      count: shapes.length
+    };
+    
+  } catch (error) {
+    console.error('centerShapes error:', error);
+    throw new Error(`Failed to center shapes: ${error.message}`);
+  }
 }
 
 /**
@@ -1349,6 +1766,39 @@ export const canvasAPI = {
         userMessage: 'Failed to clear selection. Please try again.'
       };
     }
-  }
-};
+  },
 
+  /**
+   * ===== LAYOUT COMMANDS (PR #22) =====
+   */
+
+  /**
+   * Arrange shapes in horizontal row
+   */
+  arrangeHorizontal,
+
+  /**
+   * Arrange shapes in vertical column
+   */
+  arrangeVertical,
+
+  /**
+   * Arrange shapes in grid pattern
+   */
+  arrangeGrid,
+
+  /**
+   * Distribute shapes evenly along an axis
+   */
+  distributeEvenly,
+
+  /**
+   * Center single shape on canvas
+   */
+  centerShape,
+
+  /**
+   * Center group of shapes on canvas
+   */
+  centerShapes
+};

@@ -396,7 +396,7 @@ export const functionSchemas = [
   },
   {
     name: 'getSelectedShapes',
-    description: 'Gets the currently selected shapes. Useful for operations on selected items.',
+    description: 'Gets currently selected shapes. Returns: {success: true, result: [{id: "abc", ...}, {id: "def", ...}], count: 2}. NOTE: Layout commands (arrangeHorizontal, arrangeVertical, etc.) automatically use selection when shapeIds is empty [], so you rarely need to call this explicitly.',
     parameters: {
       type: 'object',
       properties: {},
@@ -491,6 +491,126 @@ export const functionSchemas = [
       type: 'object',
       properties: {}
     }
+  },
+
+  // ===== LAYOUT COMMANDS (PR #22) =====
+  {
+    name: 'arrangeHorizontal',
+    description: 'Arranges shapes in a horizontal row with specified spacing. Shapes are aligned by their vertical centers. Works with rotated shapes (uses bounding boxes). TIP: Pass empty array [] for shapeIds to automatically use currently selected shapes!',
+    parameters: {
+      type: 'object',
+      properties: {
+        shapeIds: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Array of shape IDs to arrange. Use empty array [] to auto-use current selection (recommended for "arrange these" commands).'
+        },
+        spacing: {
+          type: 'number',
+          description: 'Space between shapes in pixels. Default is 20. Use 10-50 for compact layouts, 50-100 for loose layouts.'
+        }
+      },
+      required: ['shapeIds']
+    }
+  },
+  {
+    name: 'arrangeVertical',
+    description: 'Arranges shapes in a vertical column with specified spacing. Shapes are aligned by their horizontal centers. Works with rotated shapes (uses bounding boxes). TIP: Pass empty array [] for shapeIds to automatically use currently selected shapes!',
+    parameters: {
+      type: 'object',
+      properties: {
+        shapeIds: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Array of shape IDs to arrange. Use empty array [] to auto-use current selection (recommended for "arrange these" commands).'
+        },
+        spacing: {
+          type: 'number',
+          description: 'Space between shapes in pixels. Default is 20. Use 10-50 for compact layouts, 50-100 for loose layouts.'
+        }
+      },
+      required: ['shapeIds']
+    }
+  },
+  {
+    name: 'arrangeGrid',
+    description: 'Arranges shapes in a grid pattern (rows × columns) with specified spacing. Shapes are centered in cells. Validates that grid fits on canvas (5000x5000). TIP: Pass empty array [] for shapeIds to automatically use currently selected shapes!',
+    parameters: {
+      type: 'object',
+      properties: {
+        shapeIds: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Array of shape IDs to arrange in grid. Use empty array [] to auto-use current selection (recommended). Number of shapes must be ≤ rows × cols.'
+        },
+        rows: {
+          type: 'number',
+          description: 'Number of rows in grid. Must be positive integer. For 9 shapes, try 3x3.'
+        },
+        cols: {
+          type: 'number',
+          description: 'Number of columns in grid. Must be positive integer. For 12 shapes, try 3x4 or 4x3.'
+        },
+        spacingX: {
+          type: 'number',
+          description: 'Horizontal spacing between cells in pixels. Default is 20. Use 20-50 for most layouts.'
+        },
+        spacingY: {
+          type: 'number',
+          description: 'Vertical spacing between cells in pixels. Default is 20. Use 20-50 for most layouts.'
+        }
+      },
+      required: ['shapeIds', 'rows', 'cols']
+    }
+  },
+  {
+    name: 'distributeEvenly',
+    description: 'Distributes shapes evenly along horizontal or vertical axis. First and last shapes stay fixed, intermediate shapes are spaced evenly between them. Uses precision-safe calculation. TIP: Pass empty array [] for shapeIds to automatically use currently selected shapes!',
+    parameters: {
+      type: 'object',
+      properties: {
+        shapeIds: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Array of shape IDs to distribute. Use empty array [] to auto-use current selection (recommended). Minimum 2 shapes required (preferably 3+ for visible effect).'
+        },
+        direction: {
+          type: 'string',
+          enum: ['horizontal', 'vertical'],
+          description: 'Direction to distribute: "horizontal" spaces shapes left-to-right, "vertical" spaces shapes top-to-bottom. Default is "horizontal".'
+        }
+      },
+      required: ['shapeIds']
+    }
+  },
+  {
+    name: 'centerShape',
+    description: 'Centers a single shape at the canvas center (2500, 2500). Works with all shape types including rotated shapes.',
+    parameters: {
+      type: 'object',
+      properties: {
+        shapeId: {
+          type: 'string',
+          description: 'ID of shape to center on canvas. Can be rectangle, circle, line, or text.'
+        }
+      },
+      required: ['shapeId']
+    }
+  },
+  {
+    name: 'centerShapes',
+    description: 'Centers a group of shapes at the canvas center while preserving their relative positions (moves as a unit). Useful for centering layouts. TIP: Pass empty array [] for shapeIds to automatically use currently selected shapes!',
+    parameters: {
+      type: 'object',
+      properties: {
+        shapeIds: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Array of shape IDs to center as a group. Use empty array [] to auto-use current selection (recommended). Relative positions between shapes are preserved.'
+        }
+      },
+      required: ['shapeIds']
+    }
   }
 ];
 
@@ -523,7 +643,15 @@ export const functionRegistry = {
   'selectShapesByColor': canvasAPI.selectShapesByColor,
   'selectShapesInRegion': canvasAPI.selectShapesInRegion,
   'selectShapes': canvasAPI.selectShapes,
-  'deselectAll': canvasAPI.deselectAll
+  'deselectAll': canvasAPI.deselectAll,
+
+  // Layout (PR #22)
+  'arrangeHorizontal': canvasAPI.arrangeHorizontal,
+  'arrangeVertical': canvasAPI.arrangeVertical,
+  'arrangeGrid': canvasAPI.arrangeGrid,
+  'distributeEvenly': canvasAPI.distributeEvenly,
+  'centerShape': canvasAPI.centerShape,
+  'centerShapes': canvasAPI.centerShapes
 };
 
 /**
@@ -687,6 +815,50 @@ export async function executeAIFunction(functionName, parameters) {
       
       case 'deselectAll':
         result = await functionRegistry[functionName]();
+        break;
+      
+      // Layout functions (PR #22)
+      case 'arrangeHorizontal':
+        result = await functionRegistry[functionName](
+          parameters.shapeIds,
+          parameters.spacing
+        );
+        break;
+      
+      case 'arrangeVertical':
+        result = await functionRegistry[functionName](
+          parameters.shapeIds,
+          parameters.spacing
+        );
+        break;
+      
+      case 'arrangeGrid':
+        result = await functionRegistry[functionName](
+          parameters.shapeIds,
+          parameters.rows,
+          parameters.cols,
+          parameters.spacingX,
+          parameters.spacingY
+        );
+        break;
+      
+      case 'distributeEvenly':
+        result = await functionRegistry[functionName](
+          parameters.shapeIds,
+          parameters.direction
+        );
+        break;
+      
+      case 'centerShape':
+        result = await functionRegistry[functionName](
+          parameters.shapeId
+        );
+        break;
+      
+      case 'centerShapes':
+        result = await functionRegistry[functionName](
+          parameters.shapeIds
+        );
         break;
       
       default:

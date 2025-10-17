@@ -25,9 +25,10 @@ CollabCanvas is a production-ready collaborative design canvas with integrated A
 
 ### 🤖 AI Assistant (GPT-4)
 - **Natural Language Interaction**: Create and manipulate shapes using plain English
-- **13 AI Functions**: Complete control over canvas via voice-like commands
+- **23 AI Functions**: Complete control over canvas via voice-like commands
 - **Batch Operations**: Create up to 1000 shapes in a single command
 - **6 Generation Patterns**: Random, grid, row, column, circle-pattern, spiral
+- **6 Layout Commands**: Arrange, align, distribute, and center shapes with precision
 - **Multi-Select Support**: AI operations work on selected shapes
 - **Real-Time Sync**: AI changes broadcast to all users instantly
 
@@ -107,6 +108,14 @@ For detailed setup instructions, see [`collabcanvas/ENV_SETUP.md`](collabcanvas/
 - "Change color to red"
 - "Delete selected shapes"
 
+### Layout & Arrangement (NEW - PR #22) 🎯
+- "Arrange these shapes in a horizontal row"
+- "Stack them vertically with 30px spacing"
+- "Make a 3x3 grid with these shapes"
+- "Distribute these evenly across the canvas"
+- "Center this shape on the canvas"
+- "Center all selected shapes as a group"
+
 ### Patterns
 - `random` - Scattered across canvas
 - `grid` - Organized rows and columns
@@ -136,7 +145,7 @@ collabcanvas/
 │   │   └── useCursors.js    # Multiplayer cursors
 │   ├── services/
 │   │   ├── ai.js            # OpenAI GPT-4 integration
-│   │   ├── aiFunctions.js   # AI function schemas (13 functions)
+│   │   ├── aiFunctions.js   # AI function schemas (23 functions)
 │   │   ├── canvasAPI.js     # Unified canvas API
 │   │   ├── selectionBridge.js # React ↔ AI bridge
 │   │   ├── firebase.js      # Firebase config
@@ -146,7 +155,8 @@ collabcanvas/
 │   │   └── presence.js      # Realtime DB presence
 │   └── utils/
 │       ├── constants.js     # App constants
-│       └── helpers.js       # Utility functions
+│       ├── helpers.js       # Utility functions
+│       └── geometry.js      # Layout calculations (NEW - PR #22)
 └── public/                  # Static assets
 ```
 
@@ -174,6 +184,8 @@ collabcanvas/
 
 ### PR Documentation
 All Pull Requests documented in [`/PR_PARTY/`](PR_PARTY/):
+- **PR #22**: [AI Layout Commands](PR_PARTY/PR22_LAYOUT_COMMANDS.md) | [Bug Analysis](PR_PARTY/PR22_BUG_ANALYSIS.md) | [Complete Summary](PR_PARTY/PR22_COMPLETE_SUMMARY.md) ✅ **NEW**
+- **PR #21**: [AI Selection Commands](PR_PARTY/PR21_SELECTION_COMMANDS.md) ✅
 - **PR #19**: [Complete Summary](PR_PARTY/PR19_COMPLETE_SUMMARY.md) | [Bug Analysis](PR_PARTY/PR19_ALL_BUGS_SUMMARY.md)
 - **PR #18**: [AI Service Integration](PR_PARTY/archive/PR18_AI_SERVICE_INTEGRATION.md)
 - **PR #17**: [Layer Management](PR_PARTY/PR17_LAYER_MANAGEMENT.md)
@@ -318,13 +330,13 @@ See [`SECURITY_VERIFICATION.md`](SECURITY_VERIFICATION.md) for details.
 
 ## 📈 Project Stats
 
-- **Total PRs**: 19 comprehensive features
-- **Code**: 10,000+ lines
-- **Documentation**: 200+ pages
+- **Total PRs**: 22 comprehensive features
+- **Code**: 12,000+ lines
+- **Documentation**: 250+ pages
 - **Development Time**: 7 days
-- **Bugs Fixed**: 20+ (all documented)
+- **Bugs Fixed**: 25+ (all documented)
 - **Performance**: 60 FPS maintained
-- **AI Functions**: 13 fully functional
+- **AI Functions**: 23 fully functional (78% complete)
 
 ---
 

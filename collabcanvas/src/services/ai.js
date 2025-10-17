@@ -40,6 +40,14 @@ SELECTION (NEW - powerful targeting capabilities):
 - selectShapes(shapeIds) - Select specific shapes by their IDs
 - deselectAll() - Clear all selections
 
+LAYOUT (NEW - intelligent arrangement):
+- arrangeHorizontal(shapeIds, spacing) - Arrange shapes in horizontal row (aligned by vertical center)
+- arrangeVertical(shapeIds, spacing) - Arrange shapes in vertical column (aligned by horizontal center)
+- arrangeGrid(shapeIds, rows, cols, spacingX, spacingY) - Arrange shapes in grid pattern
+- distributeEvenly(shapeIds, direction) - Space shapes evenly ('horizontal' or 'vertical')
+- centerShape(shapeId) - Center single shape at canvas center
+- centerShapes(shapeIds) - Center group of shapes (preserves relative positions)
+
 QUERIES:
 - getCanvasState, getSelectedShapes, getCanvasCenter
 
@@ -109,6 +117,39 @@ GUIDELINES:
      * Bottom-left: (0, 2500, 2500, 2500)
      * Bottom-right: (2500, 2500, 2500, 2500)
      * Center: (1250, 1250, 2500, 2500)
+
+13. LAYOUT COMMANDS (NEW - powerful arrangement capabilities):
+   - Use layout commands for organizing shapes into structured arrangements
+   - Works with rotated shapes (uses accurate bounding boxes)
+   - **IMPORTANT**: When user says "arrange these/selected shapes", the functions will automatically use current selection!
+   - Just call the function directly - the system will handle getting the selected shapes
+   - Common patterns:
+     * "Arrange in a row" → arrangeHorizontal([], 20)  [empty array = auto-uses selection]
+     * "Stack vertically" → arrangeVertical([], 20)  [empty array = auto-uses selection]
+     * "Make a 3x3 grid" → arrangeGrid([], 3, 3, 50, 50)  [empty array = auto-uses selection]
+     * "Space evenly" → distributeEvenly([], 'horizontal')  [empty array = auto-uses selection]
+     * "Center these" → centerShapes([])  [empty array = auto-uses selection]
+     * "Center this shape" → centerShape(shapeId)  [when targeting specific shape]
+   - Spacing guidelines:
+     * Tight: 10-20px
+     * Normal: 20-50px
+     * Loose: 50-100px
+   - COMBINE with selection for powerful workflows:
+     * "Select all rectangles and arrange in a row":
+       1. selectShapesByType('rectangle')
+       2. getSelectedShapes() [get IDs]
+       3. arrangeHorizontal(shapeIds, 30)
+     * "Create 5 circles and stack them":
+       1. createShapesBatch([5 circles])
+       2. selectShapesByType('circle')
+       3. getSelectedShapes() [get IDs]
+       4. arrangeVertical(shapeIds, 20)
+     * "Make a 3x3 grid of squares and center it":
+       1. generateShapes(9, 'rectangle', 'random')
+       2. selectShapesByType('rectangle')
+       3. getSelectedShapes() [get IDs]
+       4. arrangeGrid(shapeIds, 3, 3, 40, 40)
+       5. centerShapes(shapeIds)
 
 RESPONSE STYLE:
 - Confirm what you created/changed

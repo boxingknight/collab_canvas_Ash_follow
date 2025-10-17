@@ -164,12 +164,20 @@ Each PR document follows this template:
 - 📋 PR #19: AI Chat Interface
 
 ### Phase 5: AI Commands - Basic
-- 📋 PR #20: AI Basic Commands
-- 📋 PR #21: AI Selection Commands
+- ✅ PR #20: AI Basic Commands - **COMPLETE** 
+- ✅ PR #21: AI Selection Commands - **COMPLETE**
 
 ### Phase 6: AI Commands - Advanced
-- 📋 PR #22: AI Layout Commands
-- 📋 PR #23: AI Complex Operations
+- ✅ PR #22: AI Layout Commands - **COMPLETE** 🎉
+  - ✅ 6 layout functions: arrangeHorizontal, arrangeVertical, arrangeGrid, distributeEvenly, centerShape, centerShapes
+  - ✅ New geometry.js utility module (13 helper functions)
+  - ✅ Selection-aware fallback (auto-uses current selection)
+  - ✅ Rotation support (AABB bounding boxes)
+  - ✅ Batch Firestore updates (atomic operations)
+  - ✅ Canvas-safe validation (prevents overflow)
+  - ✅ 3.5 hours implementation + debugging
+  - 📄 Documentation: PR22_LAYOUT_COMMANDS.md, PR22_BUG_ANALYSIS.md, PR22_COMPLETE_SUMMARY.md
+- 📋 PR #23: AI Complex Operations - **Next to implement**
 
 ### Phase 7: Testing & Documentation
 - 📋 PR #24: AI Testing & Documentation
