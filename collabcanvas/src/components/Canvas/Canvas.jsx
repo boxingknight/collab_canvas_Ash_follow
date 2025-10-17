@@ -1694,135 +1694,14 @@ function Canvas() {
             </span>
           </div>
         )}
-      </div>
-
-      {/* Bulk Shape Creation Panel (Development Only) */}
-      {import.meta.env.DEV && (
-        <div style={{
-          position: 'absolute',
-          top: '10px',
-          right: '10px',
-          background: 'rgba(0, 0, 0, 0.85)',
-          color: 'white',
-          padding: '12px 16px',
-          borderRadius: '8px',
-          fontSize: '12px',
-          fontFamily: 'monospace',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          zIndex: 1000,
-          backdropFilter: 'blur(8px)',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
-        }}>
-          <div style={{ 
-            fontSize: '13px', 
-            fontWeight: 'bold', 
-            marginBottom: '8px', 
-            color: '#f59e0b',
-            letterSpacing: '0.5px'
-          }}>
-            🧪 BULK CREATE (DEV)
+        {selectionCount > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ opacity: 0.7 }}>Selected:</span>
+            <span style={{ color: '#60a5fa', fontWeight: 'bold' }}>
+              {selectionCount} shape{selectionCount !== 1 ? 's' : ''}
+            </span>
           </div>
-          <div style={{ display: 'flex', gap: '6px', flexDirection: 'column' }}>
-            <button
-              onClick={() => handleBulkCreateShapes(100)}
-              style={{
-                padding: '6px 12px',
-                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '11px',
-                fontWeight: 'bold',
-                transition: 'transform 0.1s'
-              }}
-              onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
-              onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
-            >
-              + 100 Shapes
-            </button>
-            <button
-              onClick={() => handleBulkCreateShapes(500)}
-              style={{
-                padding: '6px 12px',
-                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '11px',
-                fontWeight: 'bold',
-                transition: 'transform 0.1s'
-              }}
-              onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
-              onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
-            >
-              + 500 Shapes
-            </button>
-            <button
-              onClick={() => handleBulkCreateShapes(1000)}
-              style={{
-                padding: '6px 12px',
-                background: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '11px',
-                fontWeight: 'bold',
-                transition: 'transform 0.1s'
-              }}
-              onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
-              onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
-            >
-              + 1000 Shapes
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Instructions */}
-      <div style={{
-        position: 'absolute',
-        bottom: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        background: 'rgba(0, 0, 0, 0.85)',
-        color: 'white',
-        padding: '14px 24px',
-        borderRadius: '8px',
-        fontSize: '14px',
-        border: '2px solid ' + (mode === 'pan' ? '#646cff' : mode === 'move' ? '#4ade80' : '#f59e0b'),
-        zIndex: 1000,
-        textAlign: 'center',
-        maxWidth: '550px'
-      }}>
-        <strong style={{ fontSize: '16px' }}>
-          {mode === 'pan' ? '✋ Pan Mode' : mode === 'move' ? '🔄 Move Mode' : (
-            shapeType === SHAPE_TYPES.TEXT ? '📝 Text Mode' :
-            shapeType === SHAPE_TYPES.LINE ? '📏 Draw Mode' :
-            shapeType === SHAPE_TYPES.CIRCLE ? '⚪ Draw Mode' :
-            '🔲 Draw Mode'
-          )}
-        </strong>
-        <br />
-        <span style={{ fontSize: '13px', opacity: 0.95, lineHeight: '1.6' }}>
-          {mode === 'pan' 
-            ? 'Drag canvas to pan • Click shapes to select (auto-switches to Move) • Scroll to zoom'
-            : mode === 'move'
-            ? 'Click to select • Drag selected shapes to move or resize • Click elsewhere to deselect'
-            : shapeType === SHAPE_TYPES.TEXT
-            ? 'Click on empty space to add text • Double-click text to edit • Canvas will NOT pan'
-            : `Click & drag on empty space to create ${
-                shapeType === SHAPE_TYPES.LINE ? 'lines' :
-                shapeType === SHAPE_TYPES.CIRCLE ? 'circles' :
-                'rectangles'
-              } • Canvas will NOT pan`}
-        </span>
-        <br />
-        <span style={{ fontSize: '11px', opacity: 0.75, marginTop: '4px', display: 'block' }}>
-          Shapes: {shapes.length} {selectionCount > 0 ? `• ${selectionCount} selected` : ''} • Keyboard: V (Pan) • M (Move) • D (Draw) • Cmd/Ctrl+A (Select All) • Esc (Deselect) • Del/Backspace (Delete)
-        </span>
+        )}
       </div>
 
       {/* Inline Text Editor with overlay to prevent canvas interaction */}
@@ -1897,13 +1776,6 @@ function Canvas() {
             placeholder="Type your text..."
           />
         </>
-      )}
-
-      {/* Selection count badge */}
-      {selectionCount > 0 && (
-        <div className="selection-badge">
-          {selectionCount} shape{selectionCount !== 1 ? 's' : ''} selected
-        </div>
       )}
 
       {/* Context Menu */}
