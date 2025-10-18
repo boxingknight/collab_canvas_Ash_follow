@@ -618,6 +618,54 @@ export const functionSchemas = [
       },
       required: ['shapeIds']
     }
+  },
+
+  // ===== COMPLEX OPERATIONS (PR #23) =====
+  {
+    name: 'createLoginForm',
+    description: `Creates a complete login form UI with username field, password field, and submit button. Creates 7 shapes (or 9 with Remember Me option) professionally laid out and aligned.
+
+IMPORTANT: Extract position from natural language carefully:
+- "at the center" → x: 2500, y: 2500
+- "at the top" → x: 2500, y: 100  
+- "at 1000, 1000" → x: 1000, y: 1000
+
+Examples:
+- "Create a login form at the center" → x: 2500, y: 2500
+- "Add a login form at 500, 500" → x: 500, y: 500
+- "Make a login form with remember me checkbox at 1000, 1000" → x: 1000, y: 1000, options: {includeRememberMe: true}`,
+    parameters: {
+      type: 'object',
+      properties: {
+        x: {
+          type: 'number',
+          description: 'X coordinate of top-left corner (0-5000). Canvas center is 2500. Will be adjusted if too close to edge.'
+        },
+        y: {
+          type: 'number',
+          description: 'Y coordinate of top-left corner (0-5000). Canvas center is 2500. Will be adjusted if too close to edge.'
+        },
+        options: {
+          type: 'object',
+          properties: {
+            includeRememberMe: {
+              type: 'boolean',
+              description: 'If true, adds a "Remember Me" checkbox. Default: false. Use when user mentions "remember me" or "keep me logged in".'
+            },
+            buttonText: {
+              type: 'string',
+              description: 'Text for the submit button. Default: "Login". Can be "Sign In", "Log In", "Submit", etc. Max 15 characters.'
+            },
+            theme: {
+              type: 'string',
+              enum: ['default', 'dark'],
+              description: 'Color theme. Use "dark" if user mentions dark theme/mode. Default: "default".'
+            }
+          }
+        }
+      },
+      required: ['x', 'y']
+    }
   }
 ];
 
@@ -659,7 +707,10 @@ export const functionRegistry = {
   'arrangeGrid': canvasAPI.arrangeGrid,
   'distributeEvenly': canvasAPI.distributeEvenly,
   'centerShape': canvasAPI.centerShape,
-  'centerShapes': canvasAPI.centerShapes
+  'centerShapes': canvasAPI.centerShapes,
+
+  // Complex Operations (PR #23)
+  'createLoginForm': canvasAPI.createLoginForm
 };
 
 /**
@@ -870,6 +921,16 @@ export async function executeAIFunction(functionName, parameters) {
       case 'centerShapes':
         result = await functionRegistry[functionName](
           parameters.shapeIds
+        );
+        break;
+      
+      // Complex Operations (PR #23)
+      case 'createLoginForm':
+        result = await functionRegistry[functionName](
+          parameters.x,
+          parameters.y,
+          parameters.options || {},
+          parameters.userId
         );
         break;
       

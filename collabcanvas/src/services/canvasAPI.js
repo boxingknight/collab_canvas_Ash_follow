@@ -122,6 +122,113 @@ function isShapeInRegion(shape, x, y, width, height) {
 }
 
 /**
+ * ===== COMPLEX OPERATIONS INFRASTRUCTURE =====
+ * PR #23: Layout constants and helpers for complex operations
+ */
+
+/**
+ * Layout constants for complex operations
+ * Defines consistent spacing, sizing, and styling for UI components
+ */
+const LAYOUT_CONSTANTS = {
+  loginForm: {
+    WIDTH: 350,
+    INPUT_HEIGHT: 40,
+    BUTTON_HEIGHT: 50,
+    BUTTON_WIDTH: 120,
+    LABEL_HEIGHT: 20,
+    SPACING: 20,           // Vertical spacing between components
+    LABEL_OFFSET: 8,       // Gap between label and input
+    SECTION_GAP: 30        // Gap between sections (e.g., before button)
+  },
+  navigationBar: {
+    HEIGHT: 60,
+    ITEM_SPACING: 40,
+    PADDING: 20,
+    MIN_ITEM_WIDTH: 80
+  },
+  card: {
+    WIDTH: 300,
+    HEIGHT: 400,
+    IMAGE_HEIGHT: 200,
+    PADDING: 20,
+    TITLE_HEIGHT: 30,
+    DESCRIPTION_OFFSET: 15
+  },
+  buttonGroup: {
+    BUTTON_WIDTH: 120,
+    BUTTON_HEIGHT: 40,
+    SPACING: 10
+  }
+};
+
+/**
+ * Color themes for complex operations
+ */
+const COLOR_THEMES = {
+  default: {
+    primary: '#646cff',       // Primary action color
+    secondary: '#535bf2',     // Secondary color
+    background: '#ffffff',    // Input/component background
+    text: '#1a1a1a',          // Dark text
+    textLight: '#666666',     // Light text for labels
+    border: '#d0d0d0',        // Border color
+    buttonText: '#ffffff'     // Button text color
+  },
+  dark: {
+    primary: '#646cff',
+    secondary: '#535bf2',
+    background: '#2d2d3f',
+    text: '#ffffff',
+    textLight: '#cccccc',
+    border: '#404040',
+    buttonText: '#ffffff'
+  }
+};
+
+/**
+ * Constrain position and size to canvas bounds
+ * Prevents complex operations from creating shapes outside visible canvas
+ * @param {number} x - Desired X position
+ * @param {number} y - Desired Y position
+ * @param {number} width - Component width
+ * @param {number} height - Component height
+ * @returns {{x: number, y: number, adjusted: boolean}} - Constrained position
+ */
+function constrainToCanvas(x, y, width, height) {
+  const MARGIN = 50; // Safe margin from edge
+  const maxX = CANVAS_CONFIG.width - width - MARGIN;
+  const maxY = CANVAS_CONFIG.height - height - MARGIN;
+  
+  const constrainedX = Math.max(MARGIN, Math.min(x, maxX));
+  const constrainedY = Math.max(MARGIN, Math.min(y, maxY));
+  
+  const adjusted = (constrainedX !== x || constrainedY !== y);
+  
+  if (adjusted) {
+    console.warn(`⚠️ Position adjusted to fit canvas: (${x}, ${y}) → (${constrainedX}, ${constrainedY})`);
+  }
+  
+  return {
+    x: constrainedX,
+    y: constrainedY,
+    adjusted
+  };
+}
+
+/**
+ * Truncate text that's too long
+ * @param {string} text - Text to truncate
+ * @param {number} maxLength - Maximum length
+ * @returns {string} - Truncated text with ellipsis if needed
+ */
+function truncateText(text, maxLength) {
+  if (!text || typeof text !== 'string') return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength - 3) + '...';
+}
+
+/**
  * ===== LAYOUT COMMANDS =====
  * PR #22: AI Layout Commands with bug fixes
  * These functions must be defined BEFORE canvasAPI object
@@ -566,6 +673,245 @@ async function centerShapes(shapeIds) {
   } catch (error) {
     console.error('centerShapes error:', error);
     throw new Error(`Failed to center shapes: ${error.message}`);
+  }
+}
+
+/**
+ * ===== COMPLEX OPERATIONS (PR #23) =====
+ * Smart templates for common UI patterns
+ * These functions must be defined BEFORE canvasAPI object
+ */
+
+/**
+ * Create a login form with username, password, and submit button
+ * @param {number} x - Top-left X position
+ * @param {number} y - Top-left Y position
+ * @param {Object} options - Optional configuration
+ * @param {boolean} options.includeRememberMe - Add "Remember Me" checkbox (default: false)
+ * @param {string} options.buttonText - Submit button text (default: "Login")
+ * @param {string} options.theme - Color theme: 'default' or 'dark' (default: 'default')
+ * @param {string} userId - User ID (optional, will be fetched if not provided)
+ * @returns {Promise<Object>} Success result with created shape IDs
+ */
+async function createLoginForm(x, y, options = {}, userId = null) {
+  // Get current user if not provided
+  if (!userId) {
+    try {
+      userId = getCurrentUserId();
+    } catch (error) {
+      return {
+        success: false,
+        error: 'NOT_AUTHENTICATED',
+        userMessage: 'You must be logged in to create shapes.'
+      };
+    }
+  }
+
+  // Validate position
+  const posValidation = validatePosition(x, y);
+  if (!posValidation.valid) {
+    return { 
+      success: false, 
+      error: 'INVALID_POSITION', 
+      userMessage: posValidation.error 
+    };
+  }
+
+  // Extract options with defaults
+  const {
+    includeRememberMe = false,
+    buttonText = 'Login',
+    theme = 'default'
+  } = options;
+
+  // Get layout constants and color theme
+  const layout = LAYOUT_CONSTANTS.loginForm;
+  const colors = COLOR_THEMES[theme] || COLOR_THEMES.default;
+
+  // Calculate total height for boundary check
+  const totalHeight = 
+    layout.LABEL_HEIGHT + layout.LABEL_OFFSET +  // Username label
+    layout.INPUT_HEIGHT + layout.SPACING +        // Username input
+    layout.LABEL_HEIGHT + layout.LABEL_OFFSET +  // Password label
+    layout.INPUT_HEIGHT +                         // Password input
+    (includeRememberMe ? layout.SPACING + layout.LABEL_HEIGHT : 0) + // Optional checkbox
+    layout.SECTION_GAP +                          // Gap before button
+    layout.BUTTON_HEIGHT;                         // Button
+
+  // Constrain to canvas bounds
+  const constrained = constrainToCanvas(x, y, layout.WIDTH, totalHeight);
+  const startX = constrained.x;
+  let currentY = constrained.y;
+
+  // Track created shape IDs for cleanup on error
+  const shapeIds = [];
+
+  try {
+    // PHASE 1: Create all backgrounds/rectangles first (z-index: backgrounds before text)
+    
+    // Username input field
+    const usernameInputId = await addShape({
+      type: 'rectangle',
+      x: startX,
+      y: currentY + layout.LABEL_HEIGHT + layout.LABEL_OFFSET,
+      width: layout.WIDTH,
+      height: layout.INPUT_HEIGHT,
+      color: colors.background,
+      rotation: 0
+    }, userId);
+    shapeIds.push(usernameInputId);
+
+    // Password input field
+    const passwordY = currentY + layout.LABEL_HEIGHT + layout.LABEL_OFFSET + layout.INPUT_HEIGHT + layout.SPACING + layout.LABEL_HEIGHT + layout.LABEL_OFFSET;
+    const passwordInputId = await addShape({
+      type: 'rectangle',
+      x: startX,
+      y: passwordY,
+      width: layout.WIDTH,
+      height: layout.INPUT_HEIGHT,
+      color: colors.background,
+      rotation: 0
+    }, userId);
+    shapeIds.push(passwordInputId);
+
+    // Remember Me checkbox (optional)
+    let checkboxId = null;
+    let checkboxTextId = null;
+    if (includeRememberMe) {
+      const checkboxY = passwordY + layout.INPUT_HEIGHT + layout.SPACING;
+      checkboxId = await addShape({
+        type: 'rectangle',
+        x: startX,
+        y: checkboxY,
+        width: 20,
+        height: 20,
+        color: colors.background,
+        rotation: 0
+      }, userId);
+      shapeIds.push(checkboxId);
+    }
+
+    // Submit button background
+    const buttonY = passwordY + layout.INPUT_HEIGHT + 
+      (includeRememberMe ? layout.SPACING + layout.LABEL_HEIGHT : 0) + 
+      layout.SECTION_GAP;
+    const buttonX = startX + (layout.WIDTH - layout.BUTTON_WIDTH) / 2; // Center button
+    const buttonBgId = await addShape({
+      type: 'rectangle',
+      x: buttonX,
+      y: buttonY,
+      width: layout.BUTTON_WIDTH,
+      height: layout.BUTTON_HEIGHT,
+      color: colors.primary,
+      rotation: 0
+    }, userId);
+    shapeIds.push(buttonBgId);
+
+    // PHASE 2: Create all text elements (z-index: text appears on top)
+
+    // Reset currentY for text creation
+    currentY = constrained.y;
+
+    // Username label
+    const usernameLabelId = await addShape({
+      type: 'text',
+      x: startX,
+      y: currentY,
+      width: 200,
+      height: layout.LABEL_HEIGHT,
+      text: 'Username',
+      fontSize: 14,
+      fontWeight: 'normal',
+      color: colors.textLight,
+      rotation: 0
+    }, userId);
+    shapeIds.push(usernameLabelId);
+
+    // Password label
+    const passwordLabelY = currentY + layout.LABEL_HEIGHT + layout.LABEL_OFFSET + layout.INPUT_HEIGHT + layout.SPACING;
+    const passwordLabelId = await addShape({
+      type: 'text',
+      x: startX,
+      y: passwordLabelY,
+      width: 200,
+      height: layout.LABEL_HEIGHT,
+      text: 'Password',
+      fontSize: 14,
+      fontWeight: 'normal',
+      color: colors.textLight,
+      rotation: 0
+    }, userId);
+    shapeIds.push(passwordLabelId);
+
+    // Remember Me text (optional)
+    if (includeRememberMe) {
+      const rememberMeY = passwordLabelY + layout.LABEL_HEIGHT + layout.LABEL_OFFSET + layout.INPUT_HEIGHT + layout.SPACING;
+      checkboxTextId = await addShape({
+        type: 'text',
+        x: startX + 30, // Offset from checkbox
+        y: rememberMeY,
+        width: 200,
+        height: layout.LABEL_HEIGHT,
+        text: 'Remember Me',
+        fontSize: 14,
+        fontWeight: 'normal',
+        color: colors.text,
+        rotation: 0
+      }, userId);
+      shapeIds.push(checkboxTextId);
+    }
+
+    // Button text (centered in button)
+    const truncatedButtonText = truncateText(buttonText, 15);
+    const buttonTextId = await addShape({
+      type: 'text',
+      x: buttonX + 10, // Padding from button edge
+      y: buttonY + (layout.BUTTON_HEIGHT - 20) / 2, // Vertically center
+      width: layout.BUTTON_WIDTH - 20,
+      height: 20,
+      text: truncatedButtonText,
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: colors.buttonText,
+      rotation: 0
+    }, userId);
+    shapeIds.push(buttonTextId);
+
+    // Success!
+    const message = constrained.adjusted 
+      ? `Created login form (position adjusted to fit canvas) with ${shapeIds.length} shapes`
+      : `Created login form with ${shapeIds.length} shapes`;
+
+    return {
+      success: true,
+      result: {
+        shapeIds,
+        count: shapeIds.length,
+        includesRememberMe: includeRememberMe,
+        buttonText: truncatedButtonText
+      },
+      userMessage: message
+    };
+
+  } catch (error) {
+    // CLEANUP: If any shape creation failed, attempt to delete created shapes
+    console.error('❌ Login form creation failed:', error);
+    
+    // Best-effort cleanup
+    for (const id of shapeIds) {
+      try {
+        await deleteShapeFromDB(id);
+      } catch (cleanupError) {
+        console.warn(`Failed to clean up shape ${id}:`, cleanupError);
+      }
+    }
+
+    return {
+      success: false,
+      error: error.code || 'CREATE_FAILED',
+      userMessage: 'Failed to create login form. Please try again.',
+      partialShapeIds: shapeIds // For manual cleanup if needed
+    };
   }
 }
 
@@ -1852,5 +2198,14 @@ export const canvasAPI = {
   /**
    * Center group of shapes on canvas
    */
-  centerShapes
+  centerShapes,
+
+  /**
+   * ===== COMPLEX OPERATIONS (PR #23) =====
+   */
+
+  /**
+   * Create a login form with username, password, and submit button
+   */
+  createLoginForm
 };
