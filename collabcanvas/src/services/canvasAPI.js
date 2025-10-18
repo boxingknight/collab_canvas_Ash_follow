@@ -730,7 +730,9 @@ async function createLoginForm(x, y, options = {}, userId = null) {
 
   // Calculate total height for boundary check
   const FORM_PADDING = 30; // Padding around form content
+  const TITLE_HEIGHT = 32; // Form title height
   const contentHeight = 
+    TITLE_HEIGHT + layout.SPACING +              // Title + spacing
     layout.LABEL_HEIGHT + layout.LABEL_OFFSET +  // Username label
     layout.INPUT_HEIGHT + layout.SPACING +        // Username input
     layout.LABEL_HEIGHT + layout.LABEL_OFFSET +  // Password label
@@ -768,11 +770,42 @@ async function createLoginForm(x, y, options = {}, userId = null) {
     }, userId);
     shapeIds.push(formBackgroundId);
     
-    // Username input field
+    // Calculate Y positions for each element
+    let elementY = currentY;
+    
+    // Skip space for title (we'll add text later)
+    const titleY = elementY;
+    elementY += 32 + layout.SPACING; // Title height + spacing
+    
+    // Username label and input
+    const usernameLabelY = elementY;
+    const usernameInputY = usernameLabelY + layout.LABEL_HEIGHT + layout.LABEL_OFFSET;
+    elementY = usernameInputY + layout.INPUT_HEIGHT + layout.SPACING;
+    
+    // Password label and input
+    const passwordLabelY = elementY;
+    const passwordInputY = passwordLabelY + layout.LABEL_HEIGHT + layout.LABEL_OFFSET;
+    elementY = passwordInputY + layout.INPUT_HEIGHT;
+    
+    // Remember Me checkbox (optional)
+    let checkboxY, rememberMeTextY;
+    if (includeRememberMe) {
+      elementY += layout.SPACING;
+      checkboxY = elementY;
+      rememberMeTextY = elementY;
+      elementY += layout.LABEL_HEIGHT;
+    }
+    
+    // Submit button
+    elementY += layout.SECTION_GAP;
+    const buttonY = elementY;
+    const buttonX = startX + (layout.WIDTH - layout.BUTTON_WIDTH) / 2; // Center button
+    
+    // Create all input rectangles
     const usernameInputId = await addShape({
       type: 'rectangle',
       x: startX,
-      y: currentY + layout.LABEL_HEIGHT + layout.LABEL_OFFSET,
+      y: usernameInputY,
       width: layout.WIDTH,
       height: layout.INPUT_HEIGHT,
       color: colors.background,
@@ -780,12 +813,10 @@ async function createLoginForm(x, y, options = {}, userId = null) {
     }, userId);
     shapeIds.push(usernameInputId);
 
-    // Password input field
-    const passwordY = currentY + layout.LABEL_HEIGHT + layout.LABEL_OFFSET + layout.INPUT_HEIGHT + layout.SPACING + layout.LABEL_HEIGHT + layout.LABEL_OFFSET;
     const passwordInputId = await addShape({
       type: 'rectangle',
       x: startX,
-      y: passwordY,
+      y: passwordInputY,
       width: layout.WIDTH,
       height: layout.INPUT_HEIGHT,
       color: colors.background,
@@ -794,11 +825,8 @@ async function createLoginForm(x, y, options = {}, userId = null) {
     shapeIds.push(passwordInputId);
 
     // Remember Me checkbox (optional)
-    let checkboxId = null;
-    let checkboxTextId = null;
     if (includeRememberMe) {
-      const checkboxY = passwordY + layout.INPUT_HEIGHT + layout.SPACING;
-      checkboxId = await addShape({
+      const checkboxId = await addShape({
         type: 'rectangle',
         x: startX,
         y: checkboxY,
@@ -811,10 +839,6 @@ async function createLoginForm(x, y, options = {}, userId = null) {
     }
 
     // Submit button background
-    const buttonY = passwordY + layout.INPUT_HEIGHT + 
-      (includeRememberMe ? layout.SPACING + layout.LABEL_HEIGHT : 0) + 
-      layout.SECTION_GAP;
-    const buttonX = startX + (layout.WIDTH - layout.BUTTON_WIDTH) / 2; // Center button
     const buttonBgId = await addShape({
       type: 'rectangle',
       x: buttonX,
@@ -828,14 +852,27 @@ async function createLoginForm(x, y, options = {}, userId = null) {
 
     // PHASE 2: Create all text elements (z-index: text appears on top)
 
-    // Reset currentY for text creation
-    currentY = constrained.y;
+    // Form title
+    const formTitle = buttonText === 'Sign Up' ? 'Sign Up' : 'Login';
+    const formTitleId = await addShape({
+      type: 'text',
+      x: startX,
+      y: titleY,
+      width: layout.WIDTH,
+      height: 32,
+      text: formTitle,
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: colors.text,
+      rotation: 0
+    }, userId);
+    shapeIds.push(formTitleId);
 
     // Username label
     const usernameLabelId = await addShape({
       type: 'text',
       x: startX,
-      y: currentY,
+      y: usernameLabelY,
       width: 200,
       height: layout.LABEL_HEIGHT,
       text: 'Username',
@@ -847,7 +884,6 @@ async function createLoginForm(x, y, options = {}, userId = null) {
     shapeIds.push(usernameLabelId);
 
     // Password label
-    const passwordLabelY = currentY + layout.LABEL_HEIGHT + layout.LABEL_OFFSET + layout.INPUT_HEIGHT + layout.SPACING;
     const passwordLabelId = await addShape({
       type: 'text',
       x: startX,
@@ -864,11 +900,10 @@ async function createLoginForm(x, y, options = {}, userId = null) {
 
     // Remember Me text (optional)
     if (includeRememberMe) {
-      const rememberMeY = passwordLabelY + layout.LABEL_HEIGHT + layout.LABEL_OFFSET + layout.INPUT_HEIGHT + layout.SPACING;
-      checkboxTextId = await addShape({
+      const rememberMeTextId = await addShape({
         type: 'text',
         x: startX + 30, // Offset from checkbox
-        y: rememberMeY,
+        y: rememberMeTextY,
         width: 200,
         height: layout.LABEL_HEIGHT,
         text: 'Remember Me',
@@ -877,7 +912,7 @@ async function createLoginForm(x, y, options = {}, userId = null) {
         color: colors.text,
         rotation: 0
       }, userId);
-      shapeIds.push(checkboxTextId);
+      shapeIds.push(rememberMeTextId);
     }
 
     // Button text (centered in button)
@@ -898,8 +933,8 @@ async function createLoginForm(x, y, options = {}, userId = null) {
 
     // Success!
     const message = constrained.adjusted 
-      ? `Created login form with background (position adjusted to fit canvas) - ${shapeIds.length} shapes`
-      : `Created login form with background - ${shapeIds.length} shapes`;
+      ? `Created "${formTitle}" form with header and background (position adjusted to fit canvas) - ${shapeIds.length} shapes`
+      : `Created "${formTitle}" form with header and background - ${shapeIds.length} shapes`;
 
     return {
       success: true,
@@ -908,7 +943,9 @@ async function createLoginForm(x, y, options = {}, userId = null) {
         count: shapeIds.length,
         includesRememberMe: includeRememberMe,
         buttonText: truncatedButtonText,
-        hasBackground: true
+        formTitle: formTitle,
+        hasBackground: true,
+        hasHeader: true
       },
       userMessage: message
     };

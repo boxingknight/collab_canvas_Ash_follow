@@ -623,7 +623,7 @@ export const functionSchemas = [
   // ===== COMPLEX OPERATIONS (PR #23) =====
   {
     name: 'createLoginForm',
-    description: `Creates a complete login form UI with background container, username field, password field, and submit button. Creates 8 shapes (or 10 with Remember Me option) professionally laid out and aligned with padding.
+    description: `Creates a complete login form UI with title header, background container, username field, password field, and submit button. Creates 9 shapes (or 11 with Remember Me option) professionally laid out with proper spacing and alignment.
 
 DEFAULT BEHAVIOR: If no position is specified, creates at canvas center (2500, 2500).
 
