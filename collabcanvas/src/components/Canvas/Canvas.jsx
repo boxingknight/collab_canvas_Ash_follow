@@ -6,6 +6,7 @@ import useCursors from '../../hooks/useCursors';
 import useAuth from '../../hooks/useAuth';
 import useSelection from '../../hooks/useSelection';
 import useKeyboard from '../../hooks/useKeyboard';
+import { useClipboard } from '../../hooks/useClipboard';
 import { setCurrentSelection as updateSelectionBridge, registerSetSelection } from '../../services/selectionBridge';
 import Shape from './Shape';
 import RemoteCursor from './RemoteCursor';
@@ -32,6 +33,7 @@ function Canvas() {
     isMultiSelect,
     selectedShapeId // For backward compatibility
   } = useSelection();
+  const { copy, paste, hasClipboard } = useClipboard();
   const [stageSize, setStageSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [fps, setFps] = useState(60);
   const fpsCounterRef = useRef(null);
@@ -703,6 +705,61 @@ function Canvas() {
     selectAll(sortedShapes.map(s => s.id));
   }
 
+  // Handle copy from keyboard (Cmd/Ctrl+C)
+  function handleCopy() {
+    if (selectedShapeIds.length === 0) {
+      console.log('No shapes selected to copy');
+      return;
+    }
+
+    // Get selected shapes
+    const selectedShapes = shapes.filter(s => selectedShapeIds.includes(s.id));
+    
+    // Copy to clipboard
+    const result = copy(selectedShapes);
+    
+    if (result.success) {
+      console.log(result.message);
+      // Optional: Show toast notification
+      // showToast(result.message, 'success');
+    }
+  }
+
+  // Handle paste from keyboard (Cmd/Ctrl+V)
+  async function handlePaste() {
+    if (!hasClipboard()) {
+      console.log('Clipboard is empty');
+      // Optional: Show toast notification
+      // showToast('Clipboard is empty. Copy shapes first.', 'info');
+      return;
+    }
+
+    // Paste shapes
+    const result = paste();
+    
+    if (result.success && result.shapes.length > 0) {
+      // Create all pasted shapes
+      const newShapeIds = [];
+      
+      for (const shapeData of result.shapes) {
+        try {
+          const newShapeId = await addShape(shapeData, user.uid);
+          newShapeIds.push(newShapeId);
+        } catch (error) {
+          console.error('Error pasting shape:', error);
+        }
+      }
+      
+      // Select newly pasted shapes
+      if (newShapeIds.length > 0) {
+        setSelection(newShapeIds);
+        console.log(result.message);
+        // Optional: Show toast notification
+        // showToast(result.message, 'success');
+      }
+    }
+  }
+
   // Integrate keyboard shortcuts
   const isTextEditing = editingTextId !== null;
   useKeyboard({
@@ -712,6 +769,8 @@ function Canvas() {
     onDeselect: handleDeselect,
     onNudge: handleNudge,
     onToolChange: handleToolChange,
+    onCopy: handleCopy,
+    onPaste: handlePaste,
     // Layer management operations
     onBringForward: () => {
       if (selectedShapeIds.length > 0) {
