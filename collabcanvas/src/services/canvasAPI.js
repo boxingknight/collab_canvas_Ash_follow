@@ -729,7 +729,8 @@ async function createLoginForm(x, y, options = {}, userId = null) {
   const colors = COLOR_THEMES[theme] || COLOR_THEMES.default;
 
   // Calculate total height for boundary check
-  const totalHeight = 
+  const FORM_PADDING = 30; // Padding around form content
+  const contentHeight = 
     layout.LABEL_HEIGHT + layout.LABEL_OFFSET +  // Username label
     layout.INPUT_HEIGHT + layout.SPACING +        // Username input
     layout.LABEL_HEIGHT + layout.LABEL_OFFSET +  // Password label
@@ -737,17 +738,35 @@ async function createLoginForm(x, y, options = {}, userId = null) {
     (includeRememberMe ? layout.SPACING + layout.LABEL_HEIGHT : 0) + // Optional checkbox
     layout.SECTION_GAP +                          // Gap before button
     layout.BUTTON_HEIGHT;                         // Button
+  
+  const totalHeight = contentHeight + (FORM_PADDING * 2);
+  const totalWidth = layout.WIDTH + (FORM_PADDING * 2);
 
   // Constrain to canvas bounds
-  const constrained = constrainToCanvas(x, y, layout.WIDTH, totalHeight);
-  const startX = constrained.x;
-  let currentY = constrained.y;
+  const constrained = constrainToCanvas(x, y, totalWidth, totalHeight);
+  const formBackgroundX = constrained.x;
+  const formBackgroundY = constrained.y;
+  const startX = formBackgroundX + FORM_PADDING; // Content starts after padding
+  let currentY = formBackgroundY + FORM_PADDING;
 
   // Track created shape IDs for cleanup on error
   const shapeIds = [];
 
   try {
     // PHASE 1: Create all backgrounds/rectangles first (z-index: backgrounds before text)
+    
+    // Form background container (created FIRST - appears at back)
+    const formBackgroundColor = theme === 'dark' ? '#1a1a1a' : '#f5f5f5';
+    const formBackgroundId = await addShape({
+      type: 'rectangle',
+      x: formBackgroundX,
+      y: formBackgroundY,
+      width: totalWidth,
+      height: totalHeight,
+      color: formBackgroundColor,
+      rotation: 0
+    }, userId);
+    shapeIds.push(formBackgroundId);
     
     // Username input field
     const usernameInputId = await addShape({
@@ -879,8 +898,8 @@ async function createLoginForm(x, y, options = {}, userId = null) {
 
     // Success!
     const message = constrained.adjusted 
-      ? `Created login form (position adjusted to fit canvas) with ${shapeIds.length} shapes`
-      : `Created login form with ${shapeIds.length} shapes`;
+      ? `Created login form with background (position adjusted to fit canvas) - ${shapeIds.length} shapes`
+      : `Created login form with background - ${shapeIds.length} shapes`;
 
     return {
       success: true,
@@ -888,7 +907,8 @@ async function createLoginForm(x, y, options = {}, userId = null) {
         shapeIds,
         count: shapeIds.length,
         includesRememberMe: includeRememberMe,
-        buttonText: truncatedButtonText
+        buttonText: truncatedButtonText,
+        hasBackground: true
       },
       userMessage: message
     };
