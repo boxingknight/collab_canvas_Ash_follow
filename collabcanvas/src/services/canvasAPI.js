@@ -1137,6 +1137,204 @@ async function createNavigationBar(x, y, menuItems = [], options = {}, userId = 
 }
 
 /**
+ * ===== COMPLEX OPERATION: CARD LAYOUT =====
+ * Creates a card-style layout with title, image placeholder, and description
+ * PR #23
+ */
+async function createCardLayout(x, y, title = '', description = '', options = {}, userId = null) {
+  console.log('🃏 Creating card layout...', { x, y, title, description, options });
+
+  // Get or validate userId
+  if (!userId) {
+    try {
+      userId = getCurrentUserId();
+    } catch (error) {
+      return { 
+        success: false, 
+        error: 'AUTH_REQUIRED', 
+        userMessage: error.message 
+      };
+    }
+  }
+
+  // Validate position
+  const posValidation = validatePosition(x, y);
+  if (!posValidation.valid) {
+    return { 
+      success: false, 
+      error: 'INVALID_POSITION', 
+      userMessage: posValidation.error 
+    };
+  }
+
+  // Validate title and description
+  if (typeof title !== 'string' || title.trim().length === 0) {
+    return {
+      success: false,
+      error: 'INVALID_TITLE',
+      userMessage: 'Card title must be a non-empty string'
+    };
+  }
+
+  if (typeof description !== 'string' || description.trim().length === 0) {
+    return {
+      success: false,
+      error: 'INVALID_DESCRIPTION',
+      userMessage: 'Card description must be a non-empty string'
+    };
+  }
+
+  // Extract options with defaults
+  const {
+    width = LAYOUT_CONSTANTS.card.WIDTH,
+    height = LAYOUT_CONSTANTS.card.HEIGHT,
+    includeImage = true,
+    backgroundColor = COLOR_THEMES.default.background,
+    theme = 'default'
+  } = options;
+
+  // Get theme colors
+  const colors = COLOR_THEMES[theme] || COLOR_THEMES.default;
+  const layout = LAYOUT_CONSTANTS.card;
+
+  // Truncate text if too long
+  const truncatedTitle = truncateText(title, 40);
+  const truncatedDescription = truncateText(description, 200);
+
+  // Constrain to canvas bounds
+  const constrained = constrainToCanvas(x, y, width, height);
+  const startX = constrained.x;
+  const startY = constrained.y;
+
+  const shapeIds = [];
+
+  try {
+    // 1. Create card background
+    const cardBgId = await addShape({
+      type: 'rectangle',
+      x: startX,
+      y: startY,
+      width: width,
+      height: height,
+      color: backgroundColor || colors.background,
+      rotation: 0
+    }, userId);
+    shapeIds.push(cardBgId);
+
+    let currentY = startY + layout.PADDING;
+
+    // 2. Create image placeholder (optional)
+    if (includeImage) {
+      const imageHeight = layout.IMAGE_HEIGHT;
+      const imageId = await addShape({
+        type: 'rectangle',
+        x: startX + layout.PADDING,
+        y: currentY,
+        width: width - (layout.PADDING * 2),
+        height: imageHeight,
+        color: colors.border,
+        rotation: 0
+      }, userId);
+      shapeIds.push(imageId);
+
+      // Add "Image" placeholder text centered in the image area
+      const imageTextId = await addShape({
+        type: 'text',
+        x: startX + layout.PADDING,
+        y: currentY + (imageHeight / 2) - 15,
+        width: width - (layout.PADDING * 2),
+        height: 30,
+        text: '📷 Image',
+        fontSize: 18,
+        color: colors.textLight,
+        align: 'center',
+        verticalAlign: 'middle',
+        rotation: 0
+      }, userId);
+      shapeIds.push(imageTextId);
+
+      currentY += imageHeight + layout.DESCRIPTION_OFFSET;
+    }
+
+    // 3. Create title text
+    const titleId = await addShape({
+      type: 'text',
+      x: startX + layout.PADDING,
+      y: currentY,
+      width: width - (layout.PADDING * 2),
+      height: layout.TITLE_HEIGHT,
+      text: truncatedTitle,
+      fontSize: 20,
+      color: colors.text,
+      align: 'center',
+      verticalAlign: 'middle',
+      rotation: 0
+    }, userId);
+    shapeIds.push(titleId);
+
+    currentY += layout.TITLE_HEIGHT + layout.DESCRIPTION_OFFSET;
+
+    // 4. Create description text
+    // Calculate remaining space for description
+    const descriptionHeight = startY + height - currentY - layout.PADDING;
+    
+    const descriptionId = await addShape({
+      type: 'text',
+      x: startX + layout.PADDING,
+      y: currentY,
+      width: width - (layout.PADDING * 2),
+      height: descriptionHeight,
+      text: truncatedDescription,
+      fontSize: 14,
+      color: colors.textLight,
+      align: 'left',
+      verticalAlign: 'top',
+      rotation: 0
+    }, userId);
+    shapeIds.push(descriptionId);
+
+    // Success!
+    const message = constrained.adjusted 
+      ? `Created card "${truncatedTitle}" ${includeImage ? 'with image' : 'without image'} (position adjusted to fit canvas) - ${shapeIds.length} shapes`
+      : `Created card "${truncatedTitle}" ${includeImage ? 'with image' : 'without image'} - ${shapeIds.length} shapes`;
+
+    return {
+      success: true,
+      result: {
+        shapeIds,
+        count: shapeIds.length,
+        title: truncatedTitle,
+        description: truncatedDescription,
+        includesImage: includeImage,
+        width: width,
+        height: height
+      },
+      userMessage: message
+    };
+
+  } catch (error) {
+    // CLEANUP: If any shape creation failed, attempt to delete created shapes
+    console.error('❌ Card layout creation failed:', error);
+    
+    // Best-effort cleanup
+    for (const id of shapeIds) {
+      try {
+        await deleteShapeFromDB(id);
+      } catch (cleanupError) {
+        console.warn(`Failed to clean up shape ${id}:`, cleanupError);
+      }
+    }
+
+    return {
+      success: false,
+      error: error.code || 'CREATE_FAILED',
+      userMessage: 'Failed to create card layout. Please try again.',
+      partialShapeIds: shapeIds
+    };
+  }
+}
+
+/**
  * Canvas API - Unified interface for all canvas operations
  * Used by both manual interactions and AI agent
  */
@@ -2433,5 +2631,10 @@ export const canvasAPI = {
   /**
    * Create a horizontal navigation bar with menu items
    */
-  createNavigationBar
+  createNavigationBar,
+
+  /**
+   * Create a card layout with title, image placeholder, and description
+   */
+  createCardLayout
 };

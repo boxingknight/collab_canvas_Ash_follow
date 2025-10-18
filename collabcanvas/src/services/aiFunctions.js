@@ -742,6 +742,81 @@ Examples:
       },
       required: []
     }
+  },
+
+  // Card Layout
+  {
+    name: 'createCardLayout',
+    description: `Creates a card-style layout with optional image placeholder, title, and description. Creates 4-5 shapes with professional spacing.
+
+DEFAULT BEHAVIOR: If no position is specified, creates at canvas center (2500, 2500).
+
+Position extraction:
+- "create a card" → x: 2500, y: 2500 (DEFAULT CENTER)
+- "add a product card" → x: 2500, y: 2500 (DEFAULT CENTER)
+- "at the center" → x: 2500, y: 2500
+- "at 1000, 1000" → x: 1000, y: 1000
+
+Title/Description extraction:
+- "with title 'Product'" → title: "Product"
+- "called 'Feature Card'" → title: "Feature Card"
+- "with description 'This is amazing'" → description: "This is amazing"
+- Default title: "Card Title"
+- Default description: "Card description with details"
+
+Examples:
+- "Create a card" → x: 2500, y: 2500, title: "Card Title", description: "Card description"
+- "Add a product card with title 'Premium Plan'" → title: "Premium Plan"
+- "Make a card without image called 'About Us' with description 'Learn about our company'" → includeImage: false
+- "Create a card at 1000, 1000 with title 'Service' and description 'Our best service'" → custom position and content`,
+    parameters: {
+      type: 'object',
+      properties: {
+        x: {
+          type: 'number',
+          description: 'X coordinate of top-left corner (0-5000). DEFAULT: 2500 (center) if not specified.'
+        },
+        y: {
+          type: 'number',
+          description: 'Y coordinate of top-left corner (0-5000). DEFAULT: 2500 (center) if not specified.'
+        },
+        title: {
+          type: 'string',
+          description: 'Card title text. DEFAULT: "Card Title". Extract from: "with title X", "called X", etc. Max 40 chars.'
+        },
+        description: {
+          type: 'string',
+          description: 'Card description text. DEFAULT: "Card description with details". Extract from: "with description X", "about X", etc. Max 200 chars.'
+        },
+        options: {
+          type: 'object',
+          properties: {
+            width: {
+              type: 'number',
+              description: 'Card width in pixels. Default: 300.'
+            },
+            height: {
+              type: 'number',
+              description: 'Card height in pixels. Default: 400.'
+            },
+            includeImage: {
+              type: 'boolean',
+              description: 'If true, adds an image placeholder at top. Default: true. Set false if user says "without image".'
+            },
+            backgroundColor: {
+              type: 'string',
+              description: 'Background color as hex code. Default: "#ffffff".'
+            },
+            theme: {
+              type: 'string',
+              enum: ['default', 'dark'],
+              description: 'Color theme. Use "dark" if user mentions dark theme/mode. Default: "default".'
+            }
+          }
+        }
+      },
+      required: []
+    }
   }
 ];
 
@@ -787,7 +862,8 @@ export const functionRegistry = {
 
   // Complex Operations (PR #23)
   'createLoginForm': canvasAPI.createLoginForm,
-  'createNavigationBar': canvasAPI.createNavigationBar
+  'createNavigationBar': canvasAPI.createNavigationBar,
+  'createCardLayout': canvasAPI.createCardLayout
 };
 
 /**
@@ -1016,6 +1092,17 @@ export async function executeAIFunction(functionName, parameters) {
           parameters.x !== undefined ? parameters.x : 2500, // Default to center X
           parameters.y !== undefined ? parameters.y : 100, // Default to top
           parameters.menuItems || ['Home', 'About', 'Services', 'Contact'], // Default menu items
+          parameters.options || {},
+          parameters.userId
+        );
+        break;
+
+      case 'createCardLayout':
+        result = await functionRegistry[functionName](
+          parameters.x !== undefined ? parameters.x : 2500, // Default to center
+          parameters.y !== undefined ? parameters.y : 2500, // Default to center
+          parameters.title || 'Card Title', // Default title
+          parameters.description || 'Card description with details', // Default description
           parameters.options || {},
           parameters.userId
         );
