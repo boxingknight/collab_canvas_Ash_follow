@@ -1063,17 +1063,32 @@ async function createNavigationBar(x, y, menuItems = [], options = {}, userId = 
     shapeIds.push(barId);
 
     // 2. Create menu items (text elements)
+    // IMPORTANT: Text elements need explicit width/height to render properly
+    // Figma/Canva pattern: Text has a bounding box, centered alignment for nav items
     let currentX = startX + layout.PADDING;
-    const textY = startY + (height / 2);
+    const textY = startY + (height / 2); // Vertical center of nav bar
 
     for (const item of truncatedItems) {
+      // Calculate text dimensions
+      // Use itemWidth for horizontal space, height for vertical
+      const textHeight = 30; // Sufficient height for font size 16
+      
+      // Position text at top-left corner of its bounding box
+      // The text will be centered within the box by Shape.jsx rendering
+      const textX = currentX;
+      const textYPos = textY - (textHeight / 2); // Center vertically
+
       const itemTextId = await addShape({
         type: 'text',
-        x: currentX + (itemWidth / 2),
-        y: textY,
+        x: textX,
+        y: textYPos,
+        width: itemWidth,           // ← FIX: Explicit width for text bounding box
+        height: textHeight,         // ← FIX: Explicit height for text bounding box
         text: item,
         fontSize: 16,
         color: itemColor,
+        align: 'center',            // ← Figma/Canva pattern: Center-aligned nav text
+        verticalAlign: 'middle',    // ← Vertical centering
         rotation: 0
       }, userId);
       shapeIds.push(itemTextId);
