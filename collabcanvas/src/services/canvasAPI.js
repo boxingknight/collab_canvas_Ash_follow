@@ -1335,6 +1335,188 @@ async function createCardLayout(x, y, title = '', description = '', options = {}
 }
 
 /**
+ * ===== COMPLEX OPERATION: BUTTON GROUP =====
+ * Creates a group of buttons arranged horizontally or vertically
+ * PR #23
+ */
+async function createButtonGroup(x, y, buttons = [], options = {}, userId = null) {
+  console.log('🔘 Creating button group...', { x, y, buttons, options });
+
+  // Get or validate userId
+  if (!userId) {
+    try {
+      userId = getCurrentUserId();
+    } catch (error) {
+      return { 
+        success: false, 
+        error: 'AUTH_REQUIRED', 
+        userMessage: error.message 
+      };
+    }
+  }
+
+  // Validate position
+  const posValidation = validatePosition(x, y);
+  if (!posValidation.valid) {
+    return { 
+      success: false, 
+      error: 'INVALID_POSITION', 
+      userMessage: posValidation.error 
+    };
+  }
+
+  // Validate buttons array
+  if (!Array.isArray(buttons) || buttons.length === 0) {
+    return {
+      success: false,
+      error: 'INVALID_BUTTONS',
+      userMessage: 'Buttons must be a non-empty array'
+    };
+  }
+
+  // Validate button structure
+  for (let i = 0; i < buttons.length; i++) {
+    const btn = buttons[i];
+    if (!btn || typeof btn !== 'object') {
+      return {
+        success: false,
+        error: 'INVALID_BUTTON_CONFIG',
+        userMessage: `Button at index ${i} must be an object with 'label' property`
+      };
+    }
+    if (typeof btn.label !== 'string' || btn.label.trim().length === 0) {
+      return {
+        success: false,
+        error: 'INVALID_BUTTON_LABEL',
+        userMessage: `Button at index ${i} must have a non-empty label`
+      };
+    }
+  }
+
+  // Extract options with defaults
+  const {
+    orientation = 'horizontal',
+    spacing = LAYOUT_CONSTANTS.buttonGroup.SPACING,
+    buttonWidth = LAYOUT_CONSTANTS.buttonGroup.BUTTON_WIDTH,
+    buttonHeight = LAYOUT_CONSTANTS.buttonGroup.BUTTON_HEIGHT,
+    theme = 'default'
+  } = options;
+
+  // Validate orientation
+  if (orientation !== 'horizontal' && orientation !== 'vertical') {
+    return {
+      success: false,
+      error: 'INVALID_ORIENTATION',
+      userMessage: 'Orientation must be "horizontal" or "vertical"'
+    };
+  }
+
+  // Get theme colors
+  const colors = COLOR_THEMES[theme] || COLOR_THEMES.default;
+
+  // Calculate total dimensions
+  let totalWidth, totalHeight;
+  if (orientation === 'horizontal') {
+    totalWidth = (buttons.length * buttonWidth) + ((buttons.length - 1) * spacing);
+    totalHeight = buttonHeight;
+  } else {
+    totalWidth = buttonWidth;
+    totalHeight = (buttons.length * buttonHeight) + ((buttons.length - 1) * spacing);
+  }
+
+  // Constrain to canvas bounds
+  const constrained = constrainToCanvas(x, y, totalWidth, totalHeight);
+  const startX = constrained.x;
+  const startY = constrained.y;
+
+  const shapeIds = [];
+
+  try {
+    let currentX = startX;
+    let currentY = startY;
+
+    // Create each button (background rectangle + text label)
+    for (const button of buttons) {
+      const truncatedLabel = truncateText(button.label, 20);
+      const buttonColor = button.color || colors.primary;
+
+      // 1. Create button background
+      const buttonBgId = await addShape({
+        type: 'rectangle',
+        x: currentX,
+        y: currentY,
+        width: buttonWidth,
+        height: buttonHeight,
+        color: buttonColor,
+        rotation: 0
+      }, userId);
+      shapeIds.push(buttonBgId);
+
+      // 2. Create button label (centered text)
+      const labelId = await addShape({
+        type: 'text',
+        x: currentX,
+        y: currentY,
+        width: buttonWidth,
+        height: buttonHeight,
+        text: truncatedLabel,
+        fontSize: 14,
+        color: colors.buttonText,
+        align: 'center',
+        verticalAlign: 'middle',
+        rotation: 0
+      }, userId);
+      shapeIds.push(labelId);
+
+      // Move to next button position
+      if (orientation === 'horizontal') {
+        currentX += buttonWidth + spacing;
+      } else {
+        currentY += buttonHeight + spacing;
+      }
+    }
+
+    // Success!
+    const message = constrained.adjusted 
+      ? `Created ${orientation} button group with ${buttons.length} buttons (position adjusted to fit canvas) - ${shapeIds.length} shapes`
+      : `Created ${orientation} button group with ${buttons.length} buttons - ${shapeIds.length} shapes`;
+
+    return {
+      success: true,
+      result: {
+        shapeIds,
+        count: shapeIds.length,
+        buttonCount: buttons.length,
+        orientation: orientation,
+        totalWidth: totalWidth,
+        totalHeight: totalHeight
+      },
+      userMessage: message
+    };
+
+  } catch (error) {
+    // CLEANUP: If any shape creation failed, attempt to delete created shapes
+    console.error('❌ Button group creation failed:', error);
+    
+    // Best-effort cleanup
+    for (const id of shapeIds) {
+      try {
+        await deleteShapeFromDB(id);
+      } catch (cleanupError) {
+        console.warn(`Failed to clean up shape ${id}:`, cleanupError);
+      }
+    }
+
+    return {
+      success: false,
+      error: error.code || 'CREATE_FAILED',
+      userMessage: 'Failed to create button group. Please try again.',
+      partialShapeIds: shapeIds
+    };
+  }
+}
+
+/**
  * Canvas API - Unified interface for all canvas operations
  * Used by both manual interactions and AI agent
  */
@@ -2636,5 +2818,10 @@ export const canvasAPI = {
   /**
    * Create a card layout with title, image placeholder, and description
    */
-  createCardLayout
+  createCardLayout,
+
+  /**
+   * Create a button group arranged horizontally or vertically
+   */
+  createButtonGroup
 };

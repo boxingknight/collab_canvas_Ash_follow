@@ -817,6 +817,96 @@ Examples:
       },
       required: []
     }
+  },
+
+  // Button Group
+  {
+    name: 'createButtonGroup',
+    description: `Creates a group of buttons arranged horizontally or vertically. Creates n×2 shapes (n backgrounds + n labels).
+
+DEFAULT BEHAVIOR: If no position is specified, creates at canvas center (2500, 2500).
+
+Position extraction:
+- "create buttons" → x: 2500, y: 2500 (DEFAULT CENTER)
+- "add a button group" → x: 2500, y: 2500 (DEFAULT CENTER)
+- "at the center" → x: 2500, y: 2500
+- "at 1000, 1000" → x: 1000, y: 1000
+
+Buttons extraction:
+- "for Cancel, Save, Submit" → buttons: [{label: "Cancel"}, {label: "Save"}, {label: "Submit"}]
+- "with OK and Cancel" → buttons: [{label: "OK"}, {label: "Cancel"}]
+- "with Yes, No, Maybe" → buttons: [{label: "Yes"}, {label: "No"}, {label: "Maybe"}]
+- Default: [{label: "Button 1"}, {label: "Button 2"}, {label: "Button 3"}]
+
+Orientation extraction:
+- "vertical button group" → orientation: "vertical"
+- "horizontal buttons" → orientation: "horizontal"
+- Default: "horizontal"
+
+Examples:
+- "Create buttons" → x: 2500, y: 2500, buttons: default 3 buttons, horizontal
+- "Add buttons for Cancel, Save, Submit" → extract labels
+- "Make a vertical button group with Yes, No, Maybe" → vertical orientation
+- "Create buttons at 1000, 1000 for OK and Cancel" → custom position and labels`,
+    parameters: {
+      type: 'object',
+      properties: {
+        x: {
+          type: 'number',
+          description: 'X coordinate of top-left corner (0-5000). DEFAULT: 2500 (center) if not specified.'
+        },
+        y: {
+          type: 'number',
+          description: 'Y coordinate of top-left corner (0-5000). DEFAULT: 2500 (center) if not specified.'
+        },
+        buttons: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              label: {
+                type: 'string',
+                description: 'Button label text'
+              },
+              color: {
+                type: 'string',
+                description: 'Optional button color as hex code (e.g., "#646cff")'
+              }
+            },
+            required: ['label']
+          },
+          description: 'Array of button objects with label (required) and optional color. DEFAULT: [{label: "Button 1"}, {label: "Button 2"}, {label: "Button 3"}]. Extract from user prompt: "Cancel, Save, Submit" → [{label: "Cancel"}, {label: "Save"}, {label: "Submit"}]'
+        },
+        options: {
+          type: 'object',
+          properties: {
+            orientation: {
+              type: 'string',
+              enum: ['horizontal', 'vertical'],
+              description: 'Button arrangement. Default: "horizontal". Use "vertical" if user says "vertical buttons" or "stacked".'
+            },
+            spacing: {
+              type: 'number',
+              description: 'Space between buttons in pixels. Default: 10.'
+            },
+            buttonWidth: {
+              type: 'number',
+              description: 'Width of each button in pixels. Default: 120.'
+            },
+            buttonHeight: {
+              type: 'number',
+              description: 'Height of each button in pixels. Default: 40.'
+            },
+            theme: {
+              type: 'string',
+              enum: ['default', 'dark'],
+              description: 'Color theme. Use "dark" if user mentions dark theme/mode. Default: "default".'
+            }
+          }
+        }
+      },
+      required: []
+    }
   }
 ];
 
@@ -863,7 +953,8 @@ export const functionRegistry = {
   // Complex Operations (PR #23)
   'createLoginForm': canvasAPI.createLoginForm,
   'createNavigationBar': canvasAPI.createNavigationBar,
-  'createCardLayout': canvasAPI.createCardLayout
+  'createCardLayout': canvasAPI.createCardLayout,
+  'createButtonGroup': canvasAPI.createButtonGroup
 };
 
 /**
@@ -1103,6 +1194,16 @@ export async function executeAIFunction(functionName, parameters) {
           parameters.y !== undefined ? parameters.y : 2500, // Default to center
           parameters.title || 'Card Title', // Default title
           parameters.description || 'Card description with details', // Default description
+          parameters.options || {},
+          parameters.userId
+        );
+        break;
+
+      case 'createButtonGroup':
+        result = await functionRegistry[functionName](
+          parameters.x !== undefined ? parameters.x : 2500, // Default to center
+          parameters.y !== undefined ? parameters.y : 2500, // Default to center
+          parameters.buttons || [{label: 'Button 1'}, {label: 'Button 2'}, {label: 'Button 3'}], // Default buttons
           parameters.options || {},
           parameters.userId
         );
