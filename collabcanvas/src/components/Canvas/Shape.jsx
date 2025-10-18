@@ -551,8 +551,8 @@ const Shape = memo(function Shape({ shape, isSelected, isMultiSelect = false, on
             fontFamily="Arial"
             fontStyle={shape.fontWeight || DEFAULT_FONT_WEIGHT}
             fill={shape.color}
-            align="left"
-            verticalAlign="top"
+            align={shape.align || "left"}
+            verticalAlign={shape.verticalAlign || "top"}
             wrap="word"
             lineHeight={1.2}
             rotation={shape.rotation || 0}

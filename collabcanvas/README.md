@@ -25,13 +25,19 @@ CollabCanvas is a real-time collaborative drawing application that allows multip
 
 ### AI Assistant (COMPLETE! 🤖)
 - **Natural Language Interaction**: Full chat interface with GPT-4 Turbo integration
-- **23 AI-Callable Functions + Multi-Tool Calling**: Complete canvas control via voice-like commands
+- **28 AI-Callable Functions + Multi-Tool Calling**: Complete canvas control via voice-like commands
   - Creation (4): Create rectangles, circles, lines, text
   - Manipulation (5): Move, resize, rotate, color, delete
   - Query (3): Get canvas state, selected shapes, canvas center
   - **Selection (5)**: Select by type, color, region, IDs, deselect all
   - **Layout (6)**: Arrange horizontal/vertical, grid, distribute, center
   - **Multi-Tool (1)**: Execute multiple operations in one command 🆕 🚀
+  - **Complex Operations (5)**: High-level UI patterns 🆕 🎨
+    - `createLoginForm`: Complete form (9-11 shapes) with header, fields, button
+    - `createNavigationBar`: Professional nav bar with menu items
+    - `createCardLayout`: Card with image, title, description
+    - `createButtonGroup`: Horizontal/vertical button arrays
+    - `createLandingPage`: Full website mockup (~27+ shapes)
   - Batch/Pattern (2): Batch create, generate patterns
 - **Powerful Selection Commands**: AI can now programmatically select shapes! 🆕
   - "Select all rectangles" - filter by shape type

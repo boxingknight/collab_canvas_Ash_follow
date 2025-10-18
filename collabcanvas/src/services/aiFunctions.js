@@ -618,6 +618,368 @@ export const functionSchemas = [
       },
       required: ['shapeIds']
     }
+  },
+
+  // ===== COMPLEX OPERATIONS (PR #23) =====
+  {
+    name: 'createLoginForm',
+    description: `Creates a complete login form UI with title header, background container, username field, password field, and submit button. Creates 9 shapes (or 11 with Remember Me option) professionally laid out with proper spacing and alignment.
+
+DEFAULT BEHAVIOR: If no position is specified, creates at canvas center (2500, 2500).
+
+Position extraction:
+- "create a login form" → x: 2500, y: 2500 (DEFAULT CENTER)
+- "create a signup form" → x: 2500, y: 2500 (DEFAULT CENTER)
+- "at the center" → x: 2500, y: 2500
+- "at the top" → x: 2500, y: 100  
+- "at 1000, 1000" → x: 1000, y: 1000
+
+Examples:
+- "Create a login form" → Use defaults: x: 2500, y: 2500
+- "Create a signup form" → Use defaults: x: 2500, y: 2500, options: {buttonText: "Sign Up"}
+- "Add a login form at 500, 500" → x: 500, y: 500
+- "Make a login form with remember me" → x: 2500, y: 2500, options: {includeRememberMe: true}`,
+    parameters: {
+      type: 'object',
+      properties: {
+        x: {
+          type: 'number',
+          description: 'X coordinate of top-left corner (0-5000). DEFAULT: 2500 (center) if not specified. Canvas center is 2500.'
+        },
+        y: {
+          type: 'number',
+          description: 'Y coordinate of top-left corner (0-5000). DEFAULT: 2500 (center) if not specified. Canvas center is 2500.'
+        },
+        options: {
+          type: 'object',
+          properties: {
+            includeRememberMe: {
+              type: 'boolean',
+              description: 'If true, adds a "Remember Me" checkbox. Default: false. Use when user mentions "remember me" or "keep me logged in".'
+            },
+            buttonText: {
+              type: 'string',
+              description: 'Text for the submit button. Default: "Login". Can be "Sign In", "Sign Up", "Submit", etc. Match user\'s terminology. Max 15 characters.'
+            },
+            theme: {
+              type: 'string',
+              enum: ['default', 'dark'],
+              description: 'Color theme. Use "dark" if user mentions dark theme/mode. Default: "default".'
+            }
+          }
+        }
+      },
+      required: []
+    }
+  },
+
+  // Navigation Bar
+  {
+    name: 'createNavigationBar',
+    description: `Creates a horizontal navigation bar with multiple menu items. Creates 1 background bar + n text items.
+
+DEFAULT BEHAVIOR: If no position is specified, creates at canvas top (2500, 100).
+
+Position extraction:
+- "create a navigation bar" → x: 2500, y: 100 (DEFAULT TOP CENTER)
+- "create a nav bar" → x: 2500, y: 100 (DEFAULT TOP CENTER)
+- "at the top" → x: 2500, y: 100
+- "at 500, 500" → x: 500, y: 500
+
+Menu item extraction:
+- "with Home, About, Services, Contact" → menuItems: ["Home", "About", "Services", "Contact"]
+- "with Products, Pricing, FAQ" → menuItems: ["Products", "Pricing", "FAQ"]
+- Default: ["Home", "About", "Services", "Contact"] if not specified
+
+Examples:
+- "Create a navigation bar" → x: 2500, y: 100, menuItems: ["Home", "About", "Services", "Contact"]
+- "Add a nav bar with Home, About, Contact" → x: 2500, y: 100, menuItems: ["Home", "About", "Contact"]
+- "Make a navigation bar at 1000, 500 with Products, Pricing" → x: 1000, y: 500, menuItems: ["Products", "Pricing"]`,
+    parameters: {
+      type: 'object',
+      properties: {
+        x: {
+          type: 'number',
+          description: 'X coordinate of top-left corner (0-5000). DEFAULT: 2500 (center X) if not specified.'
+        },
+        y: {
+          type: 'number',
+          description: 'Y coordinate of top-left corner (0-5000). DEFAULT: 100 (top) if not specified.'
+        },
+        menuItems: {
+          type: 'array',
+          items: {
+            type: 'string'
+          },
+          description: 'Array of menu item labels. DEFAULT: ["Home", "About", "Services", "Contact"]. Extract from user prompt: "Home, About, Contact" → ["Home", "About", "Contact"]. Each item should be a short string (max 20 chars).'
+        },
+        options: {
+          type: 'object',
+          properties: {
+            height: {
+              type: 'number',
+              description: 'Nav bar height in pixels. Default: 60. Use 80-100 for larger bars.'
+            },
+            spacing: {
+              type: 'number',
+              description: 'Space between menu items in pixels. Default: 40.'
+            },
+            background: {
+              type: 'string',
+              description: 'Background color as hex code. Default: "#ffffff". Use dark colors like "#2d2d3f" for dark themes.'
+            },
+            textColor: {
+              type: 'string',
+              description: 'Text color as hex code. Default: "#1a1a1a". Use "#ffffff" for dark backgrounds.'
+            },
+            theme: {
+              type: 'string',
+              enum: ['default', 'dark'],
+              description: 'Color theme. Use "dark" if user mentions dark theme/mode. Default: "default".'
+            }
+          }
+        }
+      },
+      required: []
+    }
+  },
+
+  // Card Layout
+  {
+    name: 'createCardLayout',
+    description: `Creates a card-style layout with optional image placeholder, title, and description. Creates 4-5 shapes with professional spacing.
+
+DEFAULT BEHAVIOR: If no position is specified, creates at canvas center (2500, 2500).
+
+Position extraction:
+- "create a card" → x: 2500, y: 2500 (DEFAULT CENTER)
+- "add a product card" → x: 2500, y: 2500 (DEFAULT CENTER)
+- "at the center" → x: 2500, y: 2500
+- "at 1000, 1000" → x: 1000, y: 1000
+
+Title/Description extraction:
+- "with title 'Product'" → title: "Product"
+- "called 'Feature Card'" → title: "Feature Card"
+- "with description 'This is amazing'" → description: "This is amazing"
+- Default title: "Card Title"
+- Default description: "Card description with details"
+
+Examples:
+- "Create a card" → x: 2500, y: 2500, title: "Card Title", description: "Card description"
+- "Add a product card with title 'Premium Plan'" → title: "Premium Plan"
+- "Make a card without image called 'About Us' with description 'Learn about our company'" → includeImage: false
+- "Create a card at 1000, 1000 with title 'Service' and description 'Our best service'" → custom position and content`,
+    parameters: {
+      type: 'object',
+      properties: {
+        x: {
+          type: 'number',
+          description: 'X coordinate of top-left corner (0-5000). DEFAULT: 2500 (center) if not specified.'
+        },
+        y: {
+          type: 'number',
+          description: 'Y coordinate of top-left corner (0-5000). DEFAULT: 2500 (center) if not specified.'
+        },
+        title: {
+          type: 'string',
+          description: 'Card title text. DEFAULT: "Card Title". Extract from: "with title X", "called X", etc. Max 40 chars.'
+        },
+        description: {
+          type: 'string',
+          description: 'Card description text. DEFAULT: "Card description with details". Extract from: "with description X", "about X", etc. Max 200 chars.'
+        },
+        options: {
+          type: 'object',
+          properties: {
+            width: {
+              type: 'number',
+              description: 'Card width in pixels. Default: 300.'
+            },
+            height: {
+              type: 'number',
+              description: 'Card height in pixels. Default: 400.'
+            },
+            includeImage: {
+              type: 'boolean',
+              description: 'If true, adds an image placeholder at top. Default: true. Set false if user says "without image".'
+            },
+            backgroundColor: {
+              type: 'string',
+              description: 'Background color as hex code. Default: "#ffffff".'
+            },
+            theme: {
+              type: 'string',
+              enum: ['default', 'dark'],
+              description: 'Color theme. Use "dark" if user mentions dark theme/mode. Default: "default".'
+            }
+          }
+        }
+      },
+      required: []
+    }
+  },
+
+  // Button Group
+  {
+    name: 'createButtonGroup',
+    description: `Creates a group of buttons arranged horizontally or vertically. Creates n×2 shapes (n backgrounds + n labels).
+
+DEFAULT BEHAVIOR: If no position is specified, creates at canvas center (2500, 2500).
+
+Position extraction:
+- "create buttons" → x: 2500, y: 2500 (DEFAULT CENTER)
+- "add a button group" → x: 2500, y: 2500 (DEFAULT CENTER)
+- "at the center" → x: 2500, y: 2500
+- "at 1000, 1000" → x: 1000, y: 1000
+
+Buttons extraction:
+- "for Cancel, Save, Submit" → buttons: [{label: "Cancel"}, {label: "Save"}, {label: "Submit"}]
+- "with OK and Cancel" → buttons: [{label: "OK"}, {label: "Cancel"}]
+- "with Yes, No, Maybe" → buttons: [{label: "Yes"}, {label: "No"}, {label: "Maybe"}]
+- Default: [{label: "Button 1"}, {label: "Button 2"}, {label: "Button 3"}]
+
+Orientation extraction:
+- "vertical button group" → orientation: "vertical"
+- "horizontal buttons" → orientation: "horizontal"
+- Default: "horizontal"
+
+Examples:
+- "Create buttons" → x: 2500, y: 2500, buttons: default 3 buttons, horizontal
+- "Add buttons for Cancel, Save, Submit" → extract labels
+- "Make a vertical button group with Yes, No, Maybe" → vertical orientation
+- "Create buttons at 1000, 1000 for OK and Cancel" → custom position and labels`,
+    parameters: {
+      type: 'object',
+      properties: {
+        x: {
+          type: 'number',
+          description: 'X coordinate of top-left corner (0-5000). DEFAULT: 2500 (center) if not specified.'
+        },
+        y: {
+          type: 'number',
+          description: 'Y coordinate of top-left corner (0-5000). DEFAULT: 2500 (center) if not specified.'
+        },
+        buttons: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              label: {
+                type: 'string',
+                description: 'Button label text'
+              },
+              color: {
+                type: 'string',
+                description: 'Optional button color as hex code (e.g., "#646cff")'
+              }
+            },
+            required: ['label']
+          },
+          description: 'Array of button objects with label (required) and optional color. DEFAULT: [{label: "Button 1"}, {label: "Button 2"}, {label: "Button 3"}]. Extract from user prompt: "Cancel, Save, Submit" → [{label: "Cancel"}, {label: "Save"}, {label: "Submit"}]'
+        },
+        options: {
+          type: 'object',
+          properties: {
+            orientation: {
+              type: 'string',
+              enum: ['horizontal', 'vertical'],
+              description: 'Button arrangement. Default: "horizontal". Use "vertical" if user says "vertical buttons" or "stacked".'
+            },
+            spacing: {
+              type: 'number',
+              description: 'Space between buttons in pixels. Default: 10.'
+            },
+            buttonWidth: {
+              type: 'number',
+              description: 'Width of each button in pixels. Default: 120.'
+            },
+            buttonHeight: {
+              type: 'number',
+              description: 'Height of each button in pixels. Default: 40.'
+            },
+            theme: {
+              type: 'string',
+              enum: ['default', 'dark'],
+              description: 'Color theme. Use "dark" if user mentions dark theme/mode. Default: "default".'
+            }
+          }
+        }
+      },
+      required: []
+    }
+  },
+
+  // Landing Page (BONUS - Complete Website Mockup)
+  {
+    name: 'createLandingPage',
+    description: `Creates a complete, professional landing page mockup with navigation bar, hero section, email signup, feature cards, and footer. Creates ~27+ shapes in a comprehensive layout.
+
+SECTIONS INCLUDED:
+1. Navigation Bar - Brand logo + menu items (Home, Features, Pricing, Contact)
+2. Hero Section - Large headline, subheadline, CTA button
+3. Email Signup - "Join Our Newsletter" with input field and subscribe button
+4. Feature Cards - 3 cards showcasing key features
+5. Footer - Copyright text
+
+DEFAULT BEHAVIOR: If no position is specified, creates at canvas center-left (1000, 500).
+
+Position extraction:
+- "create a landing page" → x: 1000, y: 500 (DEFAULT)
+- "create a website" → x: 1000, y: 500 (DEFAULT)
+- "at 500, 500" → x: 500, y: 500
+
+Content extraction:
+- "for TechCo" → siteName: "TechCo"
+- "called MyApp" → siteName: "MyApp"
+- "with headline 'Transform Your Business'" → headline: "Transform Your Business"
+- Default siteName: "Your Brand"
+- Default headline: "Welcome to Our Platform"
+
+Examples:
+- "Create a landing page" → Full landing page with defaults
+- "Build a website for TechStartup" → siteName: "TechStartup"
+- "Make a landing page called CloudApp with headline 'Scale Your Infrastructure'" → custom branding
+- "Create a complete website mockup at 1000, 1000" → custom position`,
+    parameters: {
+      type: 'object',
+      properties: {
+        x: {
+          type: 'number',
+          description: 'X coordinate of top-left corner (0-5000). DEFAULT: 1000 if not specified. Landing pages are large (1200px wide).'
+        },
+        y: {
+          type: 'number',
+          description: 'Y coordinate of top-left corner (0-5000). DEFAULT: 500 if not specified.'
+        },
+        options: {
+          type: 'object',
+          properties: {
+            siteName: {
+              type: 'string',
+              description: 'Brand/site name shown in navigation. DEFAULT: "Your Brand". Extract from: "for X", "called X", etc. Max 20 chars.'
+            },
+            headline: {
+              type: 'string',
+              description: 'Main hero headline. DEFAULT: "Welcome to Our Platform". Max 60 chars.'
+            },
+            subheadline: {
+              type: 'string',
+              description: 'Hero subheadline. DEFAULT: "The best solution for your needs". Max 80 chars.'
+            },
+            ctaText: {
+              type: 'string',
+              description: 'Call-to-action button text. DEFAULT: "Get Started". Max 15 chars.'
+            },
+            theme: {
+              type: 'string',
+              enum: ['default', 'dark'],
+              description: 'Color theme. Use "dark" if user mentions dark theme/mode. Default: "default".'
+            }
+          }
+        }
+      },
+      required: []
+    }
   }
 ];
 
@@ -659,7 +1021,14 @@ export const functionRegistry = {
   'arrangeGrid': canvasAPI.arrangeGrid,
   'distributeEvenly': canvasAPI.distributeEvenly,
   'centerShape': canvasAPI.centerShape,
-  'centerShapes': canvasAPI.centerShapes
+  'centerShapes': canvasAPI.centerShapes,
+
+  // Complex Operations (PR #23)
+  'createLoginForm': canvasAPI.createLoginForm,
+  'createNavigationBar': canvasAPI.createNavigationBar,
+  'createCardLayout': canvasAPI.createCardLayout,
+  'createButtonGroup': canvasAPI.createButtonGroup,
+  'createLandingPage': canvasAPI.createLandingPage
 };
 
 /**
@@ -870,6 +1239,56 @@ export async function executeAIFunction(functionName, parameters) {
       case 'centerShapes':
         result = await functionRegistry[functionName](
           parameters.shapeIds
+        );
+        break;
+      
+      // Complex Operations (PR #23)
+      case 'createLoginForm':
+        result = await functionRegistry[functionName](
+          parameters.x !== undefined ? parameters.x : 2500, // Default to center
+          parameters.y !== undefined ? parameters.y : 2500, // Default to center
+          parameters.options || {},
+          parameters.userId
+        );
+        break;
+
+      case 'createNavigationBar':
+        result = await functionRegistry[functionName](
+          parameters.x !== undefined ? parameters.x : 2500, // Default to center X
+          parameters.y !== undefined ? parameters.y : 100, // Default to top
+          parameters.menuItems || ['Home', 'About', 'Services', 'Contact'], // Default menu items
+          parameters.options || {},
+          parameters.userId
+        );
+        break;
+
+      case 'createCardLayout':
+        result = await functionRegistry[functionName](
+          parameters.x !== undefined ? parameters.x : 2500, // Default to center
+          parameters.y !== undefined ? parameters.y : 2500, // Default to center
+          parameters.title || 'Card Title', // Default title
+          parameters.description || 'Card description with details', // Default description
+          parameters.options || {},
+          parameters.userId
+        );
+        break;
+
+      case 'createButtonGroup':
+        result = await functionRegistry[functionName](
+          parameters.x !== undefined ? parameters.x : 2500, // Default to center
+          parameters.y !== undefined ? parameters.y : 2500, // Default to center
+          parameters.buttons || [{label: 'Button 1'}, {label: 'Button 2'}, {label: 'Button 3'}], // Default buttons
+          parameters.options || {},
+          parameters.userId
+        );
+        break;
+
+      case 'createLandingPage':
+        result = await functionRegistry[functionName](
+          parameters.x !== undefined ? parameters.x : 1000, // Default to center-left (landing pages are wide)
+          parameters.y !== undefined ? parameters.y : 500, // Default to middle
+          parameters.options || {},
+          parameters.userId
         );
         break;
       

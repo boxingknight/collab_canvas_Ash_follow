@@ -122,6 +122,123 @@ function isShapeInRegion(shape, x, y, width, height) {
 }
 
 /**
+ * ===== COMPLEX OPERATIONS INFRASTRUCTURE =====
+ * PR #23: Layout constants and helpers for complex operations
+ */
+
+/**
+ * Layout constants for complex operations
+ * Defines consistent spacing, sizing, and styling for UI components
+ */
+const LAYOUT_CONSTANTS = {
+  loginForm: {
+    WIDTH: 350,
+    INPUT_HEIGHT: 40,
+    BUTTON_HEIGHT: 50,
+    BUTTON_WIDTH: 120,
+    LABEL_HEIGHT: 20,
+    SPACING: 20,           // Vertical spacing between components
+    LABEL_OFFSET: 8,       // Gap between label and input
+    SECTION_GAP: 30        // Gap between sections (e.g., before button)
+  },
+  navigationBar: {
+    HEIGHT: 60,
+    ITEM_SPACING: 40,
+    PADDING: 20,
+    MIN_ITEM_WIDTH: 80
+  },
+  card: {
+    WIDTH: 300,
+    HEIGHT: 400,
+    IMAGE_HEIGHT: 200,
+    PADDING: 20,
+    TITLE_HEIGHT: 30,
+    DESCRIPTION_OFFSET: 15
+  },
+  buttonGroup: {
+    BUTTON_WIDTH: 120,
+    BUTTON_HEIGHT: 40,
+    SPACING: 10
+  },
+  landingPage: {
+    WIDTH: 1200,
+    NAV_HEIGHT: 60,
+    HERO_HEIGHT: 300,
+    SECTION_SPACING: 40,
+    CONTENT_PADDING: 30,
+    FEATURE_CARD_WIDTH: 350,
+    FEATURE_CARD_HEIGHT: 200,
+    FOOTER_HEIGHT: 80
+  }
+};
+
+/**
+ * Color themes for complex operations
+ */
+const COLOR_THEMES = {
+  default: {
+    primary: '#646cff',       // Primary action color
+    secondary: '#535bf2',     // Secondary color
+    background: '#ffffff',    // Input/component background
+    text: '#1a1a1a',          // Dark text
+    textLight: '#666666',     // Light text for labels
+    border: '#d0d0d0',        // Border color
+    buttonText: '#ffffff'     // Button text color
+  },
+  dark: {
+    primary: '#646cff',
+    secondary: '#535bf2',
+    background: '#2d2d3f',
+    text: '#ffffff',
+    textLight: '#cccccc',
+    border: '#404040',
+    buttonText: '#ffffff'
+  }
+};
+
+/**
+ * Constrain position and size to canvas bounds
+ * Prevents complex operations from creating shapes outside visible canvas
+ * @param {number} x - Desired X position
+ * @param {number} y - Desired Y position
+ * @param {number} width - Component width
+ * @param {number} height - Component height
+ * @returns {{x: number, y: number, adjusted: boolean}} - Constrained position
+ */
+function constrainToCanvas(x, y, width, height) {
+  const MARGIN = 50; // Safe margin from edge
+  const maxX = CANVAS_CONFIG.width - width - MARGIN;
+  const maxY = CANVAS_CONFIG.height - height - MARGIN;
+  
+  const constrainedX = Math.max(MARGIN, Math.min(x, maxX));
+  const constrainedY = Math.max(MARGIN, Math.min(y, maxY));
+  
+  const adjusted = (constrainedX !== x || constrainedY !== y);
+  
+  if (adjusted) {
+    console.warn(`⚠️ Position adjusted to fit canvas: (${x}, ${y}) → (${constrainedX}, ${constrainedY})`);
+  }
+  
+  return {
+    x: constrainedX,
+    y: constrainedY,
+    adjusted
+  };
+}
+
+/**
+ * Truncate text that's too long
+ * @param {string} text - Text to truncate
+ * @param {number} maxLength - Maximum length
+ * @returns {string} - Truncated text with ellipsis if needed
+ */
+function truncateText(text, maxLength) {
+  if (!text || typeof text !== 'string') return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength - 3) + '...';
+}
+
+/**
  * ===== LAYOUT COMMANDS =====
  * PR #22: AI Layout Commands with bug fixes
  * These functions must be defined BEFORE canvasAPI object
@@ -566,6 +683,1256 @@ async function centerShapes(shapeIds) {
   } catch (error) {
     console.error('centerShapes error:', error);
     throw new Error(`Failed to center shapes: ${error.message}`);
+  }
+}
+
+/**
+ * ===== COMPLEX OPERATIONS (PR #23) =====
+ * Smart templates for common UI patterns
+ * These functions must be defined BEFORE canvasAPI object
+ */
+
+/**
+ * Create a login form with username, password, and submit button
+ * @param {number} x - Top-left X position
+ * @param {number} y - Top-left Y position
+ * @param {Object} options - Optional configuration
+ * @param {boolean} options.includeRememberMe - Add "Remember Me" checkbox (default: false)
+ * @param {string} options.buttonText - Submit button text (default: "Login")
+ * @param {string} options.theme - Color theme: 'default' or 'dark' (default: 'default')
+ * @param {string} userId - User ID (optional, will be fetched if not provided)
+ * @returns {Promise<Object>} Success result with created shape IDs
+ */
+async function createLoginForm(x, y, options = {}, userId = null) {
+  // Get current user if not provided
+  if (!userId) {
+    try {
+      userId = getCurrentUserId();
+    } catch (error) {
+      return {
+        success: false,
+        error: 'NOT_AUTHENTICATED',
+        userMessage: 'You must be logged in to create shapes.'
+      };
+    }
+  }
+
+  // Validate position
+  const posValidation = validatePosition(x, y);
+  if (!posValidation.valid) {
+    return { 
+      success: false, 
+      error: 'INVALID_POSITION', 
+      userMessage: posValidation.error 
+    };
+  }
+
+  // Extract options with defaults
+  const {
+    includeRememberMe = false,
+    buttonText = 'Login',
+    theme = 'default'
+  } = options;
+
+  // Get layout constants and color theme
+  const layout = LAYOUT_CONSTANTS.loginForm;
+  const colors = COLOR_THEMES[theme] || COLOR_THEMES.default;
+
+  // Calculate total height for boundary check
+  const FORM_PADDING = 30; // Padding around form content
+  const TITLE_HEIGHT = 32; // Form title height
+  const contentHeight = 
+    TITLE_HEIGHT + layout.SPACING +              // Title + spacing
+    layout.LABEL_HEIGHT + layout.LABEL_OFFSET +  // Username label
+    layout.INPUT_HEIGHT + layout.SPACING +        // Username input
+    layout.LABEL_HEIGHT + layout.LABEL_OFFSET +  // Password label
+    layout.INPUT_HEIGHT +                         // Password input
+    (includeRememberMe ? layout.SPACING + layout.LABEL_HEIGHT : 0) + // Optional checkbox
+    layout.SECTION_GAP +                          // Gap before button
+    layout.BUTTON_HEIGHT;                         // Button
+  
+  const totalHeight = contentHeight + (FORM_PADDING * 2);
+  const totalWidth = layout.WIDTH + (FORM_PADDING * 2);
+
+  // Constrain to canvas bounds
+  const constrained = constrainToCanvas(x, y, totalWidth, totalHeight);
+  const formBackgroundX = constrained.x;
+  const formBackgroundY = constrained.y;
+  const startX = formBackgroundX + FORM_PADDING; // Content starts after padding
+  let currentY = formBackgroundY + FORM_PADDING;
+
+  // Track created shape IDs for cleanup on error
+  const shapeIds = [];
+
+  try {
+    // PHASE 1: Create all backgrounds/rectangles first (z-index: backgrounds before text)
+    
+    // Form background container (created FIRST - appears at back)
+    const formBackgroundColor = theme === 'dark' ? '#1a1a1a' : '#f5f5f5';
+    const formBackgroundId = await addShape({
+      type: 'rectangle',
+      x: formBackgroundX,
+      y: formBackgroundY,
+      width: totalWidth,
+      height: totalHeight,
+      color: formBackgroundColor,
+      rotation: 0
+    }, userId);
+    shapeIds.push(formBackgroundId);
+    
+    // Calculate Y positions for each element
+    let elementY = currentY;
+    
+    // Skip space for title (we'll add text later)
+    const titleY = elementY;
+    elementY += 32 + layout.SPACING; // Title height + spacing
+    
+    // Username label and input
+    const usernameLabelY = elementY;
+    const usernameInputY = usernameLabelY + layout.LABEL_HEIGHT + layout.LABEL_OFFSET;
+    elementY = usernameInputY + layout.INPUT_HEIGHT + layout.SPACING;
+    
+    // Password label and input
+    const passwordLabelY = elementY;
+    const passwordInputY = passwordLabelY + layout.LABEL_HEIGHT + layout.LABEL_OFFSET;
+    elementY = passwordInputY + layout.INPUT_HEIGHT;
+    
+    // Remember Me checkbox (optional)
+    let checkboxY, rememberMeTextY;
+    if (includeRememberMe) {
+      elementY += layout.SPACING;
+      checkboxY = elementY;
+      rememberMeTextY = elementY;
+      elementY += layout.LABEL_HEIGHT;
+    }
+    
+    // Submit button
+    elementY += layout.SECTION_GAP;
+    const buttonY = elementY;
+    const buttonX = startX + (layout.WIDTH - layout.BUTTON_WIDTH) / 2; // Center button
+    
+    // Create all input rectangles
+    const usernameInputId = await addShape({
+      type: 'rectangle',
+      x: startX,
+      y: usernameInputY,
+      width: layout.WIDTH,
+      height: layout.INPUT_HEIGHT,
+      color: colors.background,
+      rotation: 0
+    }, userId);
+    shapeIds.push(usernameInputId);
+
+    const passwordInputId = await addShape({
+      type: 'rectangle',
+      x: startX,
+      y: passwordInputY,
+      width: layout.WIDTH,
+      height: layout.INPUT_HEIGHT,
+      color: colors.background,
+      rotation: 0
+    }, userId);
+    shapeIds.push(passwordInputId);
+
+    // Remember Me checkbox (optional)
+    if (includeRememberMe) {
+      const checkboxId = await addShape({
+        type: 'rectangle',
+        x: startX,
+        y: checkboxY,
+        width: 20,
+        height: 20,
+        color: colors.background,
+        rotation: 0
+      }, userId);
+      shapeIds.push(checkboxId);
+    }
+
+    // Submit button background
+    const buttonBgId = await addShape({
+      type: 'rectangle',
+      x: buttonX,
+      y: buttonY,
+      width: layout.BUTTON_WIDTH,
+      height: layout.BUTTON_HEIGHT,
+      color: colors.primary,
+      rotation: 0
+    }, userId);
+    shapeIds.push(buttonBgId);
+
+    // PHASE 2: Create all text elements (z-index: text appears on top)
+
+    // Form title
+    const formTitle = buttonText === 'Sign Up' ? 'Sign Up' : 'Login';
+    const formTitleId = await addShape({
+      type: 'text',
+      x: startX,
+      y: titleY,
+      width: layout.WIDTH,
+      height: 32,
+      text: formTitle,
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: colors.text,
+      rotation: 0
+    }, userId);
+    shapeIds.push(formTitleId);
+
+    // Username label
+    const usernameLabelId = await addShape({
+      type: 'text',
+      x: startX,
+      y: usernameLabelY,
+      width: 200,
+      height: layout.LABEL_HEIGHT,
+      text: 'Username',
+      fontSize: 14,
+      fontWeight: 'normal',
+      color: colors.textLight,
+      rotation: 0
+    }, userId);
+    shapeIds.push(usernameLabelId);
+
+    // Password label
+    const passwordLabelId = await addShape({
+      type: 'text',
+      x: startX,
+      y: passwordLabelY,
+      width: 200,
+      height: layout.LABEL_HEIGHT,
+      text: 'Password',
+      fontSize: 14,
+      fontWeight: 'normal',
+      color: colors.textLight,
+      rotation: 0
+    }, userId);
+    shapeIds.push(passwordLabelId);
+
+    // Remember Me text (optional)
+    if (includeRememberMe) {
+      const rememberMeTextId = await addShape({
+        type: 'text',
+        x: startX + 30, // Offset from checkbox
+        y: rememberMeTextY,
+        width: 200,
+        height: layout.LABEL_HEIGHT,
+        text: 'Remember Me',
+        fontSize: 14,
+        fontWeight: 'normal',
+        color: colors.text,
+        rotation: 0
+      }, userId);
+      shapeIds.push(rememberMeTextId);
+    }
+
+    // Button text (centered in button)
+    const truncatedButtonText = truncateText(buttonText, 15);
+    const buttonTextId = await addShape({
+      type: 'text',
+      x: buttonX + 10, // Padding from button edge
+      y: buttonY + (layout.BUTTON_HEIGHT - 20) / 2, // Vertically center
+      width: layout.BUTTON_WIDTH - 20,
+      height: 20,
+      text: truncatedButtonText,
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: colors.buttonText,
+      rotation: 0
+    }, userId);
+    shapeIds.push(buttonTextId);
+
+    // Success!
+    const message = constrained.adjusted 
+      ? `Created "${formTitle}" form with header and background (position adjusted to fit canvas) - ${shapeIds.length} shapes`
+      : `Created "${formTitle}" form with header and background - ${shapeIds.length} shapes`;
+
+    return {
+      success: true,
+      result: {
+        shapeIds,
+        count: shapeIds.length,
+        includesRememberMe: includeRememberMe,
+        buttonText: truncatedButtonText,
+        formTitle: formTitle,
+        hasBackground: true,
+        hasHeader: true
+      },
+      userMessage: message
+    };
+
+  } catch (error) {
+    // CLEANUP: If any shape creation failed, attempt to delete created shapes
+    console.error('❌ Login form creation failed:', error);
+    
+    // Best-effort cleanup
+    for (const id of shapeIds) {
+      try {
+        await deleteShapeFromDB(id);
+      } catch (cleanupError) {
+        console.warn(`Failed to clean up shape ${id}:`, cleanupError);
+      }
+    }
+
+    return {
+      success: false,
+      error: error.code || 'CREATE_FAILED',
+      userMessage: 'Failed to create login form. Please try again.',
+      partialShapeIds: shapeIds // For manual cleanup if needed
+    };
+  }
+}
+
+/**
+ * ===== COMPLEX OPERATION: NAVIGATION BAR =====
+ * Creates a horizontal navigation bar with menu items
+ * PR #23
+ */
+async function createNavigationBar(x, y, menuItems = [], options = {}, userId = null) {
+  console.log('📐 Creating navigation bar...', { x, y, menuItems, options });
+
+  // Get or validate userId
+  if (!userId) {
+    try {
+      userId = getCurrentUserId();
+    } catch (error) {
+      return { 
+        success: false, 
+        error: 'AUTH_REQUIRED', 
+        userMessage: error.message 
+      };
+    }
+  }
+
+  // Validate position
+  const posValidation = validatePosition(x, y);
+  if (!posValidation.valid) {
+    return { 
+      success: false, 
+      error: 'INVALID_POSITION', 
+      userMessage: posValidation.error 
+    };
+  }
+
+  // Validate menu items
+  if (!Array.isArray(menuItems) || menuItems.length === 0) {
+    return {
+      success: false,
+      error: 'INVALID_MENU_ITEMS',
+      userMessage: 'Menu items must be a non-empty array of strings'
+    };
+  }
+
+  // Validate all menu items are strings
+  const invalidItems = menuItems.filter(item => typeof item !== 'string' || item.trim().length === 0);
+  if (invalidItems.length > 0) {
+    return {
+      success: false,
+      error: 'INVALID_MENU_ITEMS',
+      userMessage: 'All menu items must be non-empty strings'
+    };
+  }
+
+  // Extract options with defaults
+  const {
+    height = LAYOUT_CONSTANTS.navigationBar.HEIGHT,
+    spacing = LAYOUT_CONSTANTS.navigationBar.ITEM_SPACING,
+    background = COLOR_THEMES.default.background,
+    textColor = COLOR_THEMES.default.text,
+    theme = 'default'
+  } = options;
+
+  // Get theme colors
+  const colors = COLOR_THEMES[theme] || COLOR_THEMES.default;
+  const bgColor = background || colors.background;
+  const itemColor = textColor || colors.text;
+
+  // Calculate nav bar dimensions
+  const layout = LAYOUT_CONSTANTS.navigationBar;
+  const truncatedItems = menuItems.map(item => truncateText(item, 20));
+  const itemWidth = layout.MIN_ITEM_WIDTH;
+  const totalWidth = (layout.PADDING * 2) + (truncatedItems.length * itemWidth) + ((truncatedItems.length - 1) * spacing);
+
+  // Constrain to canvas bounds
+  const constrained = constrainToCanvas(x, y, totalWidth, height);
+  const startX = constrained.x;
+  const startY = constrained.y;
+
+  const shapeIds = [];
+
+  try {
+    // 1. Create background bar
+    const barId = await addShape({
+      type: 'rectangle',
+      x: startX,
+      y: startY,
+      width: totalWidth,
+      height: height,
+      color: bgColor,
+      rotation: 0
+    }, userId);
+    shapeIds.push(barId);
+
+    // 2. Create menu items (text elements)
+    // IMPORTANT: Text elements need explicit width/height to render properly
+    // Figma/Canva pattern: Text has a bounding box, centered alignment for nav items
+    let currentX = startX + layout.PADDING;
+    const textY = startY + (height / 2); // Vertical center of nav bar
+
+    for (const item of truncatedItems) {
+      // Calculate text dimensions
+      // Use itemWidth for horizontal space, height for vertical
+      const textHeight = 30; // Sufficient height for font size 16
+      
+      // Position text at top-left corner of its bounding box
+      // The text will be centered within the box by Shape.jsx rendering
+      const textX = currentX;
+      const textYPos = textY - (textHeight / 2); // Center vertically
+
+      const itemTextId = await addShape({
+        type: 'text',
+        x: textX,
+        y: textYPos,
+        width: itemWidth,           // ← FIX: Explicit width for text bounding box
+        height: textHeight,         // ← FIX: Explicit height for text bounding box
+        text: item,
+        fontSize: 16,
+        color: itemColor,
+        align: 'center',            // ← Figma/Canva pattern: Center-aligned nav text
+        verticalAlign: 'middle',    // ← Vertical centering
+        rotation: 0
+      }, userId);
+      shapeIds.push(itemTextId);
+
+      // Move to next item position
+      currentX += itemWidth + spacing;
+    }
+
+    // Success!
+    const message = constrained.adjusted 
+      ? `Created navigation bar with ${truncatedItems.length} items (position adjusted to fit canvas) - ${shapeIds.length} shapes`
+      : `Created navigation bar with ${truncatedItems.length} items - ${shapeIds.length} shapes`;
+
+    return {
+      success: true,
+      result: {
+        shapeIds,
+        count: shapeIds.length,
+        menuItems: truncatedItems,
+        width: totalWidth,
+        height: height
+      },
+      userMessage: message
+    };
+
+  } catch (error) {
+    // CLEANUP: If any shape creation failed, attempt to delete created shapes
+    console.error('❌ Navigation bar creation failed:', error);
+    
+    // Best-effort cleanup
+    for (const id of shapeIds) {
+      try {
+        await deleteShapeFromDB(id);
+      } catch (cleanupError) {
+        console.warn(`Failed to clean up shape ${id}:`, cleanupError);
+      }
+    }
+
+    return {
+      success: false,
+      error: error.code || 'CREATE_FAILED',
+      userMessage: 'Failed to create navigation bar. Please try again.',
+      partialShapeIds: shapeIds
+    };
+  }
+}
+
+/**
+ * ===== COMPLEX OPERATION: CARD LAYOUT =====
+ * Creates a card-style layout with title, image placeholder, and description
+ * PR #23
+ */
+async function createCardLayout(x, y, title = '', description = '', options = {}, userId = null) {
+  console.log('🃏 Creating card layout...', { x, y, title, description, options });
+
+  // Get or validate userId
+  if (!userId) {
+    try {
+      userId = getCurrentUserId();
+    } catch (error) {
+      return { 
+        success: false, 
+        error: 'AUTH_REQUIRED', 
+        userMessage: error.message 
+      };
+    }
+  }
+
+  // Validate position
+  const posValidation = validatePosition(x, y);
+  if (!posValidation.valid) {
+    return { 
+      success: false, 
+      error: 'INVALID_POSITION', 
+      userMessage: posValidation.error 
+    };
+  }
+
+  // Validate title and description
+  if (typeof title !== 'string' || title.trim().length === 0) {
+    return {
+      success: false,
+      error: 'INVALID_TITLE',
+      userMessage: 'Card title must be a non-empty string'
+    };
+  }
+
+  if (typeof description !== 'string' || description.trim().length === 0) {
+    return {
+      success: false,
+      error: 'INVALID_DESCRIPTION',
+      userMessage: 'Card description must be a non-empty string'
+    };
+  }
+
+  // Extract options with defaults
+  const {
+    width = LAYOUT_CONSTANTS.card.WIDTH,
+    height = LAYOUT_CONSTANTS.card.HEIGHT,
+    includeImage = true,
+    backgroundColor = COLOR_THEMES.default.background,
+    theme = 'default'
+  } = options;
+
+  // Get theme colors
+  const colors = COLOR_THEMES[theme] || COLOR_THEMES.default;
+  const layout = LAYOUT_CONSTANTS.card;
+
+  // Truncate text if too long
+  const truncatedTitle = truncateText(title, 40);
+  const truncatedDescription = truncateText(description, 200);
+
+  // Constrain to canvas bounds
+  const constrained = constrainToCanvas(x, y, width, height);
+  const startX = constrained.x;
+  const startY = constrained.y;
+
+  const shapeIds = [];
+
+  try {
+    // 1. Create card background
+    const cardBgId = await addShape({
+      type: 'rectangle',
+      x: startX,
+      y: startY,
+      width: width,
+      height: height,
+      color: backgroundColor || colors.background,
+      rotation: 0
+    }, userId);
+    shapeIds.push(cardBgId);
+
+    let currentY = startY + layout.PADDING;
+
+    // 2. Create image placeholder (optional)
+    if (includeImage) {
+      const imageHeight = layout.IMAGE_HEIGHT;
+      const imageId = await addShape({
+        type: 'rectangle',
+        x: startX + layout.PADDING,
+        y: currentY,
+        width: width - (layout.PADDING * 2),
+        height: imageHeight,
+        color: colors.border,
+        rotation: 0
+      }, userId);
+      shapeIds.push(imageId);
+
+      // Add "Image" placeholder text centered in the image area
+      const imageTextId = await addShape({
+        type: 'text',
+        x: startX + layout.PADDING,
+        y: currentY + (imageHeight / 2) - 15,
+        width: width - (layout.PADDING * 2),
+        height: 30,
+        text: '📷 Image',
+        fontSize: 18,
+        color: colors.textLight,
+        align: 'center',
+        verticalAlign: 'middle',
+        rotation: 0
+      }, userId);
+      shapeIds.push(imageTextId);
+
+      currentY += imageHeight + layout.DESCRIPTION_OFFSET;
+    }
+
+    // 3. Create title text
+    const titleId = await addShape({
+      type: 'text',
+      x: startX + layout.PADDING,
+      y: currentY,
+      width: width - (layout.PADDING * 2),
+      height: layout.TITLE_HEIGHT,
+      text: truncatedTitle,
+      fontSize: 20,
+      color: colors.text,
+      align: 'center',
+      verticalAlign: 'middle',
+      rotation: 0
+    }, userId);
+    shapeIds.push(titleId);
+
+    currentY += layout.TITLE_HEIGHT + layout.DESCRIPTION_OFFSET;
+
+    // 4. Create description text
+    // Calculate remaining space for description
+    const descriptionHeight = startY + height - currentY - layout.PADDING;
+    
+    const descriptionId = await addShape({
+      type: 'text',
+      x: startX + layout.PADDING,
+      y: currentY,
+      width: width - (layout.PADDING * 2),
+      height: descriptionHeight,
+      text: truncatedDescription,
+      fontSize: 14,
+      color: colors.textLight,
+      align: 'left',
+      verticalAlign: 'top',
+      rotation: 0
+    }, userId);
+    shapeIds.push(descriptionId);
+
+    // Success!
+    const message = constrained.adjusted 
+      ? `Created card "${truncatedTitle}" ${includeImage ? 'with image' : 'without image'} (position adjusted to fit canvas) - ${shapeIds.length} shapes`
+      : `Created card "${truncatedTitle}" ${includeImage ? 'with image' : 'without image'} - ${shapeIds.length} shapes`;
+
+    return {
+      success: true,
+      result: {
+        shapeIds,
+        count: shapeIds.length,
+        title: truncatedTitle,
+        description: truncatedDescription,
+        includesImage: includeImage,
+        width: width,
+        height: height
+      },
+      userMessage: message
+    };
+
+  } catch (error) {
+    // CLEANUP: If any shape creation failed, attempt to delete created shapes
+    console.error('❌ Card layout creation failed:', error);
+    
+    // Best-effort cleanup
+    for (const id of shapeIds) {
+      try {
+        await deleteShapeFromDB(id);
+      } catch (cleanupError) {
+        console.warn(`Failed to clean up shape ${id}:`, cleanupError);
+      }
+    }
+
+    return {
+      success: false,
+      error: error.code || 'CREATE_FAILED',
+      userMessage: 'Failed to create card layout. Please try again.',
+      partialShapeIds: shapeIds
+    };
+  }
+}
+
+/**
+ * ===== COMPLEX OPERATION: BUTTON GROUP =====
+ * Creates a group of buttons arranged horizontally or vertically
+ * PR #23
+ */
+async function createButtonGroup(x, y, buttons = [], options = {}, userId = null) {
+  console.log('🔘 Creating button group...', { x, y, buttons, options });
+
+  // Get or validate userId
+  if (!userId) {
+    try {
+      userId = getCurrentUserId();
+    } catch (error) {
+      return { 
+        success: false, 
+        error: 'AUTH_REQUIRED', 
+        userMessage: error.message 
+      };
+    }
+  }
+
+  // Validate position
+  const posValidation = validatePosition(x, y);
+  if (!posValidation.valid) {
+    return { 
+      success: false, 
+      error: 'INVALID_POSITION', 
+      userMessage: posValidation.error 
+    };
+  }
+
+  // Validate buttons array
+  if (!Array.isArray(buttons) || buttons.length === 0) {
+    return {
+      success: false,
+      error: 'INVALID_BUTTONS',
+      userMessage: 'Buttons must be a non-empty array'
+    };
+  }
+
+  // Validate button structure
+  for (let i = 0; i < buttons.length; i++) {
+    const btn = buttons[i];
+    if (!btn || typeof btn !== 'object') {
+      return {
+        success: false,
+        error: 'INVALID_BUTTON_CONFIG',
+        userMessage: `Button at index ${i} must be an object with 'label' property`
+      };
+    }
+    if (typeof btn.label !== 'string' || btn.label.trim().length === 0) {
+      return {
+        success: false,
+        error: 'INVALID_BUTTON_LABEL',
+        userMessage: `Button at index ${i} must have a non-empty label`
+      };
+    }
+  }
+
+  // Extract options with defaults
+  const {
+    orientation = 'horizontal',
+    spacing = LAYOUT_CONSTANTS.buttonGroup.SPACING,
+    buttonWidth = LAYOUT_CONSTANTS.buttonGroup.BUTTON_WIDTH,
+    buttonHeight = LAYOUT_CONSTANTS.buttonGroup.BUTTON_HEIGHT,
+    theme = 'default'
+  } = options;
+
+  // Validate orientation
+  if (orientation !== 'horizontal' && orientation !== 'vertical') {
+    return {
+      success: false,
+      error: 'INVALID_ORIENTATION',
+      userMessage: 'Orientation must be "horizontal" or "vertical"'
+    };
+  }
+
+  // Get theme colors
+  const colors = COLOR_THEMES[theme] || COLOR_THEMES.default;
+
+  // Calculate total dimensions
+  let totalWidth, totalHeight;
+  if (orientation === 'horizontal') {
+    totalWidth = (buttons.length * buttonWidth) + ((buttons.length - 1) * spacing);
+    totalHeight = buttonHeight;
+  } else {
+    totalWidth = buttonWidth;
+    totalHeight = (buttons.length * buttonHeight) + ((buttons.length - 1) * spacing);
+  }
+
+  // Constrain to canvas bounds
+  const constrained = constrainToCanvas(x, y, totalWidth, totalHeight);
+  const startX = constrained.x;
+  const startY = constrained.y;
+
+  const shapeIds = [];
+
+  try {
+    let currentX = startX;
+    let currentY = startY;
+
+    // Create each button (background rectangle + text label)
+    for (const button of buttons) {
+      const truncatedLabel = truncateText(button.label, 20);
+      const buttonColor = button.color || colors.primary;
+
+      // 1. Create button background
+      const buttonBgId = await addShape({
+        type: 'rectangle',
+        x: currentX,
+        y: currentY,
+        width: buttonWidth,
+        height: buttonHeight,
+        color: buttonColor,
+        rotation: 0
+      }, userId);
+      shapeIds.push(buttonBgId);
+
+      // 2. Create button label (centered text)
+      const labelId = await addShape({
+        type: 'text',
+        x: currentX,
+        y: currentY,
+        width: buttonWidth,
+        height: buttonHeight,
+        text: truncatedLabel,
+        fontSize: 14,
+        color: colors.buttonText,
+        align: 'center',
+        verticalAlign: 'middle',
+        rotation: 0
+      }, userId);
+      shapeIds.push(labelId);
+
+      // Move to next button position
+      if (orientation === 'horizontal') {
+        currentX += buttonWidth + spacing;
+      } else {
+        currentY += buttonHeight + spacing;
+      }
+    }
+
+    // Success!
+    const message = constrained.adjusted 
+      ? `Created ${orientation} button group with ${buttons.length} buttons (position adjusted to fit canvas) - ${shapeIds.length} shapes`
+      : `Created ${orientation} button group with ${buttons.length} buttons - ${shapeIds.length} shapes`;
+
+    return {
+      success: true,
+      result: {
+        shapeIds,
+        count: shapeIds.length,
+        buttonCount: buttons.length,
+        orientation: orientation,
+        totalWidth: totalWidth,
+        totalHeight: totalHeight
+      },
+      userMessage: message
+    };
+
+  } catch (error) {
+    // CLEANUP: If any shape creation failed, attempt to delete created shapes
+    console.error('❌ Button group creation failed:', error);
+    
+    // Best-effort cleanup
+    for (const id of shapeIds) {
+      try {
+        await deleteShapeFromDB(id);
+      } catch (cleanupError) {
+        console.warn(`Failed to clean up shape ${id}:`, cleanupError);
+      }
+    }
+
+    return {
+      success: false,
+      error: error.code || 'CREATE_FAILED',
+      userMessage: 'Failed to create button group. Please try again.',
+      partialShapeIds: shapeIds
+    };
+  }
+}
+
+/**
+ * ===== COMPLEX OPERATION: LANDING PAGE =====
+ * Creates a complete landing page mockup with navigation, hero, features, and footer
+ * PR #23 - BONUS OPERATION
+ */
+async function createLandingPage(x, y, options = {}, userId = null) {
+  console.log('🌐 Creating landing page...', { x, y, options });
+
+  // Get or validate userId
+  if (!userId) {
+    try {
+      userId = getCurrentUserId();
+    } catch (error) {
+      return { 
+        success: false, 
+        error: 'AUTH_REQUIRED', 
+        userMessage: error.message 
+      };
+    }
+  }
+
+  // Validate position
+  const posValidation = validatePosition(x, y);
+  if (!posValidation.valid) {
+    return { 
+      success: false, 
+      error: 'INVALID_POSITION', 
+      userMessage: posValidation.error 
+    };
+  }
+
+  // Extract options with defaults
+  const {
+    siteName = 'Your Brand',
+    headline = 'Welcome to Our Platform',
+    subheadline = 'The best solution for your needs',
+    ctaText = 'Get Started',
+    theme = 'default'
+  } = options;
+
+  // Get theme colors and layout
+  const colors = COLOR_THEMES[theme] || COLOR_THEMES.default;
+  const layout = LAYOUT_CONSTANTS.landingPage;
+
+  // Calculate total height
+  const totalHeight = 
+    layout.NAV_HEIGHT + 
+    layout.SECTION_SPACING + 
+    layout.HERO_HEIGHT + 
+    layout.SECTION_SPACING + 
+    200 + // Email signup section
+    layout.SECTION_SPACING + 
+    layout.FEATURE_CARD_HEIGHT + 
+    layout.SECTION_SPACING + 
+    layout.FOOTER_HEIGHT;
+
+  // Constrain to canvas bounds
+  const constrained = constrainToCanvas(x, y, layout.WIDTH, totalHeight);
+  const startX = constrained.x;
+  const startY = constrained.y;
+
+  const shapeIds = [];
+  let currentY = startY;
+
+  try {
+    // ===== 1. NAVIGATION BAR =====
+    // Background
+    const navBgId = await addShape({
+      type: 'rectangle',
+      x: startX,
+      y: currentY,
+      width: layout.WIDTH,
+      height: layout.NAV_HEIGHT,
+      color: colors.primary,
+      rotation: 0
+    }, userId);
+    shapeIds.push(navBgId);
+
+    // Logo/Brand name
+    const brandId = await addShape({
+      type: 'text',
+      x: startX + layout.CONTENT_PADDING,
+      y: currentY,
+      width: 200,
+      height: layout.NAV_HEIGHT,
+      text: truncateText(siteName, 20),
+      fontSize: 20,
+      color: colors.buttonText,
+      align: 'left',
+      verticalAlign: 'middle',
+      rotation: 0
+    }, userId);
+    shapeIds.push(brandId);
+
+    // Nav menu items
+    const menuItems = ['Home', 'Features', 'Pricing', 'Contact'];
+    let menuX = startX + layout.WIDTH - layout.CONTENT_PADDING - (menuItems.length * 100);
+    
+    for (const item of menuItems) {
+      const menuItemId = await addShape({
+        type: 'text',
+        x: menuX,
+        y: currentY,
+        width: 80,
+        height: layout.NAV_HEIGHT,
+        text: item,
+        fontSize: 14,
+        color: colors.buttonText,
+        align: 'center',
+        verticalAlign: 'middle',
+        rotation: 0
+      }, userId);
+      shapeIds.push(menuItemId);
+      menuX += 100;
+    }
+
+    currentY += layout.NAV_HEIGHT + layout.SECTION_SPACING;
+
+    // ===== 2. HERO SECTION =====
+    // Hero background
+    const heroBgId = await addShape({
+      type: 'rectangle',
+      x: startX,
+      y: currentY,
+      width: layout.WIDTH,
+      height: layout.HERO_HEIGHT,
+      color: colors.background,
+      rotation: 0
+    }, userId);
+    shapeIds.push(heroBgId);
+
+    // Headline
+    const headlineId = await addShape({
+      type: 'text',
+      x: startX + layout.CONTENT_PADDING,
+      y: currentY + 60,
+      width: layout.WIDTH - (layout.CONTENT_PADDING * 2),
+      height: 50,
+      text: truncateText(headline, 60),
+      fontSize: 36,
+      color: colors.text,
+      align: 'center',
+      verticalAlign: 'middle',
+      rotation: 0
+    }, userId);
+    shapeIds.push(headlineId);
+
+    // Subheadline
+    const subheadlineId = await addShape({
+      type: 'text',
+      x: startX + layout.CONTENT_PADDING,
+      y: currentY + 120,
+      width: layout.WIDTH - (layout.CONTENT_PADDING * 2),
+      height: 40,
+      text: truncateText(subheadline, 80),
+      fontSize: 18,
+      color: colors.textLight,
+      align: 'center',
+      verticalAlign: 'middle',
+      rotation: 0
+    }, userId);
+    shapeIds.push(subheadlineId);
+
+    // CTA Button
+    const ctaX = startX + (layout.WIDTH / 2) - 75;
+    const ctaBgId = await addShape({
+      type: 'rectangle',
+      x: ctaX,
+      y: currentY + 200,
+      width: 150,
+      height: 50,
+      color: colors.primary,
+      rotation: 0
+    }, userId);
+    shapeIds.push(ctaBgId);
+
+    const ctaTextId = await addShape({
+      type: 'text',
+      x: ctaX,
+      y: currentY + 200,
+      width: 150,
+      height: 50,
+      text: truncateText(ctaText, 15),
+      fontSize: 16,
+      color: colors.buttonText,
+      align: 'center',
+      verticalAlign: 'middle',
+      rotation: 0
+    }, userId);
+    shapeIds.push(ctaTextId);
+
+    currentY += layout.HERO_HEIGHT + layout.SECTION_SPACING;
+
+    // ===== 3. EMAIL SIGNUP SECTION =====
+    const emailSectionHeight = 200;
+    
+    // Section background
+    const emailBgId = await addShape({
+      type: 'rectangle',
+      x: startX,
+      y: currentY,
+      width: layout.WIDTH,
+      height: emailSectionHeight,
+      color: '#f9fafb',
+      rotation: 0
+    }, userId);
+    shapeIds.push(emailBgId);
+
+    // Section title
+    const emailTitleId = await addShape({
+      type: 'text',
+      x: startX + layout.CONTENT_PADDING,
+      y: currentY + 30,
+      width: layout.WIDTH - (layout.CONTENT_PADDING * 2),
+      height: 40,
+      text: 'Join Our Newsletter',
+      fontSize: 24,
+      color: colors.text,
+      align: 'center',
+      verticalAlign: 'middle',
+      rotation: 0
+    }, userId);
+    shapeIds.push(emailTitleId);
+
+    // Email input field
+    const emailInputX = startX + (layout.WIDTH / 2) - 200;
+    const emailInputId = await addShape({
+      type: 'rectangle',
+      x: emailInputX,
+      y: currentY + 90,
+      width: 300,
+      height: 45,
+      color: '#ffffff',
+      rotation: 0
+    }, userId);
+    shapeIds.push(emailInputId);
+
+    const emailPlaceholderId = await addShape({
+      type: 'text',
+      x: emailInputX,
+      y: currentY + 90,
+      width: 300,
+      height: 45,
+      text: 'Enter your email',
+      fontSize: 14,
+      color: colors.textLight,
+      align: 'center',
+      verticalAlign: 'middle',
+      rotation: 0
+    }, userId);
+    shapeIds.push(emailPlaceholderId);
+
+    // Subscribe button
+    const subscribeBtnId = await addShape({
+      type: 'rectangle',
+      x: emailInputX + 310,
+      y: currentY + 90,
+      width: 100,
+      height: 45,
+      color: colors.primary,
+      rotation: 0
+    }, userId);
+    shapeIds.push(subscribeBtnId);
+
+    const subscribeTxtId = await addShape({
+      type: 'text',
+      x: emailInputX + 310,
+      y: currentY + 90,
+      width: 100,
+      height: 45,
+      text: 'Subscribe',
+      fontSize: 14,
+      color: colors.buttonText,
+      align: 'center',
+      verticalAlign: 'middle',
+      rotation: 0
+    }, userId);
+    shapeIds.push(subscribeTxtId);
+
+    currentY += emailSectionHeight + layout.SECTION_SPACING;
+
+    // ===== 4. FEATURE CARDS (3 cards in a row) =====
+    const features = [
+      { title: 'Fast & Reliable', desc: 'Lightning-fast performance you can count on' },
+      { title: 'Secure', desc: 'Enterprise-grade security for your data' },
+      { title: 'Easy to Use', desc: 'Intuitive interface anyone can master' }
+    ];
+
+    const cardSpacing = 25;
+    const totalCardsWidth = (layout.FEATURE_CARD_WIDTH * 3) + (cardSpacing * 2);
+    let featureX = startX + (layout.WIDTH - totalCardsWidth) / 2;
+
+    for (const feature of features) {
+      // Card background
+      const cardBgId = await addShape({
+        type: 'rectangle',
+        x: featureX,
+        y: currentY,
+        width: layout.FEATURE_CARD_WIDTH,
+        height: layout.FEATURE_CARD_HEIGHT,
+        color: colors.background,
+        rotation: 0
+      }, userId);
+      shapeIds.push(cardBgId);
+
+      // Card title
+      const cardTitleId = await addShape({
+        type: 'text',
+        x: featureX + 20,
+        y: currentY + 40,
+        width: layout.FEATURE_CARD_WIDTH - 40,
+        height: 40,
+        text: truncateText(feature.title, 30),
+        fontSize: 20,
+        color: colors.text,
+        align: 'center',
+        verticalAlign: 'middle',
+        rotation: 0
+      }, userId);
+      shapeIds.push(cardTitleId);
+
+      // Card description
+      const cardDescId = await addShape({
+        type: 'text',
+        x: featureX + 20,
+        y: currentY + 90,
+        width: layout.FEATURE_CARD_WIDTH - 40,
+        height: 80,
+        text: truncateText(feature.desc, 80),
+        fontSize: 14,
+        color: colors.textLight,
+        align: 'center',
+        verticalAlign: 'top',
+        rotation: 0
+      }, userId);
+      shapeIds.push(cardDescId);
+
+      featureX += layout.FEATURE_CARD_WIDTH + cardSpacing;
+    }
+
+    currentY += layout.FEATURE_CARD_HEIGHT + layout.SECTION_SPACING;
+
+    // ===== 5. FOOTER =====
+    const footerBgId = await addShape({
+      type: 'rectangle',
+      x: startX,
+      y: currentY,
+      width: layout.WIDTH,
+      height: layout.FOOTER_HEIGHT,
+      color: '#1a1a1a',
+      rotation: 0
+    }, userId);
+    shapeIds.push(footerBgId);
+
+    // Footer text
+    const footerTextId = await addShape({
+      type: 'text',
+      x: startX + layout.CONTENT_PADDING,
+      y: currentY,
+      width: layout.WIDTH - (layout.CONTENT_PADDING * 2),
+      height: layout.FOOTER_HEIGHT,
+      text: `© 2024 ${truncateText(siteName, 20)}. All rights reserved.`,
+      fontSize: 14,
+      color: '#ffffff',
+      align: 'center',
+      verticalAlign: 'middle',
+      rotation: 0
+    }, userId);
+    shapeIds.push(footerTextId);
+
+    // Success!
+    const message = constrained.adjusted 
+      ? `Created complete landing page "${siteName}" (position adjusted to fit canvas) - ${shapeIds.length} shapes`
+      : `Created complete landing page "${siteName}" - ${shapeIds.length} shapes`;
+
+    return {
+      success: true,
+      result: {
+        shapeIds,
+        count: shapeIds.length,
+        siteName: siteName,
+        sections: ['navigation', 'hero', 'email-signup', 'features', 'footer'],
+        width: layout.WIDTH,
+        height: totalHeight
+      },
+      userMessage: message
+    };
+
+  } catch (error) {
+    // CLEANUP: If any shape creation failed, attempt to delete created shapes
+    console.error('❌ Landing page creation failed:', error);
+    
+    // Best-effort cleanup
+    for (const id of shapeIds) {
+      try {
+        await deleteShapeFromDB(id);
+      } catch (cleanupError) {
+        console.warn(`Failed to clean up shape ${id}:`, cleanupError);
+      }
+    }
+
+    return {
+      success: false,
+      error: error.code || 'CREATE_FAILED',
+      userMessage: 'Failed to create landing page. Please try again.',
+      partialShapeIds: shapeIds
+    };
   }
 }
 
@@ -1852,5 +3219,34 @@ export const canvasAPI = {
   /**
    * Center group of shapes on canvas
    */
-  centerShapes
+  centerShapes,
+
+  /**
+   * ===== COMPLEX OPERATIONS (PR #23) =====
+   */
+
+  /**
+   * Create a login form with username, password, and submit button
+   */
+  createLoginForm,
+
+  /**
+   * Create a horizontal navigation bar with menu items
+   */
+  createNavigationBar,
+
+  /**
+   * Create a card layout with title, image placeholder, and description
+   */
+  createCardLayout,
+
+  /**
+   * Create a button group arranged horizontally or vertically
+   */
+  createButtonGroup,
+
+  /**
+   * Create a complete landing page with navigation, hero, email signup, features, and footer
+   */
+  createLandingPage
 };
