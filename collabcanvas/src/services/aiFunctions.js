@@ -671,6 +671,77 @@ Examples:
       },
       required: []
     }
+  },
+
+  // Navigation Bar
+  {
+    name: 'createNavigationBar',
+    description: `Creates a horizontal navigation bar with multiple menu items. Creates 1 background bar + n text items.
+
+DEFAULT BEHAVIOR: If no position is specified, creates at canvas top (2500, 100).
+
+Position extraction:
+- "create a navigation bar" → x: 2500, y: 100 (DEFAULT TOP CENTER)
+- "create a nav bar" → x: 2500, y: 100 (DEFAULT TOP CENTER)
+- "at the top" → x: 2500, y: 100
+- "at 500, 500" → x: 500, y: 500
+
+Menu item extraction:
+- "with Home, About, Services, Contact" → menuItems: ["Home", "About", "Services", "Contact"]
+- "with Products, Pricing, FAQ" → menuItems: ["Products", "Pricing", "FAQ"]
+- Default: ["Home", "About", "Services", "Contact"] if not specified
+
+Examples:
+- "Create a navigation bar" → x: 2500, y: 100, menuItems: ["Home", "About", "Services", "Contact"]
+- "Add a nav bar with Home, About, Contact" → x: 2500, y: 100, menuItems: ["Home", "About", "Contact"]
+- "Make a navigation bar at 1000, 500 with Products, Pricing" → x: 1000, y: 500, menuItems: ["Products", "Pricing"]`,
+    parameters: {
+      type: 'object',
+      properties: {
+        x: {
+          type: 'number',
+          description: 'X coordinate of top-left corner (0-5000). DEFAULT: 2500 (center X) if not specified.'
+        },
+        y: {
+          type: 'number',
+          description: 'Y coordinate of top-left corner (0-5000). DEFAULT: 100 (top) if not specified.'
+        },
+        menuItems: {
+          type: 'array',
+          items: {
+            type: 'string'
+          },
+          description: 'Array of menu item labels. DEFAULT: ["Home", "About", "Services", "Contact"]. Extract from user prompt: "Home, About, Contact" → ["Home", "About", "Contact"]. Each item should be a short string (max 20 chars).'
+        },
+        options: {
+          type: 'object',
+          properties: {
+            height: {
+              type: 'number',
+              description: 'Nav bar height in pixels. Default: 60. Use 80-100 for larger bars.'
+            },
+            spacing: {
+              type: 'number',
+              description: 'Space between menu items in pixels. Default: 40.'
+            },
+            background: {
+              type: 'string',
+              description: 'Background color as hex code. Default: "#ffffff". Use dark colors like "#2d2d3f" for dark themes.'
+            },
+            textColor: {
+              type: 'string',
+              description: 'Text color as hex code. Default: "#1a1a1a". Use "#ffffff" for dark backgrounds.'
+            },
+            theme: {
+              type: 'string',
+              enum: ['default', 'dark'],
+              description: 'Color theme. Use "dark" if user mentions dark theme/mode. Default: "default".'
+            }
+          }
+        }
+      },
+      required: []
+    }
   }
 ];
 
@@ -715,7 +786,8 @@ export const functionRegistry = {
   'centerShapes': canvasAPI.centerShapes,
 
   // Complex Operations (PR #23)
-  'createLoginForm': canvasAPI.createLoginForm
+  'createLoginForm': canvasAPI.createLoginForm,
+  'createNavigationBar': canvasAPI.createNavigationBar
 };
 
 /**
@@ -934,6 +1006,16 @@ export async function executeAIFunction(functionName, parameters) {
         result = await functionRegistry[functionName](
           parameters.x !== undefined ? parameters.x : 2500, // Default to center
           parameters.y !== undefined ? parameters.y : 2500, // Default to center
+          parameters.options || {},
+          parameters.userId
+        );
+        break;
+
+      case 'createNavigationBar':
+        result = await functionRegistry[functionName](
+          parameters.x !== undefined ? parameters.x : 2500, // Default to center X
+          parameters.y !== undefined ? parameters.y : 100, // Default to top
+          parameters.menuItems || ['Home', 'About', 'Services', 'Contact'], // Default menu items
           parameters.options || {},
           parameters.userId
         );

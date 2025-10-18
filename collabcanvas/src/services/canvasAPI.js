@@ -973,6 +973,155 @@ async function createLoginForm(x, y, options = {}, userId = null) {
 }
 
 /**
+ * ===== COMPLEX OPERATION: NAVIGATION BAR =====
+ * Creates a horizontal navigation bar with menu items
+ * PR #23
+ */
+async function createNavigationBar(x, y, menuItems = [], options = {}, userId = null) {
+  console.log('📐 Creating navigation bar...', { x, y, menuItems, options });
+
+  // Get or validate userId
+  if (!userId) {
+    try {
+      userId = getCurrentUserId();
+    } catch (error) {
+      return { 
+        success: false, 
+        error: 'AUTH_REQUIRED', 
+        userMessage: error.message 
+      };
+    }
+  }
+
+  // Validate position
+  const posValidation = validatePosition(x, y);
+  if (!posValidation.valid) {
+    return { 
+      success: false, 
+      error: 'INVALID_POSITION', 
+      userMessage: posValidation.error 
+    };
+  }
+
+  // Validate menu items
+  if (!Array.isArray(menuItems) || menuItems.length === 0) {
+    return {
+      success: false,
+      error: 'INVALID_MENU_ITEMS',
+      userMessage: 'Menu items must be a non-empty array of strings'
+    };
+  }
+
+  // Validate all menu items are strings
+  const invalidItems = menuItems.filter(item => typeof item !== 'string' || item.trim().length === 0);
+  if (invalidItems.length > 0) {
+    return {
+      success: false,
+      error: 'INVALID_MENU_ITEMS',
+      userMessage: 'All menu items must be non-empty strings'
+    };
+  }
+
+  // Extract options with defaults
+  const {
+    height = LAYOUT_CONSTANTS.navigationBar.HEIGHT,
+    spacing = LAYOUT_CONSTANTS.navigationBar.ITEM_SPACING,
+    background = COLOR_THEMES.default.background,
+    textColor = COLOR_THEMES.default.text,
+    theme = 'default'
+  } = options;
+
+  // Get theme colors
+  const colors = COLOR_THEMES[theme] || COLOR_THEMES.default;
+  const bgColor = background || colors.background;
+  const itemColor = textColor || colors.text;
+
+  // Calculate nav bar dimensions
+  const layout = LAYOUT_CONSTANTS.navigationBar;
+  const truncatedItems = menuItems.map(item => truncateText(item, 20));
+  const itemWidth = layout.MIN_ITEM_WIDTH;
+  const totalWidth = (layout.PADDING * 2) + (truncatedItems.length * itemWidth) + ((truncatedItems.length - 1) * spacing);
+
+  // Constrain to canvas bounds
+  const constrained = constrainToCanvas(x, y, totalWidth, height);
+  const startX = constrained.x;
+  const startY = constrained.y;
+
+  const shapeIds = [];
+
+  try {
+    // 1. Create background bar
+    const barId = await addShape({
+      type: 'rectangle',
+      x: startX,
+      y: startY,
+      width: totalWidth,
+      height: height,
+      color: bgColor,
+      rotation: 0
+    }, userId);
+    shapeIds.push(barId);
+
+    // 2. Create menu items (text elements)
+    let currentX = startX + layout.PADDING;
+    const textY = startY + (height / 2);
+
+    for (const item of truncatedItems) {
+      const itemTextId = await addShape({
+        type: 'text',
+        x: currentX + (itemWidth / 2),
+        y: textY,
+        text: item,
+        fontSize: 16,
+        color: itemColor,
+        rotation: 0
+      }, userId);
+      shapeIds.push(itemTextId);
+
+      // Move to next item position
+      currentX += itemWidth + spacing;
+    }
+
+    // Success!
+    const message = constrained.adjusted 
+      ? `Created navigation bar with ${truncatedItems.length} items (position adjusted to fit canvas) - ${shapeIds.length} shapes`
+      : `Created navigation bar with ${truncatedItems.length} items - ${shapeIds.length} shapes`;
+
+    return {
+      success: true,
+      result: {
+        shapeIds,
+        count: shapeIds.length,
+        menuItems: truncatedItems,
+        width: totalWidth,
+        height: height
+      },
+      userMessage: message
+    };
+
+  } catch (error) {
+    // CLEANUP: If any shape creation failed, attempt to delete created shapes
+    console.error('❌ Navigation bar creation failed:', error);
+    
+    // Best-effort cleanup
+    for (const id of shapeIds) {
+      try {
+        await deleteShapeFromDB(id);
+      } catch (cleanupError) {
+        console.warn(`Failed to clean up shape ${id}:`, cleanupError);
+      }
+    }
+
+    return {
+      success: false,
+      error: error.code || 'CREATE_FAILED',
+      userMessage: 'Failed to create navigation bar. Please try again.',
+      partialShapeIds: shapeIds
+    };
+  }
+}
+
+/**
  * Canvas API - Unified interface for all canvas operations
  * Used by both manual interactions and AI agent
  */
@@ -2264,5 +2413,10 @@ export const canvasAPI = {
   /**
    * Create a login form with username, password, and submit button
    */
-  createLoginForm
+  createLoginForm,
+
+  /**
+   * Create a horizontal navigation bar with menu items
+   */
+  createNavigationBar
 };
