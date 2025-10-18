@@ -625,25 +625,30 @@ export const functionSchemas = [
     name: 'createLoginForm',
     description: `Creates a complete login form UI with username field, password field, and submit button. Creates 7 shapes (or 9 with Remember Me option) professionally laid out and aligned.
 
-IMPORTANT: Extract position from natural language carefully:
+DEFAULT BEHAVIOR: If no position is specified, creates at canvas center (2500, 2500).
+
+Position extraction:
+- "create a login form" → x: 2500, y: 2500 (DEFAULT CENTER)
+- "create a signup form" → x: 2500, y: 2500 (DEFAULT CENTER)
 - "at the center" → x: 2500, y: 2500
 - "at the top" → x: 2500, y: 100  
 - "at 1000, 1000" → x: 1000, y: 1000
 
 Examples:
-- "Create a login form at the center" → x: 2500, y: 2500
+- "Create a login form" → Use defaults: x: 2500, y: 2500
+- "Create a signup form" → Use defaults: x: 2500, y: 2500, options: {buttonText: "Sign Up"}
 - "Add a login form at 500, 500" → x: 500, y: 500
-- "Make a login form with remember me checkbox at 1000, 1000" → x: 1000, y: 1000, options: {includeRememberMe: true}`,
+- "Make a login form with remember me" → x: 2500, y: 2500, options: {includeRememberMe: true}`,
     parameters: {
       type: 'object',
       properties: {
         x: {
           type: 'number',
-          description: 'X coordinate of top-left corner (0-5000). Canvas center is 2500. Will be adjusted if too close to edge.'
+          description: 'X coordinate of top-left corner (0-5000). DEFAULT: 2500 (center) if not specified. Canvas center is 2500.'
         },
         y: {
           type: 'number',
-          description: 'Y coordinate of top-left corner (0-5000). Canvas center is 2500. Will be adjusted if too close to edge.'
+          description: 'Y coordinate of top-left corner (0-5000). DEFAULT: 2500 (center) if not specified. Canvas center is 2500.'
         },
         options: {
           type: 'object',
@@ -654,7 +659,7 @@ Examples:
             },
             buttonText: {
               type: 'string',
-              description: 'Text for the submit button. Default: "Login". Can be "Sign In", "Log In", "Submit", etc. Max 15 characters.'
+              description: 'Text for the submit button. Default: "Login". Can be "Sign In", "Sign Up", "Submit", etc. Match user\'s terminology. Max 15 characters.'
             },
             theme: {
               type: 'string',
@@ -664,7 +669,7 @@ Examples:
           }
         }
       },
-      required: ['x', 'y']
+      required: []
     }
   }
 ];
@@ -927,8 +932,8 @@ export async function executeAIFunction(functionName, parameters) {
       // Complex Operations (PR #23)
       case 'createLoginForm':
         result = await functionRegistry[functionName](
-          parameters.x,
-          parameters.y,
+          parameters.x !== undefined ? parameters.x : 2500, // Default to center
+          parameters.y !== undefined ? parameters.y : 2500, // Default to center
           parameters.options || {},
           parameters.userId
         );
