@@ -159,6 +159,16 @@ const LAYOUT_CONSTANTS = {
     BUTTON_WIDTH: 120,
     BUTTON_HEIGHT: 40,
     SPACING: 10
+  },
+  landingPage: {
+    WIDTH: 1200,
+    NAV_HEIGHT: 60,
+    HERO_HEIGHT: 300,
+    SECTION_SPACING: 40,
+    CONTENT_PADDING: 30,
+    FEATURE_CARD_WIDTH: 350,
+    FEATURE_CARD_HEIGHT: 200,
+    FOOTER_HEIGHT: 80
   }
 };
 
@@ -1517,6 +1527,416 @@ async function createButtonGroup(x, y, buttons = [], options = {}, userId = null
 }
 
 /**
+ * ===== COMPLEX OPERATION: LANDING PAGE =====
+ * Creates a complete landing page mockup with navigation, hero, features, and footer
+ * PR #23 - BONUS OPERATION
+ */
+async function createLandingPage(x, y, options = {}, userId = null) {
+  console.log('🌐 Creating landing page...', { x, y, options });
+
+  // Get or validate userId
+  if (!userId) {
+    try {
+      userId = getCurrentUserId();
+    } catch (error) {
+      return { 
+        success: false, 
+        error: 'AUTH_REQUIRED', 
+        userMessage: error.message 
+      };
+    }
+  }
+
+  // Validate position
+  const posValidation = validatePosition(x, y);
+  if (!posValidation.valid) {
+    return { 
+      success: false, 
+      error: 'INVALID_POSITION', 
+      userMessage: posValidation.error 
+    };
+  }
+
+  // Extract options with defaults
+  const {
+    siteName = 'Your Brand',
+    headline = 'Welcome to Our Platform',
+    subheadline = 'The best solution for your needs',
+    ctaText = 'Get Started',
+    theme = 'default'
+  } = options;
+
+  // Get theme colors and layout
+  const colors = COLOR_THEMES[theme] || COLOR_THEMES.default;
+  const layout = LAYOUT_CONSTANTS.landingPage;
+
+  // Calculate total height
+  const totalHeight = 
+    layout.NAV_HEIGHT + 
+    layout.SECTION_SPACING + 
+    layout.HERO_HEIGHT + 
+    layout.SECTION_SPACING + 
+    200 + // Email signup section
+    layout.SECTION_SPACING + 
+    layout.FEATURE_CARD_HEIGHT + 
+    layout.SECTION_SPACING + 
+    layout.FOOTER_HEIGHT;
+
+  // Constrain to canvas bounds
+  const constrained = constrainToCanvas(x, y, layout.WIDTH, totalHeight);
+  const startX = constrained.x;
+  const startY = constrained.y;
+
+  const shapeIds = [];
+  let currentY = startY;
+
+  try {
+    // ===== 1. NAVIGATION BAR =====
+    // Background
+    const navBgId = await addShape({
+      type: 'rectangle',
+      x: startX,
+      y: currentY,
+      width: layout.WIDTH,
+      height: layout.NAV_HEIGHT,
+      color: colors.primary,
+      rotation: 0
+    }, userId);
+    shapeIds.push(navBgId);
+
+    // Logo/Brand name
+    const brandId = await addShape({
+      type: 'text',
+      x: startX + layout.CONTENT_PADDING,
+      y: currentY,
+      width: 200,
+      height: layout.NAV_HEIGHT,
+      text: truncateText(siteName, 20),
+      fontSize: 20,
+      color: colors.buttonText,
+      align: 'left',
+      verticalAlign: 'middle',
+      rotation: 0
+    }, userId);
+    shapeIds.push(brandId);
+
+    // Nav menu items
+    const menuItems = ['Home', 'Features', 'Pricing', 'Contact'];
+    let menuX = startX + layout.WIDTH - layout.CONTENT_PADDING - (menuItems.length * 100);
+    
+    for (const item of menuItems) {
+      const menuItemId = await addShape({
+        type: 'text',
+        x: menuX,
+        y: currentY,
+        width: 80,
+        height: layout.NAV_HEIGHT,
+        text: item,
+        fontSize: 14,
+        color: colors.buttonText,
+        align: 'center',
+        verticalAlign: 'middle',
+        rotation: 0
+      }, userId);
+      shapeIds.push(menuItemId);
+      menuX += 100;
+    }
+
+    currentY += layout.NAV_HEIGHT + layout.SECTION_SPACING;
+
+    // ===== 2. HERO SECTION =====
+    // Hero background
+    const heroBgId = await addShape({
+      type: 'rectangle',
+      x: startX,
+      y: currentY,
+      width: layout.WIDTH,
+      height: layout.HERO_HEIGHT,
+      color: colors.background,
+      rotation: 0
+    }, userId);
+    shapeIds.push(heroBgId);
+
+    // Headline
+    const headlineId = await addShape({
+      type: 'text',
+      x: startX + layout.CONTENT_PADDING,
+      y: currentY + 60,
+      width: layout.WIDTH - (layout.CONTENT_PADDING * 2),
+      height: 50,
+      text: truncateText(headline, 60),
+      fontSize: 36,
+      color: colors.text,
+      align: 'center',
+      verticalAlign: 'middle',
+      rotation: 0
+    }, userId);
+    shapeIds.push(headlineId);
+
+    // Subheadline
+    const subheadlineId = await addShape({
+      type: 'text',
+      x: startX + layout.CONTENT_PADDING,
+      y: currentY + 120,
+      width: layout.WIDTH - (layout.CONTENT_PADDING * 2),
+      height: 40,
+      text: truncateText(subheadline, 80),
+      fontSize: 18,
+      color: colors.textLight,
+      align: 'center',
+      verticalAlign: 'middle',
+      rotation: 0
+    }, userId);
+    shapeIds.push(subheadlineId);
+
+    // CTA Button
+    const ctaX = startX + (layout.WIDTH / 2) - 75;
+    const ctaBgId = await addShape({
+      type: 'rectangle',
+      x: ctaX,
+      y: currentY + 200,
+      width: 150,
+      height: 50,
+      color: colors.primary,
+      rotation: 0
+    }, userId);
+    shapeIds.push(ctaBgId);
+
+    const ctaTextId = await addShape({
+      type: 'text',
+      x: ctaX,
+      y: currentY + 200,
+      width: 150,
+      height: 50,
+      text: truncateText(ctaText, 15),
+      fontSize: 16,
+      color: colors.buttonText,
+      align: 'center',
+      verticalAlign: 'middle',
+      rotation: 0
+    }, userId);
+    shapeIds.push(ctaTextId);
+
+    currentY += layout.HERO_HEIGHT + layout.SECTION_SPACING;
+
+    // ===== 3. EMAIL SIGNUP SECTION =====
+    const emailSectionHeight = 200;
+    
+    // Section background
+    const emailBgId = await addShape({
+      type: 'rectangle',
+      x: startX,
+      y: currentY,
+      width: layout.WIDTH,
+      height: emailSectionHeight,
+      color: '#f9fafb',
+      rotation: 0
+    }, userId);
+    shapeIds.push(emailBgId);
+
+    // Section title
+    const emailTitleId = await addShape({
+      type: 'text',
+      x: startX + layout.CONTENT_PADDING,
+      y: currentY + 30,
+      width: layout.WIDTH - (layout.CONTENT_PADDING * 2),
+      height: 40,
+      text: 'Join Our Newsletter',
+      fontSize: 24,
+      color: colors.text,
+      align: 'center',
+      verticalAlign: 'middle',
+      rotation: 0
+    }, userId);
+    shapeIds.push(emailTitleId);
+
+    // Email input field
+    const emailInputX = startX + (layout.WIDTH / 2) - 200;
+    const emailInputId = await addShape({
+      type: 'rectangle',
+      x: emailInputX,
+      y: currentY + 90,
+      width: 300,
+      height: 45,
+      color: '#ffffff',
+      rotation: 0
+    }, userId);
+    shapeIds.push(emailInputId);
+
+    const emailPlaceholderId = await addShape({
+      type: 'text',
+      x: emailInputX,
+      y: currentY + 90,
+      width: 300,
+      height: 45,
+      text: 'Enter your email',
+      fontSize: 14,
+      color: colors.textLight,
+      align: 'center',
+      verticalAlign: 'middle',
+      rotation: 0
+    }, userId);
+    shapeIds.push(emailPlaceholderId);
+
+    // Subscribe button
+    const subscribeBtnId = await addShape({
+      type: 'rectangle',
+      x: emailInputX + 310,
+      y: currentY + 90,
+      width: 100,
+      height: 45,
+      color: colors.primary,
+      rotation: 0
+    }, userId);
+    shapeIds.push(subscribeBtnId);
+
+    const subscribeTxtId = await addShape({
+      type: 'text',
+      x: emailInputX + 310,
+      y: currentY + 90,
+      width: 100,
+      height: 45,
+      text: 'Subscribe',
+      fontSize: 14,
+      color: colors.buttonText,
+      align: 'center',
+      verticalAlign: 'middle',
+      rotation: 0
+    }, userId);
+    shapeIds.push(subscribeTxtId);
+
+    currentY += emailSectionHeight + layout.SECTION_SPACING;
+
+    // ===== 4. FEATURE CARDS (3 cards in a row) =====
+    const features = [
+      { title: 'Fast & Reliable', desc: 'Lightning-fast performance you can count on' },
+      { title: 'Secure', desc: 'Enterprise-grade security for your data' },
+      { title: 'Easy to Use', desc: 'Intuitive interface anyone can master' }
+    ];
+
+    const cardSpacing = 25;
+    const totalCardsWidth = (layout.FEATURE_CARD_WIDTH * 3) + (cardSpacing * 2);
+    let featureX = startX + (layout.WIDTH - totalCardsWidth) / 2;
+
+    for (const feature of features) {
+      // Card background
+      const cardBgId = await addShape({
+        type: 'rectangle',
+        x: featureX,
+        y: currentY,
+        width: layout.FEATURE_CARD_WIDTH,
+        height: layout.FEATURE_CARD_HEIGHT,
+        color: colors.background,
+        rotation: 0
+      }, userId);
+      shapeIds.push(cardBgId);
+
+      // Card title
+      const cardTitleId = await addShape({
+        type: 'text',
+        x: featureX + 20,
+        y: currentY + 40,
+        width: layout.FEATURE_CARD_WIDTH - 40,
+        height: 40,
+        text: truncateText(feature.title, 30),
+        fontSize: 20,
+        color: colors.text,
+        align: 'center',
+        verticalAlign: 'middle',
+        rotation: 0
+      }, userId);
+      shapeIds.push(cardTitleId);
+
+      // Card description
+      const cardDescId = await addShape({
+        type: 'text',
+        x: featureX + 20,
+        y: currentY + 90,
+        width: layout.FEATURE_CARD_WIDTH - 40,
+        height: 80,
+        text: truncateText(feature.desc, 80),
+        fontSize: 14,
+        color: colors.textLight,
+        align: 'center',
+        verticalAlign: 'top',
+        rotation: 0
+      }, userId);
+      shapeIds.push(cardDescId);
+
+      featureX += layout.FEATURE_CARD_WIDTH + cardSpacing;
+    }
+
+    currentY += layout.FEATURE_CARD_HEIGHT + layout.SECTION_SPACING;
+
+    // ===== 5. FOOTER =====
+    const footerBgId = await addShape({
+      type: 'rectangle',
+      x: startX,
+      y: currentY,
+      width: layout.WIDTH,
+      height: layout.FOOTER_HEIGHT,
+      color: '#1a1a1a',
+      rotation: 0
+    }, userId);
+    shapeIds.push(footerBgId);
+
+    // Footer text
+    const footerTextId = await addShape({
+      type: 'text',
+      x: startX + layout.CONTENT_PADDING,
+      y: currentY,
+      width: layout.WIDTH - (layout.CONTENT_PADDING * 2),
+      height: layout.FOOTER_HEIGHT,
+      text: `© 2024 ${truncateText(siteName, 20)}. All rights reserved.`,
+      fontSize: 14,
+      color: '#ffffff',
+      align: 'center',
+      verticalAlign: 'middle',
+      rotation: 0
+    }, userId);
+    shapeIds.push(footerTextId);
+
+    // Success!
+    const message = constrained.adjusted 
+      ? `Created complete landing page "${siteName}" (position adjusted to fit canvas) - ${shapeIds.length} shapes`
+      : `Created complete landing page "${siteName}" - ${shapeIds.length} shapes`;
+
+    return {
+      success: true,
+      result: {
+        shapeIds,
+        count: shapeIds.length,
+        siteName: siteName,
+        sections: ['navigation', 'hero', 'email-signup', 'features', 'footer'],
+        width: layout.WIDTH,
+        height: totalHeight
+      },
+      userMessage: message
+    };
+
+  } catch (error) {
+    // CLEANUP: If any shape creation failed, attempt to delete created shapes
+    console.error('❌ Landing page creation failed:', error);
+    
+    // Best-effort cleanup
+    for (const id of shapeIds) {
+      try {
+        await deleteShapeFromDB(id);
+      } catch (cleanupError) {
+        console.warn(`Failed to clean up shape ${id}:`, cleanupError);
+      }
+    }
+
+    return {
+      success: false,
+      error: error.code || 'CREATE_FAILED',
+      userMessage: 'Failed to create landing page. Please try again.',
+      partialShapeIds: shapeIds
+    };
+  }
+}
+
+/**
  * Canvas API - Unified interface for all canvas operations
  * Used by both manual interactions and AI agent
  */
@@ -2823,5 +3243,10 @@ export const canvasAPI = {
   /**
    * Create a button group arranged horizontally or vertically
    */
-  createButtonGroup
+  createButtonGroup,
+
+  /**
+   * Create a complete landing page with navigation, hero, email signup, features, and footer
+   */
+  createLandingPage
 };

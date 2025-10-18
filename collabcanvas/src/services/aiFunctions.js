@@ -907,6 +907,79 @@ Examples:
       },
       required: []
     }
+  },
+
+  // Landing Page (BONUS - Complete Website Mockup)
+  {
+    name: 'createLandingPage',
+    description: `Creates a complete, professional landing page mockup with navigation bar, hero section, email signup, feature cards, and footer. Creates ~27+ shapes in a comprehensive layout.
+
+SECTIONS INCLUDED:
+1. Navigation Bar - Brand logo + menu items (Home, Features, Pricing, Contact)
+2. Hero Section - Large headline, subheadline, CTA button
+3. Email Signup - "Join Our Newsletter" with input field and subscribe button
+4. Feature Cards - 3 cards showcasing key features
+5. Footer - Copyright text
+
+DEFAULT BEHAVIOR: If no position is specified, creates at canvas center-left (1000, 500).
+
+Position extraction:
+- "create a landing page" → x: 1000, y: 500 (DEFAULT)
+- "create a website" → x: 1000, y: 500 (DEFAULT)
+- "at 500, 500" → x: 500, y: 500
+
+Content extraction:
+- "for TechCo" → siteName: "TechCo"
+- "called MyApp" → siteName: "MyApp"
+- "with headline 'Transform Your Business'" → headline: "Transform Your Business"
+- Default siteName: "Your Brand"
+- Default headline: "Welcome to Our Platform"
+
+Examples:
+- "Create a landing page" → Full landing page with defaults
+- "Build a website for TechStartup" → siteName: "TechStartup"
+- "Make a landing page called CloudApp with headline 'Scale Your Infrastructure'" → custom branding
+- "Create a complete website mockup at 1000, 1000" → custom position`,
+    parameters: {
+      type: 'object',
+      properties: {
+        x: {
+          type: 'number',
+          description: 'X coordinate of top-left corner (0-5000). DEFAULT: 1000 if not specified. Landing pages are large (1200px wide).'
+        },
+        y: {
+          type: 'number',
+          description: 'Y coordinate of top-left corner (0-5000). DEFAULT: 500 if not specified.'
+        },
+        options: {
+          type: 'object',
+          properties: {
+            siteName: {
+              type: 'string',
+              description: 'Brand/site name shown in navigation. DEFAULT: "Your Brand". Extract from: "for X", "called X", etc. Max 20 chars.'
+            },
+            headline: {
+              type: 'string',
+              description: 'Main hero headline. DEFAULT: "Welcome to Our Platform". Max 60 chars.'
+            },
+            subheadline: {
+              type: 'string',
+              description: 'Hero subheadline. DEFAULT: "The best solution for your needs". Max 80 chars.'
+            },
+            ctaText: {
+              type: 'string',
+              description: 'Call-to-action button text. DEFAULT: "Get Started". Max 15 chars.'
+            },
+            theme: {
+              type: 'string',
+              enum: ['default', 'dark'],
+              description: 'Color theme. Use "dark" if user mentions dark theme/mode. Default: "default".'
+            }
+          }
+        }
+      },
+      required: []
+    }
   }
 ];
 
@@ -954,7 +1027,8 @@ export const functionRegistry = {
   'createLoginForm': canvasAPI.createLoginForm,
   'createNavigationBar': canvasAPI.createNavigationBar,
   'createCardLayout': canvasAPI.createCardLayout,
-  'createButtonGroup': canvasAPI.createButtonGroup
+  'createButtonGroup': canvasAPI.createButtonGroup,
+  'createLandingPage': canvasAPI.createLandingPage
 };
 
 /**
@@ -1204,6 +1278,15 @@ export async function executeAIFunction(functionName, parameters) {
           parameters.x !== undefined ? parameters.x : 2500, // Default to center
           parameters.y !== undefined ? parameters.y : 2500, // Default to center
           parameters.buttons || [{label: 'Button 1'}, {label: 'Button 2'}, {label: 'Button 3'}], // Default buttons
+          parameters.options || {},
+          parameters.userId
+        );
+        break;
+
+      case 'createLandingPage':
+        result = await functionRegistry[functionName](
+          parameters.x !== undefined ? parameters.x : 1000, // Default to center-left (landing pages are wide)
+          parameters.y !== undefined ? parameters.y : 500, // Default to middle
           parameters.options || {},
           parameters.userId
         );
