@@ -261,6 +261,8 @@ export async function deleteShape(shapeId) {
  */
 export function subscribeToShapes(canvasId, callback) {
   try {
+    console.log('📡 Subscribing to shapes for canvasId:', canvasId);
+    
     // Query shapes filtered by canvasId
     const shapesQuery = query(
       collection(db, SHAPES_COLLECTION),
@@ -273,11 +275,17 @@ export function subscribeToShapes(canvasId, callback) {
         const shapes = [];
         
         snapshot.forEach((doc) => {
+          const shapeData = doc.data();
           shapes.push({
             id: doc.id,
-            ...doc.data()
+            ...shapeData
           });
         });
+        
+        console.log('📡 Shapes subscription update:', shapes.length, 'shapes for canvas', canvasId);
+        if (shapes.length > 0) {
+          console.log('📡 First shape canvasId:', shapes[0].canvasId, 'matches query?', shapes[0].canvasId === canvasId);
+        }
         
         // Sort by createdAt client-side if available
         shapes.sort((a, b) => {
@@ -288,7 +296,7 @@ export function subscribeToShapes(canvasId, callback) {
         callback(shapes);
       }, 
       (error) => {
-        console.error('Firestore subscription error:', error.message);
+        console.error('❌ Firestore subscription error:', error.message);
         callback([]);
       }
     );
