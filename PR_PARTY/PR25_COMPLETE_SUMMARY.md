@@ -164,33 +164,60 @@ collabcanvas/src/components/Properties/
 
 ---
 
-## 🐛 Bugs Fixed
+## 🐛 Bugs Fixed (8 Total - 1 Critical)
 
-### **Bug 1: Export/Import Issues**
-**Problem**: `alignLeft is not defined` - alignment functions not exported properly  
-**Fix**: Changed import from `import * as canvasAPI` to `import { canvasAPI }`  
-**Resolution**: Functions now accessible via canvasAPI object
+**See `PR25_BUGS_FIXED.md` for full details**
 
-### **Bug 2: Method References**
-**Problem**: `distributeHorizontally`, `distributeVertically`, `centerOnCanvas` calling standalone functions  
-**Fix**: Added `this.` to reference other methods in same object  
-**Resolution**: All alignment wrapper functions working correctly
+### **Bug 1: Properties Panel Scrolling** (Medium)
+**Problem**: Couldn't scroll to see bottom alignment buttons  
+**Fix**: Added `padding-bottom: 80px`  
+**Time**: 5 minutes
 
-### **Bug 3: React Hooks Order Violation**
-**Problem**: "Rendered more hooks than during the previous render"  
-**Root Cause**: `selectedShapes` useMemo hook called after early return (isLoading check)  
-**Fix**: Moved hook to top of component before any conditional returns  
-**Resolution**: Hooks now called in consistent order every render
+### **Bug 2: Text Alignment Not Visible** (Medium)
+**Problem**: Text alignment buttons had no visible effect - text boxes too narrow  
+**Fix**: Set minimum text dimensions (150px x 40px) with default alignment  
+**Time**: 15 minutes
 
-### **Bug 4: Full-Screen Layout**
-**Problem**: Empty space on left and right due to max-width: 1280px constraint  
-**Fix**: Changed to width: 100%, height: 100vh with no margins/padding  
-**Resolution**: App now utilizes entire viewport
+### **Bug 3: Layer Controls Not Working** (High)
+**Problem**: Layer buttons (Forward/Backward/etc) didn't work  
+**Root Cause**: Functions expect ARRAY, passing STRING  
+**Fix**: Wrapped shapeId in array: `bringForward([shapeId])`  
+**Time**: 10 minutes
 
-### **Bug 5: AI Chat Overlap**
-**Problem**: AI Chat positioned at right: 20px, overlapping Properties Panel  
-**Fix**: Repositioned to right: 320px (280px panel + 40px gap)  
-**Resolution**: Clean spacing, no overlap between panels
+### **Bug 4: Alignment Tools Don't Move Single Shapes** (High)
+**Problem**: Alignment buttons didn't move shapes when only 1 selected  
+**Root Cause**: Functions designed for multi-shape relative alignment  
+**Fix**: Dual-mode alignment - single shapes align to canvas edges, multiple shapes align to each other  
+**Time**: 1 hour
+
+### **Bug 5: AI Chat Overlapping** (Medium)
+**Problem**: AI Chat covering Properties Panel  
+**Fix**: Repositioned from `right: 20px` to `right: 320px`  
+**Time**: 3 minutes
+
+### **Bug 6: Circle Bounds Calculation** ⚠️ **CRITICAL**
+**Problem**: Circles aligned incorrectly, visual position didn't match panel values, went out of bounds  
+**Root Cause**: `getShapeBounds` assumed circles stored center as x,y (WRONG - they store top-left like rectangles)  
+**Fix**: Updated `getShapeBounds` to treat circles like rectangles  
+**Impact**: This bug would have affected ALL future features using shape bounds  
+**Time**: 2 hours (investigation + fix + testing)
+
+### **Bug 7: Alignment Code Refactor** (Medium)
+**Problem**: Confusing offset calculations in alignment functions  
+**Fix**: Refactored with clear pattern: calculate offset, apply to target position  
+**Time**: 45 minutes
+
+### **Bug 8: Circle Radius Input Not Working** (Medium)
+**Problem**: Changing radius in Properties Panel had no effect  
+**Root Cause**: Reading/writing `radius` property, but circles store `width`/`height`  
+**Fix**: Read as `width/2`, write by updating both `width` and `height` to `radius * 2`  
+**Time**: 10 minutes
+
+### **Enhancement: Rotation Label Clarity**
+Changed second "R" label to "Rotation" (no longer confusing with Radius)
+
+**Total Debug Time**: ~4 hours  
+**Bugs Prevented by Pre-Planning**: 12-13 out of 15 identified
 
 ---
 
@@ -229,12 +256,13 @@ collabcanvas/src/components/Properties/
 ## 📊 Final Statistics
 
 ### **Implementation Metrics**
-- **Time Spent**: ~4 hours (planning + implementation)
+- **Time Spent**: ~8 hours (planning + implementation + debugging)
 - **Components Created**: 15
-- **Lines of Code**: ~1,500
+- **Lines of Code**: ~1,700 (including fixes)
 - **Functions Added**: 9 (alignment tools)
-- **Commits**: 6 major + 5 fixes
-- **Bugs Fixed**: 5
+- **Commits**: 15 total (6 major features + 9 bug fixes)
+- **Bugs Fixed**: 8 (1 Critical, 2 High, 5 Medium)
+- **Debug Time**: ~4 hours
 
 ### **Feature Completeness**
 - **Phase 1**: ✅ Core Infrastructure (100%)
