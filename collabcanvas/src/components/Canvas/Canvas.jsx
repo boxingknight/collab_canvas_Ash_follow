@@ -585,6 +585,32 @@ function Canvas() {
     });
   }
 
+  // Handle context menu on empty canvas (not on shapes)
+  function handleStageContextMenu(event) {
+    // Only handle if right-clicking on the stage itself (not on shapes)
+    const clickedOnEmpty = event.target === event.target.getStage();
+    
+    if (!clickedOnEmpty) {
+      return; // Let shape handler handle it
+    }
+    
+    event.evt.preventDefault(); // Prevent default browser context menu
+    
+    // Get the pointer position relative to the viewport
+    const stage = event.target.getStage();
+    const pointerPosition = stage.getPointerPosition();
+    
+    // Convert to screen coordinates
+    const container = stage.container();
+    const rect = container.getBoundingClientRect();
+    
+    setContextMenu({
+      visible: true,
+      x: rect.left + pointerPosition.x,
+      y: rect.top + pointerPosition.y
+    });
+  }
+
   // Close context menu
   function closeContextMenu() {
     setContextMenu({ visible: false, x: 0, y: 0 });
@@ -1394,6 +1420,7 @@ function Canvas() {
         onMouseMove={editingTextId ? undefined : handleMouseMove}
         onMouseUp={editingTextId ? undefined : handleMouseUp}
         onClick={editingTextId ? undefined : handleStageClick}
+        onContextMenu={editingTextId ? undefined : handleStageContextMenu}
         style={{ 
           cursor: isMarqueeActive ? 'crosshair'
                 : isDrawing ? 'crosshair' 
