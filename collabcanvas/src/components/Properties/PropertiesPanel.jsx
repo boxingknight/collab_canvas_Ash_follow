@@ -2,6 +2,7 @@
 import { useMemo } from 'react';
 import NoSelection from './sections/NoSelection';
 import PositionSize from './sections/PositionSize';
+import Appearance from './sections/Appearance';
 import './PropertiesPanel.css';
 
 function PropertiesPanel({ selectedShapes = [], onUpdateShape }) {
@@ -44,6 +45,12 @@ function PropertiesPanel({ selectedShapes = [], onUpdateShape }) {
 
             {/* Position & Size */}
             <PositionSize
+              shape={shape}
+              onUpdate={onUpdateShape}
+            />
+
+            {/* Appearance (Color) */}
+            <Appearance
               shape={shape}
               onUpdate={onUpdateShape}
             />
