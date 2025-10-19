@@ -2001,16 +2001,16 @@ function Canvas() {
         onLayerChange={(operation, shapeId) => {
           switch (operation) {
             case 'forward':
-              bringForward(shapeId);
+              bringForward([shapeId]); // Wrap in array - function expects array
               break;
             case 'backward':
-              sendBackward(shapeId);
+              sendBackward([shapeId]); // Wrap in array - function expects array
               break;
             case 'front':
-              bringToFront(shapeId);
+              bringToFront([shapeId]); // Wrap in array - function expects array
               break;
             case 'back':
-              sendToBack(shapeId);
+              sendToBack([shapeId]); // Wrap in array - function expects array
               break;
             default:
               console.warn('Unknown layer operation:', operation);
