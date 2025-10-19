@@ -15,7 +15,8 @@ export const OperationType = {
   MOVE: 'move',
   RESIZE: 'resize',
   MODIFY: 'modify',
-  BATCH: 'batch'  // Multiple operations together
+  BATCH: 'batch',  // Multiple operations together
+  BATCH_MODIFY: 'batch_modify'  // Batch property modification for multi-select
 };
 
 /**
@@ -134,6 +135,24 @@ export function createBatchOperation(operations, operationName, userId) {
 }
 
 /**
+ * Create a BATCH_MODIFY operation (for multi-select property changes)
+ * @param {Array<string>} shapeIds - IDs of shapes being modified
+ * @param {string} property - Property being changed (e.g., 'color', 'x', 'fontSize')
+ * @param {Object} oldValues - Map of shapeId -> old value
+ * @param {any} newValue - New value applied to all shapes
+ * @param {string} userId - User who performed the modification
+ * @returns {Object} BATCH_MODIFY operation
+ */
+export function createBatchModifyOperation(shapeIds, property, oldValues, newValue, userId) {
+  return createOperation(
+    OperationType.BATCH_MODIFY,
+    { shapeIds, property, values: oldValues },  // Old state
+    { shapeIds, property, value: newValue },     // New state
+    { userId, property, shapeCount: shapeIds.length }
+  );
+}
+
+/**
  * Restore an operation (for undo/redo)
  * @param {Object} operation - The operation to restore
  * @param {string} direction - 'undo' or 'redo'
@@ -243,6 +262,38 @@ export async function restoreOperation(operation, direction, canvasAPI) {
           const operations = operation.after.operations;
           for (let i = 0; i < operations.length; i++) {
             await restoreOperation(operations[i], 'redo', canvasAPI);
+          }
+        }
+        break;
+        
+      case OperationType.BATCH_MODIFY:
+        // For batch modify operations (multi-select editing)
+        {
+          const property = operation.metadata.property;
+          
+          if (isUndo) {
+            // Undo: Restore old values for each shape
+            const { shapeIds, values: oldValues } = operation.before;
+            for (const shapeId of shapeIds) {
+              const exists = await canvasAPI.shapeExists(shapeId);
+              if (!exists) {
+                console.warn(`Shape ${shapeId} no longer exists, skipping`);
+                continue;
+              }
+              const oldValue = oldValues[shapeId];
+              await canvasAPI.updateShapeProperties(shapeId, { [property]: oldValue });
+            }
+          } else {
+            // Redo: Apply new value to all shapes
+            const { shapeIds, value: newValue } = operation.after;
+            for (const shapeId of shapeIds) {
+              const exists = await canvasAPI.shapeExists(shapeId);
+              if (!exists) {
+                console.warn(`Shape ${shapeId} no longer exists, skipping`);
+                continue;
+              }
+              await canvasAPI.updateShapeProperties(shapeId, { [property]: newValue });
+            }
           }
         }
         break;

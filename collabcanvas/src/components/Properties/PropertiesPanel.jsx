@@ -6,6 +6,9 @@ import Appearance from './sections/Appearance';
 import AlignmentTools from './sections/AlignmentTools';
 import LayerControls from './sections/LayerControls';
 import Typography from './sections/Typography';
+import MultiSelectPositionSize from './sections/MultiSelectPositionSize';
+import MultiSelectAppearance from './sections/MultiSelectAppearance';
+import MultiSelectTypography from './sections/MultiSelectTypography';
 import './PropertiesPanel.css';
 
 function PropertiesPanel({ selectedShapes = [], onUpdateShape, onLayerChange }) {
@@ -81,7 +84,35 @@ function PropertiesPanel({ selectedShapes = [], onUpdateShape, onLayerChange }) 
           <div className="multi-select-state">
             <div className="multi-select-icon">⚡</div>
             <h3 className="multi-select-title">{selectionCount} shapes selected</h3>
-            <p className="multi-select-text">Multi-select editing coming in Phase 7</p>
+            
+            {/* Multi-select Position & Size */}
+            <MultiSelectPositionSize
+              shapes={selectedShapes}
+              onUpdate={onUpdateShape}
+            />
+            
+            {/* Multi-select Appearance */}
+            <MultiSelectAppearance
+              shapes={selectedShapes}
+              onUpdate={onUpdateShape}
+            />
+            
+            {/* Alignment Tools (already work with multi-select) */}
+            <AlignmentTools
+              selectedShapeIds={selectedShapes.map(s => s.id)}
+            />
+            
+            {/* Layer Controls (already work with multi-select) */}
+            <LayerControls
+              selectedShapeIds={selectedShapes.map(s => s.id)}
+              onLayerChange={onLayerChange}
+            />
+            
+            {/* Multi-select Typography (only if text shapes selected) */}
+            <MultiSelectTypography
+              shapes={selectedShapes}
+              onUpdate={onUpdateShape}
+            />
           </div>
         )}
       </div>

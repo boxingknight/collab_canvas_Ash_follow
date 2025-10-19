@@ -1,4 +1,4 @@
-// ColorPicker.jsx - Color picker with hex input, swatches, and recent colors
+// ColorPicker.jsx - Color picker with hex input, swatches, recent colors, and mixed value support
 import { useState, useEffect, useRef } from 'react';
 
 const PRESET_COLORS = [
@@ -11,7 +11,7 @@ const PRESET_COLORS = [
 const MAX_RECENT_COLORS = 8;
 const RECENT_COLORS_KEY = 'collabcanvas_recent_colors';
 
-function ColorPicker({ value, onChange, label = 'Color' }) {
+function ColorPicker({ value, onChange, label = 'Color', showMixedIndicator = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const [hex, setHex] = useState(value || '#000000');
   const [recentColors, setRecentColors] = useState([]);
@@ -87,12 +87,19 @@ function ColorPicker({ value, onChange, label = 'Color' }) {
       
       {/* Current Color Swatch (clickable) */}
       <button
-        className="color-swatch-button"
-        style={{ backgroundColor: hex }}
+        className={`color-swatch-button ${showMixedIndicator ? 'mixed' : ''}`}
+        style={showMixedIndicator ? {} : { backgroundColor: hex }}
         onClick={() => setIsOpen(!isOpen)}
         type="button"
       >
-        <span className="color-swatch-hex">{hex}</span>
+        {showMixedIndicator ? (
+          <div className="mixed-color-indicator">
+            <div className="mixed-color-pattern"></div>
+            <span className="color-swatch-hex">Mixed</span>
+          </div>
+        ) : (
+          <span className="color-swatch-hex">{hex}</span>
+        )}
       </button>
 
       {/* Color Picker Modal */}
