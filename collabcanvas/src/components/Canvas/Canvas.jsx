@@ -503,6 +503,12 @@ function Canvas() {
           normalizedShape.text = newShape.text;
           normalizedShape.fontSize = newShape.fontSize;
           normalizedShape.fontWeight = newShape.fontWeight;
+          // Ensure text box has minimum width for alignment to be visible
+          normalizedShape.width = Math.max(normalizedShape.width, 150);
+          normalizedShape.height = Math.max(normalizedShape.height, 40);
+          // Set default alignment
+          normalizedShape.align = 'left';
+          normalizedShape.verticalAlign = 'top';
         }
         
         try {
