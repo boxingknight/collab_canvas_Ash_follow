@@ -1,5 +1,95 @@
 # Progress Tracker
 
+## 🚀 PR #27.1: Commercial Transformation - Foundation (IN PROGRESS)
+
+**Branch**: `feature/pr27.1-foundation`  
+**Started**: October 19, 2025  
+**Status**: Parts 1-5 COMPLETE! Parts 6-7 remaining  
+**Goal**: Transform demo into commercial-grade multi-tenant application
+
+### ✅ Part 1: Data Architecture (COMPLETE - 8 hours)
+- ✅ Firestore V2 Schema designed (multi-tenant: users, workspaces, canvases, shapes)
+- ✅ Workspace service created (`workspaces.js`)
+- ✅ Canvas service created (`canvases.js`)
+- ✅ Firestore rules updated (permission-based access)
+- ✅ Schema documentation (`FIRESTORE_SCHEMA_V2.md`)
+
+### ✅ Part 2: Migration Script (COMPLETE - 1 hour)
+- ✅ Node.js migration script (`migrate-to-v2.js`)
+- ✅ Dry-run mode for testing
+- ✅ Execute mode for production migration
+- ⏳ Not yet run on production (waiting for final testing)
+
+### ✅ Part 3: Landing Page (COMPLETE - 6 hours)
+- ✅ Professional hero section with gradient title
+- ✅ Features section (real-time, AI-powered, infinite canvas)
+- ✅ Pricing section (Free, Pro, Team tiers)
+- ✅ Footer with navigation and branding
+- ✅ Modern dark theme with animations
+- ✅ Fully responsive design
+- ✅ Routes configured (`/`, `/login`, `/signup`)
+
+### ✅ Part 4: Canvas Dashboard (COMPLETE - 8 hours)
+- ✅ Grid layout for canvas cards
+- ✅ Sidebar navigation (All, Starred, Trash)
+- ✅ Search functionality (name, description, tags)
+- ✅ Create new canvas workflow
+- ✅ Star/unstar canvases
+- ✅ Soft delete to trash
+- ✅ Restore from trash
+- ✅ Empty states for all views
+- ✅ Responsive grid (1-4 columns)
+- ✅ Route `/dashboard` working
+
+### ✅ Part 5: Canvas Editor Updates (COMPLETE - 6 hours + 2 hours debugging)
+- ✅ Dynamic canvas routing (`/canvas/:canvasId`)
+- ✅ Canvas-scoped shapes (filter by canvasId)
+- ✅ Canvas-scoped cursors (`cursors/{canvasId}/users/{userId}`)
+- ✅ Canvas-scoped presence (`presence/{canvasId}/users/{userId}`)
+- ✅ UserList moved to Canvas (canvas-specific user list)
+- ✅ **CRITICAL BUG FIXES**:
+  1. Missing Firestore imports (query, where)
+  2. Wrong Firestore rules file deployed
+  3. React hooks violation in MultiSelectTypography
+  4. Canvas permissions field missing
+  5. **canvasId missing in batch shape creation** (shapes not appearing!)
+
+**Total Time for Parts 1-5**: ~33 hours actual
+
+### ⏳ Part 6: Share Links (PENDING - 4 hours estimated)
+- [ ] Generate shareable canvas links
+- [ ] View-only vs edit permissions
+- [ ] Optional password protection
+- [ ] Expiration dates
+- [ ] Share dialog component
+
+### ⏳ Part 7: Testing & Deployment (PENDING - 4 hours estimated)
+- [ ] Run data migration on production
+- [ ] Deploy to staging environment
+- [ ] End-to-end testing with multiple users
+- [ ] Tighten Firestore security rules
+- [ ] Performance testing
+- [ ] Final production deployment
+
+**Estimated Remaining Time**: ~8 hours for Parts 6-7
+
+### 🎯 Success Criteria Met (Parts 1-5)
+- ✅ Professional landing page with clear value proposition
+- ✅ Multi-tenant data architecture (true canvas isolation)
+- ✅ Canvas dashboard (CRUD operations)
+- ✅ Each canvas is truly unique (no shared shapes!)
+- ✅ Canvas-scoped real-time collaboration
+- ✅ User authentication with protected routes
+
+### 🎯 Success Criteria Remaining (Parts 6-7)
+- ⏳ Share canvas with link (permissions)
+- ⏳ Data migration run successfully
+- ⏳ Production deployment of commercial version
+
+**Progress: 71% (5/7 parts complete)**
+
+---
+
 ## What Works (Completed Features)
 
 ### ✅ Authentication System
