@@ -7,14 +7,11 @@ function AlignmentTools({ selectedShapeIds }) {
   }
 
   const handleAlign = async (operation) => {
-    console.log('🎯 Alignment clicked:', operation, 'shapeIds:', selectedShapeIds);
     try {
       let result;
       switch (operation) {
         case 'left':
-          console.log('📍 Calling alignLeft with:', selectedShapeIds);
           result = await canvasAPI.alignLeft(selectedShapeIds);
-          console.log('📍 alignLeft result:', result);
           break;
         case 'center-h':
           result = await canvasAPI.alignCenterHorizontal(selectedShapeIds);

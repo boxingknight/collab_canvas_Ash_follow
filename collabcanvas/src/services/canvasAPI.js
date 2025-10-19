@@ -3258,7 +3258,11 @@ export const canvasAPI = {
       for (const shape of selectedShapes) {
         const shapeRef = doc(db, 'shapes', shape.id);
         const bounds = getShapeBounds(shape);
-        const newX = leftmostX + (shape.x - bounds.x); // Maintain offset for rotated shapes
+        
+        // Calculate new position to align bounding box left edge
+        const shapeOffset = shape.x - bounds.x; // Offset from bounds to shape anchor (e.g., radius for circles)
+        const newX = leftmostX + shapeOffset;
+        
         batch.update(shapeRef, { x: newX, updatedAt: serverTimestamp() });
       }
       await batch.commit();
@@ -3303,8 +3307,12 @@ export const canvasAPI = {
       const batch = writeBatch(db);
       for (const shape of selectedShapes) {
         const bounds = getShapeBounds(shape);
-        const shapeCenterOffset = bounds.width / 2;
-        const newX = centerX - shapeCenterOffset + (shape.x - bounds.x);
+        
+        // Calculate new position to center bounding box horizontally
+        const shapeOffset = shape.x - bounds.x; // Offset from bounds to shape anchor
+        const targetBoundsX = centerX - (bounds.width / 2); // Where bounds.x should be to center
+        const newX = targetBoundsX + shapeOffset;
+        
         const shapeRef = doc(db, 'shapes', shape.id);
         batch.update(shapeRef, { x: newX, updatedAt: serverTimestamp() });
       }
@@ -3347,7 +3355,12 @@ export const canvasAPI = {
       const batch = writeBatch(db);
       for (const shape of selectedShapes) {
         const bounds = getShapeBounds(shape);
-        const newX = rightmostX - bounds.width + (shape.x - bounds.x);
+        
+        // Calculate new position to align bounding box right edge
+        const shapeOffset = shape.x - bounds.x; // Offset from bounds to shape anchor
+        const targetBoundsX = rightmostX - bounds.width; // Where bounds.x should be
+        const newX = targetBoundsX + shapeOffset;
+        
         const shapeRef = doc(db, 'shapes', shape.id);
         batch.update(shapeRef, { x: newX, updatedAt: serverTimestamp() });
       }
@@ -3390,7 +3403,11 @@ export const canvasAPI = {
       const batch = writeBatch(db);
       for (const shape of selectedShapes) {
         const bounds = getShapeBounds(shape);
-        const newY = topmostY + (shape.y - bounds.y);
+        
+        // Calculate new position to align bounding box top edge
+        const shapeOffset = shape.y - bounds.y; // Offset from bounds to shape anchor
+        const newY = topmostY + shapeOffset;
+        
         const shapeRef = doc(db, 'shapes', shape.id);
         batch.update(shapeRef, { y: newY, updatedAt: serverTimestamp() });
       }
@@ -3436,8 +3453,12 @@ export const canvasAPI = {
       const batch = writeBatch(db);
       for (const shape of selectedShapes) {
         const bounds = getShapeBounds(shape);
-        const shapeCenterOffset = bounds.height / 2;
-        const newY = centerY - shapeCenterOffset + (shape.y - bounds.y);
+        
+        // Calculate new position to center bounding box vertically
+        const shapeOffset = shape.y - bounds.y; // Offset from bounds to shape anchor
+        const targetBoundsY = centerY - (bounds.height / 2); // Where bounds.y should be to center
+        const newY = targetBoundsY + shapeOffset;
+        
         const shapeRef = doc(db, 'shapes', shape.id);
         batch.update(shapeRef, { y: newY, updatedAt: serverTimestamp() });
       }
@@ -3480,7 +3501,12 @@ export const canvasAPI = {
       const batch = writeBatch(db);
       for (const shape of selectedShapes) {
         const bounds = getShapeBounds(shape);
-        const newY = bottommostY - bounds.height + (shape.y - bounds.y);
+        
+        // Calculate new position to align bounding box bottom edge
+        const shapeOffset = shape.y - bounds.y; // Offset from bounds to shape anchor
+        const targetBoundsY = bottommostY - bounds.height; // Where bounds.y should be
+        const newY = targetBoundsY + shapeOffset;
+        
         const shapeRef = doc(db, 'shapes', shape.id);
         batch.update(shapeRef, { y: newY, updatedAt: serverTimestamp() });
       }
