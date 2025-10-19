@@ -7,7 +7,9 @@ import {
   onSnapshot,
   getDocs,
   serverTimestamp,
-  writeBatch
+  writeBatch,
+  query,
+  where
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { DEFAULT_FONT_SIZE, DEFAULT_FONT_WEIGHT, DEFAULT_TEXT, MIN_TEXT_WIDTH, MIN_TEXT_HEIGHT, DEFAULT_STROKE_WIDTH } from '../utils/constants';
