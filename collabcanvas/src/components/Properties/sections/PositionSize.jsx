@@ -49,8 +49,12 @@ function PositionSize({ shape, onUpdate }) {
         {isCircle ? (
           <NumberInput
             label="R"
-            value={Math.round(shape.radius || 50)}
-            onChange={(val) => handleUpdate('radius', val)}
+            value={Math.round((shape.width || 100) / 2)}
+            onChange={(val) => {
+              // Circle radius: update both width and height (diameter = radius * 2)
+              const diameter = val * 2;
+              onUpdate(shape.id, { width: diameter, height: diameter });
+            }}
             min={5}
             max={2500}
             step={1}
@@ -82,7 +86,7 @@ function PositionSize({ shape, onUpdate }) {
       {/* Rotation */}
       <div className="properties-grid">
         <NumberInput
-          label="R"
+          label="Rotation"
           value={Math.round((shape.rotation || 0) % 360)}
           onChange={(val) => handleUpdate('rotation', val % 360)}
           min={0}
