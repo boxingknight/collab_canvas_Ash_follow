@@ -44,6 +44,11 @@ export async function createCanvas({ workspaceId, ownerId, name, description, ta
       ownerId,
       orgId: null,  // Future: organization support
       
+      // Permissions (map of userId -> role)
+      permissions: {
+        [ownerId]: 'editor'  // Owner gets editor permission
+      },
+      
       // Visibility & Sharing
       visibility: 'private',
       shareToken: null,
