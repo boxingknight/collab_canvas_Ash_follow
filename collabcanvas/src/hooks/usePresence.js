@@ -36,8 +36,13 @@ function usePresence(canvasId, user) {
 
     // Subscribe to presence updates
     const unsubscribe = subscribeToPresence(canvasId, (users) => {
-      console.log('👥 usePresence received users:', users.length, users.map(u => u.userName));
-      setOnlineUsers(users);
+      // Only log when user count changes
+      setOnlineUsers(prevUsers => {
+        if (prevUsers.length !== users.length) {
+          console.log('👥 Users on canvas:', users.length);
+        }
+        return users;
+      });
     });
 
     // Set up heartbeat to keep presence alive (every 30 seconds)

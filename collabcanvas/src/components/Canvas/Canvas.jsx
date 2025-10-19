@@ -346,6 +346,7 @@ function Canvas() {
     
     // SHAPE CREATION: Only in 'draw' mode and when clicking on the stage (empty canvas)
     if (mode === 'draw' && isClickingStage) {
+      console.log('🎨 DRAW: Starting shape creation, type:', shapeType);
       const stage = stageRef.current;
       const pos = stage.getRelativePointerPosition();
       
@@ -480,6 +481,7 @@ function Canvas() {
       
       // Only add line if it has meaningful length (>5px)
       if (length > 5) {
+        console.log('🎨 DRAW: Saving line to Firestore...');
         try {
           const createdShape = await addShape({
             x: newShape.x,
@@ -491,6 +493,7 @@ function Canvas() {
             type: 'line',
             rotation: 0
           });
+          console.log('✅ Line saved:', createdShape?.id);
           
           // Record CREATE operation for undo
           if (createdShape && createdShape.id) {
@@ -528,15 +531,17 @@ function Canvas() {
           normalizedShape.verticalAlign = 'top';
         }
         
+        console.log('🎨 DRAW: Saving shape to Firestore, type:', normalizedShape.type, 'size:', normalizedShape.width, 'x', normalizedShape.height);
         try {
           const createdShape = await addShape(normalizedShape);
+          console.log('✅ Shape saved:', createdShape?.id);
           
           // Record CREATE operation for undo
           if (createdShape && createdShape.id) {
             recordOperation(createCreateOperation(createdShape, user.uid));
           }
         } catch (error) {
-          console.error('Failed to add shape:', error.message);
+          console.error('❌ Failed to add shape:', error.message);
           alert(`Failed to create shape: ${error.message}`);
         }
       }
