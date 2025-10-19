@@ -581,11 +581,11 @@ body {
    AI Chat Styles
    ======================================== */
 
-/* AI Chat Panel - Fixed bottom-right corner */
+/* AI Chat Panel - Fixed bottom-right corner, left of Properties Panel */
 .ai-chat {
   position: fixed;
   bottom: 20px;
-  right: 20px;
+  right: 320px; /* 280px (Properties Panel) + 40px gap */
   width: 400px;
   background: #2a2a2a;
   border: 1px solid rgba(255, 255, 255, 0.1);
