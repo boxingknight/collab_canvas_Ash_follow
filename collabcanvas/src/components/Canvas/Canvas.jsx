@@ -94,11 +94,15 @@ function Canvas() {
     });
   }, [shapes]);
 
+  // Get selected shapes for properties panel (must be before any early returns)
+  const selectedShapes = useMemo(() => {
+    return shapes.filter(s => selectedShapeIds.includes(s.id));
+  }, [shapes, selectedShapeIds]);
+
   // Sync selection to selection bridge (for AI access)
   useEffect(() => {
-    const selectedShapes = shapes.filter(s => selectedShapeIds.includes(s.id));
     updateSelectionBridge(selectedShapeIds, selectedShapes);
-  }, [selectedShapeIds, shapes]);
+  }, [selectedShapeIds, selectedShapes]);
   
   // Register setSelection function with bridge (for AI to call)
   useEffect(() => {
@@ -1402,11 +1406,6 @@ function Canvas() {
       </div>
     );
   }
-
-  // Get selected shapes for properties panel
-  const selectedShapes = useMemo(() => {
-    return shapes.filter(s => selectedShapeIds.includes(s.id));
-  }, [shapes, selectedShapeIds]);
 
   return (
     <div style={{ display: 'flex', width: '100%', height: '100%' }}>

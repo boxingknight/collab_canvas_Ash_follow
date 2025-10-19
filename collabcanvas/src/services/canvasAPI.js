@@ -3480,7 +3480,7 @@ export const canvasAPI = {
 
     try {
       // Reuse existing distributeEvenly with 'horizontal' direction
-      return await distributeEvenly(shapeIds, 'horizontal');
+      return await this.distributeEvenly(shapeIds, 'horizontal');
     } catch (error) {
       return { success: false, message: 'Failed to distribute shapes' };
     }
@@ -3498,7 +3498,7 @@ export const canvasAPI = {
 
     try {
       // Reuse existing distributeEvenly with 'vertical' direction
-      return await distributeEvenly(shapeIds, 'vertical');
+      return await this.distributeEvenly(shapeIds, 'vertical');
     } catch (error) {
       return { success: false, message: 'Failed to distribute shapes' };
     }
@@ -3517,10 +3517,10 @@ export const canvasAPI = {
     try {
       if (shapeIds.length === 1) {
         // Single shape - use centerShape
-        return await centerShape(shapeIds[0]);
+        return await this.centerShape(shapeIds[0]);
       } else {
         // Multiple shapes - use centerShapes
-        return await centerShapes(shapeIds);
+        return await this.centerShapes(shapeIds);
       }
     } catch (error) {
       return { success: false, message: 'Failed to center shapes' };

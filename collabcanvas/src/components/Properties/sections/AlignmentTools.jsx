@@ -1,5 +1,5 @@
 // AlignmentTools.jsx - Visual alignment buttons
-import * as canvasAPI from '../../../services/canvasAPI';
+import { canvasAPI } from '../../../services/canvasAPI';
 
 function AlignmentTools({ selectedShapeIds }) {
   if (!selectedShapeIds || selectedShapeIds.length === 0) {
