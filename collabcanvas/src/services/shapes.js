@@ -24,12 +24,15 @@ const SHAPES_COLLECTION = 'shapes';
  */
 export async function addShape(shapeData, userId) {
   try {
+    console.log('💾 addShape called with canvasId:', shapeData.canvasId);
+    
     // Base document fields (common to all shapes)
     const baseDoc = {
       x: shapeData.x,
       y: shapeData.y,
       color: shapeData.color,
       type: shapeData.type || 'rectangle', // Default to rectangle for backward compatibility
+      canvasId: shapeData.canvasId, // Ensure canvasId is included
       rotation: shapeData.rotation || 0, // Rotation in degrees (0-359)
       zIndex: shapeData.zIndex ?? 0, // Layer order (default: 0)
       createdBy: userId,
@@ -56,8 +59,15 @@ export async function addShape(shapeData, userId) {
       baseDoc.height = shapeData.height;
     }
     
+    console.log('💾 Saving shape to Firestore with data:', {
+      ...baseDoc,
+      createdAt: '(timestamp)',
+      updatedAt: '(timestamp)'
+    });
+    
     const docRef = await addDoc(collection(db, SHAPES_COLLECTION), baseDoc);
     
+    console.log('💾 Shape saved with ID:', docRef.id);
     return docRef.id;
   } catch (error) {
     console.error('Error adding shape:', error.message);
@@ -92,6 +102,7 @@ export async function addShapesBatch(shapesData, userId) {
           y: shapeData.y,
           color: shapeData.color,
           type: shapeData.type || 'rectangle',
+          canvasId: shapeData.canvasId, // Ensure canvasId is included
           rotation: shapeData.rotation || 0, // Rotation in degrees (0-359)
           zIndex: shapeData.zIndex ?? 0, // Layer order (default: 0)
           createdBy: userId,
