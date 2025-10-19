@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import AIChat from '../AI/AIChat';
+import ShareDialog from '../Canvas/ShareDialog';
 
 function AppLayout({ children, user, onLogout }) {
   const location = useLocation();
@@ -12,6 +13,9 @@ function AppLayout({ children, user, onLogout }) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
   const inputRef = useRef(null);
+  
+  // Share dialog state
+  const [showShareDialog, setShowShareDialog] = useState(false);
   
   // Fetch canvas name when on canvas page
   useEffect(() => {
@@ -89,31 +93,40 @@ function AppLayout({ children, user, onLogout }) {
             )}
             
             {isOnCanvas ? (
-              // Show emoji + canvas name when on canvas page
-              <div className="header-title-wrapper">
-                <span className="app-logo">🎨</span>
-                {isEditingName ? (
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    className="canvas-name-input"
-                    value={editedName}
-                    onChange={(e) => setEditedName(e.target.value)}
-                    onBlur={handleSaveName}
-                    onKeyDown={handleKeyDown}
-                    maxLength={50}
-                    placeholder="Untitled Canvas"
-                  />
-                ) : (
-                  <h1 
-                    className="app-title canvas-title-editable" 
-                    onClick={handleStartEdit}
-                    title="Click to rename canvas"
-                  >
-                    {canvasName || 'Untitled Canvas'}
-                  </h1>
-                )}
-              </div>
+              // Show emoji + canvas name + share button when on canvas page
+              <>
+                <div className="header-title-wrapper">
+                  <span className="app-logo">🎨</span>
+                  {isEditingName ? (
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      className="canvas-name-input"
+                      value={editedName}
+                      onChange={(e) => setEditedName(e.target.value)}
+                      onBlur={handleSaveName}
+                      onKeyDown={handleKeyDown}
+                      maxLength={50}
+                      placeholder="Untitled Canvas"
+                    />
+                  ) : (
+                    <h1 
+                      className="app-title canvas-title-editable" 
+                      onClick={handleStartEdit}
+                      title="Click to rename canvas"
+                    >
+                      {canvasName || 'Untitled Canvas'}
+                    </h1>
+                  )}
+                </div>
+                <button 
+                  className="btn-share"
+                  onClick={() => setShowShareDialog(true)}
+                  title="Share canvas"
+                >
+                  🔗 Share
+                </button>
+              </>
             ) : (
               // Show app title (linked to dashboard) when not on canvas
               <Link to="/dashboard" className="app-title-link">
@@ -134,6 +147,15 @@ function AppLayout({ children, user, onLogout }) {
         {children}
       </main>
       <AIChat />
+      
+      {/* Share Dialog */}
+      {showShareDialog && canvasId && user && (
+        <ShareDialog
+          canvasId={canvasId}
+          userId={user.uid}
+          onClose={() => setShowShareDialog(false)}
+        />
+      )}
     </div>
   );
 }
