@@ -10,12 +10,7 @@ function MultiSelectTypography({ shapes, onUpdate }) {
     return shapes.filter(s => s.type === 'text');
   }, [shapes]);
 
-  // Don't render if no text shapes selected
-  if (textShapes.length === 0) {
-    return null;
-  }
-
-  // Detect mixed values for typography properties
+  // Detect mixed values for typography properties (MUST be called before early return)
   const fontSizeMixed = useMemo(() => detectMixedValue(textShapes, 'fontSize'), [textShapes]);
   const boldMixed = useMemo(() => detectMixedBoolean(textShapes, 'fontWeight', 'bold'), [textShapes]);
   const italicMixed = useMemo(() => detectMixedBoolean(textShapes, 'fontStyle', 'italic'), [textShapes]);
@@ -23,6 +18,11 @@ function MultiSelectTypography({ shapes, onUpdate }) {
   const alignLeftMixed = useMemo(() => detectMixedBoolean(textShapes, 'align', 'left'), [textShapes]);
   const alignCenterMixed = useMemo(() => detectMixedBoolean(textShapes, 'align', 'center'), [textShapes]);
   const alignRightMixed = useMemo(() => detectMixedBoolean(textShapes, 'align', 'right'), [textShapes]);
+
+  // Don't render if no text shapes selected (early return AFTER all hooks)
+  if (textShapes.length === 0) {
+    return null;
+  }
 
   /**
    * Handle batch update for a property
