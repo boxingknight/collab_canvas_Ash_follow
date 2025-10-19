@@ -1,4 +1,4 @@
-// NumberInput.jsx - Validated numeric input with debouncing
+// NumberInput.jsx - Validated numeric input with debouncing and mixed value support
 import { useState, useEffect, useCallback } from 'react';
 
 function NumberInput({ 
@@ -9,15 +9,22 @@ function NumberInput({
   step = 1,
   label,
   suffix = '',
-  disabled = false
+  disabled = false,
+  isMixed = false,        // NEW: Indicates mixed values across selection
+  placeholder = ''        // NEW: Custom placeholder (e.g., "Mixed")
 }) {
   const [localValue, setLocalValue] = useState(value);
   const [isValid, setIsValid] = useState(true);
 
   // Sync with external value changes
   useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
+    // For mixed state, show empty input with placeholder
+    if (isMixed && value === "Mixed") {
+      setLocalValue('');
+    } else {
+      setLocalValue(value);
+    }
+  }, [value, isMixed]);
 
   const handleChange = (e) => {
     const newValue = e.target.value;
@@ -70,11 +77,12 @@ function NumberInput({
       <div className="number-input-wrapper">
         <input
           type="number"
-          className={`number-input ${!isValid ? 'invalid' : ''}`}
+          className={`number-input ${!isValid ? 'invalid' : ''} ${isMixed ? 'mixed' : ''}`}
           value={localValue}
           onChange={handleChange}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
+          placeholder={isMixed ? (placeholder || "Mixed") : ''}
           min={min}
           max={max}
           step={step}
