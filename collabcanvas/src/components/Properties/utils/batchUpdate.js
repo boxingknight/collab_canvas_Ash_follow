@@ -1,8 +1,9 @@
 // batchUpdate.js - Utility functions for batch updating multiple shapes
 
-import { doc, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { doc, writeBatch, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db } from '../../../services/firebase';
 import { v4 as uuidv4 } from 'uuid';
+import { createBatchModifyOperation } from '../../../utils/historyOperations';
 
 /**
  * Apply a property update to multiple shapes using Firestore batch write
@@ -10,6 +11,8 @@ import { v4 as uuidv4 } from 'uuid';
  * @param {String} property - Property to update (e.g., 'x', 'color')
  * @param {any} value - New value to apply
  * @param {Object} options - Additional options
+ * @param {Function} options.recordHistory - Optional history recording function
+ * @param {string} options.userId - Optional user ID for history
  * @returns {Promise<Object>} { success: boolean, batchId: string, error?: string }
  */
 export async function batchUpdateShapes(shapeIds, property, value, options = {}) {
@@ -18,6 +21,23 @@ export async function batchUpdateShapes(shapeIds, property, value, options = {})
   }
 
   try {
+    // Capture old values for undo/redo (before the update)
+    const oldValues = {};
+    if (options.recordHistory) {
+      for (const shapeId of shapeIds) {
+        try {
+          const shapeRef = doc(db, 'shapes', shapeId);
+          const shapeSnap = await getDoc(shapeRef);
+          if (shapeSnap.exists()) {
+            const shapeData = shapeSnap.data();
+            oldValues[shapeId] = shapeData[property];
+          }
+        } catch (error) {
+          console.warn(`Failed to get old value for shape ${shapeId}:`, error);
+        }
+      }
+    }
+
     const batch = writeBatch(db);
     const batchId = uuidv4(); // Track batch operations
 
@@ -33,6 +53,18 @@ export async function batchUpdateShapes(shapeIds, property, value, options = {})
 
     // Execute atomic batch write
     await batch.commit();
+
+    // Record in history if requested
+    if (options.recordHistory && Object.keys(oldValues).length > 0) {
+      const operation = createBatchModifyOperation(
+        shapeIds,
+        property,
+        oldValues,
+        value,
+        options.userId || 'unknown'
+      );
+      options.recordHistory(operation);
+    }
 
     return { 
       success: true, 
