@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import NoSelection from './sections/NoSelection';
 import PositionSize from './sections/PositionSize';
 import Appearance from './sections/Appearance';
+import AlignmentTools from './sections/AlignmentTools';
 import './PropertiesPanel.css';
 
 function PropertiesPanel({ selectedShapes = [], onUpdateShape }) {
@@ -53,6 +54,11 @@ function PropertiesPanel({ selectedShapes = [], onUpdateShape }) {
             <Appearance
               shape={shape}
               onUpdate={onUpdateShape}
+            />
+
+            {/* Alignment Tools */}
+            <AlignmentTools
+              selectedShapeIds={selectedShapes.map(s => s.id)}
             />
 
             {/* More sections will be added in subsequent phases */}

@@ -342,6 +342,62 @@
   border-color: #fff;
 }
 
+/* Alignment Tools */
+.alignment-group {
+  margin-bottom: 12px;
+}
+
+.alignment-group:last-child {
+  margin-bottom: 0;
+}
+
+.alignment-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: #a0a0a0;
+  margin-bottom: 6px;
+}
+
+.alignment-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.alignment-button {
+  height: 32px;
+  background: #1a1a1a;
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alignment-button:hover:not(:disabled) {
+  background: #3a3a3a;
+  border-color: #5a9fd4;
+}
+
+.alignment-button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.alignment-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.alignment-button.full-width {
+  width: 100%;
+  font-size: 13px;
+}
+
 /* Responsive */
 @media (max-width: 1200px) {
   .properties-panel {

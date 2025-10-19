@@ -3222,6 +3222,312 @@ export const canvasAPI = {
   centerShapes,
 
   /**
+   * ===== VISUAL ALIGNMENT TOOLS (PR #25) =====
+   * For Properties Panel alignment buttons
+   */
+
+  /**
+   * Align shapes to the left edge of the leftmost shape
+   * @param {string[]} shapeIds - Array of shape IDs
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  async alignLeft(shapeIds) {
+    if (!shapeIds || shapeIds.length === 0) {
+      return { success: false, message: 'No shapes provided' };
+    }
+
+    try {
+      const shapes = await getAllShapes();
+      const selectedShapes = shapes.filter(s => shapeIds.includes(s.id));
+      
+      if (selectedShapes.length === 0) {
+        return { success: false, message: 'No valid shapes found' };
+      }
+
+      // Find leftmost X
+      const leftmostX = Math.min(...selectedShapes.map(s => {
+        const bounds = getShapeBounds(s);
+        return bounds.x;
+      }));
+
+      // Update all shapes to align left
+      const batch = writeBatch(db);
+      for (const shape of selectedShapes) {
+        const shapeRef = doc(db, 'shapes', shape.id);
+        const bounds = getShapeBounds(shape);
+        const newX = leftmostX + (shape.x - bounds.x); // Maintain offset for rotated shapes
+        batch.update(shapeRef, { x: newX, updatedAt: serverTimestamp() });
+      }
+      await batch.commit();
+
+      return { success: true, message: `Aligned ${selectedShapes.length} shape(s) left` };
+    } catch (error) {
+      return { success: false, message: 'Failed to align shapes' };
+    }
+  },
+
+  /**
+   * Align shapes to horizontal center
+   * @param {string[]} shapeIds - Array of shape IDs
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  async alignCenterHorizontal(shapeIds) {
+    if (!shapeIds || shapeIds.length === 0) {
+      return { success: false, message: 'No shapes provided' };
+    }
+
+    try {
+      const shapes = await getAllShapes();
+      const selectedShapes = shapes.filter(s => shapeIds.includes(s.id));
+      
+      if (selectedShapes.length === 0) {
+        return { success: false, message: 'No valid shapes found' };
+      }
+
+      // Calculate center of bounding box of all selected shapes
+      const allBounds = selectedShapes.map(s => getShapeBounds(s));
+      const minX = Math.min(...allBounds.map(b => b.x));
+      const maxX = Math.max(...allBounds.map(b => b.x + b.width));
+      const centerX = (minX + maxX) / 2;
+
+      // Update all shapes to align to this center
+      const batch = writeBatch(db);
+      for (const shape of selectedShapes) {
+        const bounds = getShapeBounds(shape);
+        const shapeCenterOffset = bounds.width / 2;
+        const newX = centerX - shapeCenterOffset + (shape.x - bounds.x);
+        const shapeRef = doc(db, 'shapes', shape.id);
+        batch.update(shapeRef, { x: newX, updatedAt: serverTimestamp() });
+      }
+      await batch.commit();
+
+      return { success: true, message: `Aligned ${selectedShapes.length} shape(s) center horizontal` };
+    } catch (error) {
+      return { success: false, message: 'Failed to align shapes' };
+    }
+  },
+
+  /**
+   * Align shapes to the right edge of the rightmost shape
+   * @param {string[]} shapeIds - Array of shape IDs
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  async alignRight(shapeIds) {
+    if (!shapeIds || shapeIds.length === 0) {
+      return { success: false, message: 'No shapes provided' };
+    }
+
+    try {
+      const shapes = await getAllShapes();
+      const selectedShapes = shapes.filter(s => shapeIds.includes(s.id));
+      
+      if (selectedShapes.length === 0) {
+        return { success: false, message: 'No valid shapes found' };
+      }
+
+      // Find rightmost edge
+      const rightmostX = Math.max(...selectedShapes.map(s => {
+        const bounds = getShapeBounds(s);
+        return bounds.x + bounds.width;
+      }));
+
+      // Update all shapes to align right
+      const batch = writeBatch(db);
+      for (const shape of selectedShapes) {
+        const bounds = getShapeBounds(shape);
+        const newX = rightmostX - bounds.width + (shape.x - bounds.x);
+        const shapeRef = doc(db, 'shapes', shape.id);
+        batch.update(shapeRef, { x: newX, updatedAt: serverTimestamp() });
+      }
+      await batch.commit();
+
+      return { success: true, message: `Aligned ${selectedShapes.length} shape(s) right` };
+    } catch (error) {
+      return { success: false, message: 'Failed to align shapes' };
+    }
+  },
+
+  /**
+   * Align shapes to the top edge of the topmost shape
+   * @param {string[]} shapeIds - Array of shape IDs
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  async alignTop(shapeIds) {
+    if (!shapeIds || shapeIds.length === 0) {
+      return { success: false, message: 'No shapes provided' };
+    }
+
+    try {
+      const shapes = await getAllShapes();
+      const selectedShapes = shapes.filter(s => shapeIds.includes(s.id));
+      
+      if (selectedShapes.length === 0) {
+        return { success: false, message: 'No valid shapes found' };
+      }
+
+      // Find topmost Y
+      const topmostY = Math.min(...selectedShapes.map(s => {
+        const bounds = getShapeBounds(s);
+        return bounds.y;
+      }));
+
+      // Update all shapes to align top
+      const batch = writeBatch(db);
+      for (const shape of selectedShapes) {
+        const bounds = getShapeBounds(shape);
+        const newY = topmostY + (shape.y - bounds.y);
+        const shapeRef = doc(db, 'shapes', shape.id);
+        batch.update(shapeRef, { y: newY, updatedAt: serverTimestamp() });
+      }
+      await batch.commit();
+
+      return { success: true, message: `Aligned ${selectedShapes.length} shape(s) top` };
+    } catch (error) {
+      return { success: false, message: 'Failed to align shapes' };
+    }
+  },
+
+  /**
+   * Align shapes to vertical middle
+   * @param {string[]} shapeIds - Array of shape IDs
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  async alignMiddleVertical(shapeIds) {
+    if (!shapeIds || shapeIds.length === 0) {
+      return { success: false, message: 'No shapes provided' };
+    }
+
+    try {
+      const shapes = await getAllShapes();
+      const selectedShapes = shapes.filter(s => shapeIds.includes(s.id));
+      
+      if (selectedShapes.length === 0) {
+        return { success: false, message: 'No valid shapes found' };
+      }
+
+      // Calculate vertical center of bounding box
+      const allBounds = selectedShapes.map(s => getShapeBounds(s));
+      const minY = Math.min(...allBounds.map(b => b.y));
+      const maxY = Math.max(...allBounds.map(b => b.y + b.height));
+      const centerY = (minY + maxY) / 2;
+
+      // Update all shapes to align to this center
+      const batch = writeBatch(db);
+      for (const shape of selectedShapes) {
+        const bounds = getShapeBounds(shape);
+        const shapeCenterOffset = bounds.height / 2;
+        const newY = centerY - shapeCenterOffset + (shape.y - bounds.y);
+        const shapeRef = doc(db, 'shapes', shape.id);
+        batch.update(shapeRef, { y: newY, updatedAt: serverTimestamp() });
+      }
+      await batch.commit();
+
+      return { success: true, message: `Aligned ${selectedShapes.length} shape(s) middle vertical` };
+    } catch (error) {
+      return { success: false, message: 'Failed to align shapes' };
+    }
+  },
+
+  /**
+   * Align shapes to the bottom edge of the bottommost shape
+   * @param {string[]} shapeIds - Array of shape IDs
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  async alignBottom(shapeIds) {
+    if (!shapeIds || shapeIds.length === 0) {
+      return { success: false, message: 'No shapes provided' };
+    }
+
+    try {
+      const shapes = await getAllShapes();
+      const selectedShapes = shapes.filter(s => shapeIds.includes(s.id));
+      
+      if (selectedShapes.length === 0) {
+        return { success: false, message: 'No valid shapes found' };
+      }
+
+      // Find bottommost edge
+      const bottommostY = Math.max(...selectedShapes.map(s => {
+        const bounds = getShapeBounds(s);
+        return bounds.y + bounds.height;
+      }));
+
+      // Update all shapes to align bottom
+      const batch = writeBatch(db);
+      for (const shape of selectedShapes) {
+        const bounds = getShapeBounds(shape);
+        const newY = bottommostY - bounds.height + (shape.y - bounds.y);
+        const shapeRef = doc(db, 'shapes', shape.id);
+        batch.update(shapeRef, { y: newY, updatedAt: serverTimestamp() });
+      }
+      await batch.commit();
+
+      return { success: true, message: `Aligned ${selectedShapes.length} shape(s) bottom` };
+    } catch (error) {
+      return { success: false, message: 'Failed to align shapes' };
+    }
+  },
+
+  /**
+   * Distribute shapes evenly horizontally (visual alignment version)
+   * @param {string[]} shapeIds - Array of shape IDs
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  async distributeHorizontally(shapeIds) {
+    if (!shapeIds || shapeIds.length < 3) {
+      return { success: false, message: 'Need at least 3 shapes to distribute' };
+    }
+
+    try {
+      // Reuse existing distributeEvenly with 'horizontal' direction
+      return await distributeEvenly(shapeIds, 'horizontal');
+    } catch (error) {
+      return { success: false, message: 'Failed to distribute shapes' };
+    }
+  },
+
+  /**
+   * Distribute shapes evenly vertically (visual alignment version)
+   * @param {string[]} shapeIds - Array of shape IDs
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  async distributeVertically(shapeIds) {
+    if (!shapeIds || shapeIds.length < 3) {
+      return { success: false, message: 'Need at least 3 shapes to distribute' };
+    }
+
+    try {
+      // Reuse existing distributeEvenly with 'vertical' direction
+      return await distributeEvenly(shapeIds, 'vertical');
+    } catch (error) {
+      return { success: false, message: 'Failed to distribute shapes' };
+    }
+  },
+
+  /**
+   * Center shapes on canvas (visual alignment version)
+   * @param {string[]} shapeIds - Array of shape IDs
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  async centerOnCanvas(shapeIds) {
+    if (!shapeIds || shapeIds.length === 0) {
+      return { success: false, message: 'No shapes provided' };
+    }
+
+    try {
+      if (shapeIds.length === 1) {
+        // Single shape - use centerShape
+        return await centerShape(shapeIds[0]);
+      } else {
+        // Multiple shapes - use centerShapes
+        return await centerShapes(shapeIds);
+      }
+    } catch (error) {
+      return { success: false, message: 'Failed to center shapes' };
+    }
+  },
+
+  /**
    * ===== COMPLEX OPERATIONS (PR #23) =====
    */
 
