@@ -39,17 +39,21 @@ function ShareLinkAccess() {
     try {
       setStatus('validating');
       
+      console.log('📋 ShareLinkAccess: Processing link:', linkId, 'for user:', user.uid);
       const { canvasId, permission } = await grantAccessFromShareLink(linkId, user.uid);
+      console.log('✅ ShareLinkAccess: Access granted! Canvas:', canvasId, 'Permission:', permission);
       
       setStatus('success');
       
       // Redirect to canvas after a brief delay
       setTimeout(() => {
+        console.log('🔀 ShareLinkAccess: Redirecting to canvas:', canvasId);
         navigate(`/canvas/${canvasId}`);
-      }, 1000);
+      }, 1500);
       
     } catch (error) {
-      console.error('Error accessing share link:', error);
+      console.error('❌ ShareLinkAccess error:', error);
+      console.error('Error details:', { linkId, userId: user?.uid, message: error.message });
       setStatus('error');
       setErrorMessage(error.message || 'Failed to access shared canvas');
     }

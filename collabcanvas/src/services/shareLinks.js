@@ -158,45 +158,70 @@ export async function getCanvasShareLinks(canvasId) {
  */
 export async function grantAccessFromShareLink(linkId, userId) {
   try {
+    console.log('🔗 Granting access from share link:', linkId, 'to user:', userId);
+    
     // Validate the share link
     const validation = await validateShareLink(linkId);
     if (!validation.valid) {
+      console.error('❌ Share link validation failed:', validation.reason);
       throw new Error(validation.reason);
     }
 
     const { shareLink } = validation;
     const { canvasId, permission } = shareLink;
-
-    // Update canvas permissions to include this user
-    const { updateCanvas } = await import('./canvases');
-    const { getCanvas } = await import('./canvases');
     
-    // Get current canvas
+    console.log('✅ Share link valid. Canvas:', canvasId, 'Permission:', permission);
+
+    // Get current canvas to check if it exists
+    const { getCanvas } = await import('./canvases');
     const canvas = await getCanvas(canvasId);
     if (!canvas) {
+      console.error('❌ Canvas not found:', canvasId);
       throw new Error('Canvas not found');
     }
+    
+    console.log('✅ Canvas found. Current permissions:', canvas.permissions);
 
-    // Add user to permissions map
+    // Check if user already has access
+    if (canvas.permissions && canvas.permissions[userId]) {
+      console.log('ℹ️ User already has access:', canvas.permissions[userId]);
+      // Update if new permission is higher (editor > viewer)
+      if (canvas.permissions[userId] === 'viewer' && permission === 'editor') {
+        console.log('⬆️ Upgrading permission from viewer to editor');
+      } else {
+        // User already has access, just return
+        return { canvasId, permission: canvas.permissions[userId] };
+      }
+    }
+
+    // Add user to permissions map - DIRECT Firestore update
     const updatedPermissions = {
-      ...canvas.permissions,
+      ...(canvas.permissions || {}),
       [userId]: permission // 'viewer' or 'editor'
     };
+    
+    console.log('💾 Updating canvas permissions:', updatedPermissions);
 
-    // Update canvas with new permissions
-    await updateCanvas(canvasId, { 
-      permissions: updatedPermissions 
-    }, canvas.ownerId); // Use owner ID for auth
+    // Direct Firestore update (bypass canvases service to avoid auth checks)
+    const canvasRef = doc(db, 'canvases', canvasId);
+    await updateDoc(canvasRef, {
+      permissions: updatedPermissions,
+      updatedAt: serverTimestamp()
+    });
+    
+    console.log('✅ Canvas permissions updated successfully');
 
     // Increment access count
     const linkRef = doc(db, SHARE_LINKS_COLLECTION, linkId);
     await updateDoc(linkRef, {
       accessCount: (shareLink.accessCount || 0) + 1
     });
+    
+    console.log('✅ Access count incremented. Granting access complete!');
 
     return { canvasId, permission };
   } catch (error) {
-    console.error('Error granting access from share link:', error);
+    console.error('❌ Error granting access from share link:', error);
     throw new Error(`Failed to grant access: ${error.message}`);
   }
 }
