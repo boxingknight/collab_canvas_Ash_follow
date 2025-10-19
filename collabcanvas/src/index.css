@@ -301,6 +301,37 @@ body {
   cursor: pointer;
 }
 
+.canvas-title-editable {
+  cursor: text;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+
+.canvas-title-editable:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.canvas-name-input {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 1.5rem;
+  font-weight: inherit;
+  font-family: inherit;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  outline: none;
+  min-width: 250px;
+  transition: all 0.2s ease;
+}
+
+.canvas-name-input:focus {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #646cff;
+}
+
 .user-info {
   display: flex;
   align-items: center;
