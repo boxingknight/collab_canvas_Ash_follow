@@ -6,7 +6,7 @@
  */
 
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
+import useAuth from '../../hooks/useAuth';
 import Hero from '../../components/Landing/Hero';
 import Features from '../../components/Landing/Features';
 import Pricing from '../../components/Landing/Pricing';
