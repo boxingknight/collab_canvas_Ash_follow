@@ -88,28 +88,32 @@ function AppLayout({ children, user, onLogout }) {
               </Link>
             )}
             
-            {isOnCanvas && canvasName ? (
-              // Show canvas name (editable) when on canvas page
-              isEditingName ? (
-                <input
-                  ref={inputRef}
-                  type="text"
-                  className="canvas-name-input"
-                  value={editedName}
-                  onChange={(e) => setEditedName(e.target.value)}
-                  onBlur={handleSaveName}
-                  onKeyDown={handleKeyDown}
-                  maxLength={50}
-                />
-              ) : (
-                <h1 
-                  className="app-title canvas-title-editable" 
-                  onClick={handleStartEdit}
-                  title="Click to rename canvas"
-                >
-                  {canvasName}
-                </h1>
-              )
+            {isOnCanvas ? (
+              // Show emoji + canvas name when on canvas page
+              <div className="header-title-wrapper">
+                <span className="app-logo">🎨</span>
+                {isEditingName ? (
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    className="canvas-name-input"
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    onBlur={handleSaveName}
+                    onKeyDown={handleKeyDown}
+                    maxLength={50}
+                    placeholder="Untitled Canvas"
+                  />
+                ) : (
+                  <h1 
+                    className="app-title canvas-title-editable" 
+                    onClick={handleStartEdit}
+                    title="Click to rename canvas"
+                  >
+                    {canvasName || 'Untitled Canvas'}
+                  </h1>
+                )}
+              </div>
             ) : (
               // Show app title (linked to dashboard) when not on canvas
               <Link to="/dashboard" className="app-title-link">
