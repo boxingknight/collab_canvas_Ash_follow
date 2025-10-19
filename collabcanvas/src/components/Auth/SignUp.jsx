@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
 
-function SignUp({ onSwitchToLogin }) {
+function SignUp() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -166,7 +168,7 @@ function SignUp({ onSwitchToLogin }) {
         <p className="auth-switch">
           Already have an account?{' '}
           <button 
-            onClick={onSwitchToLogin}
+            onClick={() => navigate('/login')}
             className="link-button"
             disabled={isSubmitting}
           >

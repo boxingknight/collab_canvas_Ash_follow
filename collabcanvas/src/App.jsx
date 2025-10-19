@@ -1,16 +1,19 @@
-import { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import useAuth from './hooks/useAuth';
+import Landing from './pages/Landing/Landing';
 import Login from './components/Auth/Login';
 import SignUp from './components/Auth/SignUp';
 import Canvas from './components/Canvas/Canvas';
 import AppLayout from './components/Layout/AppLayout';
 import './App.css';
 
-function App() {
-  const { user, loading, logout } = useAuth();
-  const [showSignUp, setShowSignUp] = useState(false);
+/**
+ * Protected Route Component
+ * Redirects to login if user is not authenticated
+ */
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth();
 
-  // Show loading spinner while checking authentication
   if (loading) {
     return (
       <div className="loading-container">
@@ -20,20 +23,88 @@ function App() {
     );
   }
 
-  // Show authentication forms if user is not logged in
   if (!user) {
-    return showSignUp ? (
-      <SignUp onSwitchToLogin={() => setShowSignUp(false)} />
-    ) : (
-      <Login onSwitchToSignup={() => setShowSignUp(true)} />
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+
+/**
+ * Public Route Component
+ * Redirects to dashboard if user is already authenticated
+ */
+function PublicRoute({ children }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Loading...</p>
+      </div>
     );
   }
 
-  // Show main app if user is authenticated
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
+}
+
+function App() {
+  const { user, logout } = useAuth();
+
   return (
-    <AppLayout user={user} onLogout={logout}>
-      <Canvas />
-    </AppLayout>
+    <BrowserRouter>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<Landing />} />
+        <Route 
+          path="/login" 
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          } 
+        />
+        <Route 
+          path="/signup" 
+          element={
+            <PublicRoute>
+              <SignUp />
+            </PublicRoute>
+          } 
+        />
+
+        {/* Protected Routes */}
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute>
+              <AppLayout user={user} onLogout={logout}>
+                <div>Dashboard - Coming Soon</div>
+              </AppLayout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/canvas" 
+          element={
+            <ProtectedRoute>
+              <AppLayout user={user} onLogout={logout}>
+                <Canvas />
+              </AppLayout>
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Fallback - Redirect to home */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
