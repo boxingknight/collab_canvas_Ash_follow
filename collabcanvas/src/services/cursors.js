@@ -8,20 +8,19 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 
-const CURSORS_COLLECTION = 'cursors';
-
 /**
- * Update user's cursor position in Firestore
+ * Update user's cursor position in Firestore (canvas-scoped)
+ * @param {string} canvasId - Canvas ID
  * @param {string} userId - User ID from Firebase Auth
  * @param {string} userName - User's display name
  * @param {number} x - Canvas X position
  * @param {number} y - Canvas Y position
  * @returns {Promise<void>}
  */
-export async function updateCursorPosition(userId, userName, x, y) {
+export async function updateCursorPosition(canvasId, userId, userName, x, y) {
   try {
-    // Use userId as document ID for easy updates
-    const cursorRef = doc(db, CURSORS_COLLECTION, userId);
+    // Canvas-scoped cursor: cursors/{canvasId}/users/{userId}
+    const cursorRef = doc(db, 'cursors', canvasId, 'users', userId);
     await setDoc(cursorRef, {
       userId,
       userName,
@@ -37,12 +36,13 @@ export async function updateCursorPosition(userId, userName, x, y) {
 
 /**
  * Remove user's cursor from Firestore (on disconnect)
+ * @param {string} canvasId - Canvas ID
  * @param {string} userId - User ID from Firebase Auth
  * @returns {Promise<void>}
  */
-export async function removeCursor(userId) {
+export async function removeCursor(canvasId, userId) {
   try {
-    const cursorRef = doc(db, CURSORS_COLLECTION, userId);
+    const cursorRef = doc(db, 'cursors', canvasId, 'users', userId);
     await deleteDoc(cursorRef);
   } catch (error) {
     console.error('Error removing cursor:', error.message);
@@ -50,14 +50,16 @@ export async function removeCursor(userId) {
 }
 
 /**
- * Subscribe to real-time cursor updates from all users
+ * Subscribe to real-time cursor updates from all users on a specific canvas
+ * @param {string} canvasId - Canvas ID
  * @param {string} currentUserId - Current user's ID (to filter out own cursor)
  * @param {Function} callback - Called with array of cursors on each update
  * @returns {Function} Unsubscribe function to stop listening
  */
-export function subscribeToCursors(currentUserId, callback) {
+export function subscribeToCursors(canvasId, currentUserId, callback) {
   try {
-    const cursorsCollection = collection(db, CURSORS_COLLECTION);
+    // Canvas-scoped cursors: cursors/{canvasId}/users
+    const cursorsCollection = collection(db, 'cursors', canvasId, 'users');
     
     const unsubscribe = onSnapshot(
       cursorsCollection,

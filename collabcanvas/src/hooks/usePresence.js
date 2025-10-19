@@ -7,24 +7,26 @@ import {
 } from '../services/presence';
 
 /**
- * Custom hook to manage user presence
+ * Custom hook to manage user presence (canvas-scoped)
+ * @param {string} canvasId - Canvas ID
  * @param {Object} user - Current user object from useAuth
  * @returns {Object} Online users array
  */
-function usePresence(user) {
+function usePresence(canvasId, user) {
   const [onlineUsers, setOnlineUsers] = useState([]);
 
   // Set user online and subscribe to presence updates
   useEffect(() => {
-    if (!user) {
+    if (!user || !canvasId) {
       setOnlineUsers([]);
       return;
     }
 
-    console.log('👥 Setting up presence for user:', user.displayName || user.email);
+    console.log('👥 Setting up presence for user:', user.displayName || user.email, 'on canvas:', canvasId);
 
     // Set user as online
     setOnline(
+      canvasId,
       user.uid, 
       user.displayName || user.email || 'Anonymous',
       user.email
@@ -33,14 +35,14 @@ function usePresence(user) {
     });
 
     // Subscribe to presence updates
-    const unsubscribe = subscribeToPresence((users) => {
+    const unsubscribe = subscribeToPresence(canvasId, (users) => {
       console.log('👥 usePresence received users:', users.length, users.map(u => u.userName));
       setOnlineUsers(users);
     });
 
     // Set up heartbeat to keep presence alive (every 30 seconds)
     const heartbeatInterval = setInterval(() => {
-      updateHeartbeat(user.uid);
+      updateHeartbeat(canvasId, user.uid);
     }, 30000); // 30 seconds
 
     // Cleanup on unmount or user change
@@ -48,22 +50,22 @@ function usePresence(user) {
       console.log('👥 Cleaning up presence');
       clearInterval(heartbeatInterval);
       unsubscribe();
-      setOffline(user.uid);
+      setOffline(canvasId, user.uid);
     };
-  }, [user]);
+  }, [user, canvasId]);
 
   // Handle page unload/refresh
   useEffect(() => {
-    if (!user) return;
+    if (!user || !canvasId) return;
 
     const handleBeforeUnload = () => {
       // Best-effort cleanup on page unload
-      setOffline(user.uid);
+      setOffline(canvasId, user.uid);
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [user]);
+  }, [user, canvasId]);
 
   return {
     onlineUsers

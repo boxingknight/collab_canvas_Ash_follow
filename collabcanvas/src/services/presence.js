@@ -8,18 +8,18 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 
-const PRESENCE_COLLECTION = 'presence';
-
 /**
- * Set user as online in Firestore
+ * Set user as online in Firestore (canvas-scoped)
+ * @param {string} canvasId - Canvas ID
  * @param {string} userId - User ID from Firebase Auth
  * @param {string} userName - User's display name
  * @param {string} userEmail - User's email
  * @returns {Promise<void>}
  */
-export async function setOnline(userId, userName, userEmail) {
+export async function setOnline(canvasId, userId, userName, userEmail) {
   try {
-    const presenceRef = doc(db, PRESENCE_COLLECTION, userId);
+    // Canvas-scoped presence: presence/{canvasId}/users/{userId}
+    const presenceRef = doc(db, 'presence', canvasId, 'users', userId);
     await setDoc(presenceRef, {
       userId,
       userName,
@@ -36,12 +36,13 @@ export async function setOnline(userId, userName, userEmail) {
 
 /**
  * Set user as offline (remove from presence)
+ * @param {string} canvasId - Canvas ID
  * @param {string} userId - User ID from Firebase Auth
  * @returns {Promise<void>}
  */
-export async function setOffline(userId) {
+export async function setOffline(canvasId, userId) {
   try {
-    const presenceRef = doc(db, PRESENCE_COLLECTION, userId);
+    const presenceRef = doc(db, 'presence', canvasId, 'users', userId);
     await deleteDoc(presenceRef);
   } catch (error) {
     console.error('Error setting user offline:', error.message);
@@ -51,12 +52,13 @@ export async function setOffline(userId) {
 
 /**
  * Update user's lastSeen timestamp (heartbeat)
+ * @param {string} canvasId - Canvas ID
  * @param {string} userId - User ID from Firebase Auth
  * @returns {Promise<void>}
  */
-export async function updateHeartbeat(userId) {
+export async function updateHeartbeat(canvasId, userId) {
   try {
-    const presenceRef = doc(db, PRESENCE_COLLECTION, userId);
+    const presenceRef = doc(db, 'presence', canvasId, 'users', userId);
     await setDoc(presenceRef, {
       lastSeen: serverTimestamp()
     }, { merge: true });
@@ -67,13 +69,15 @@ export async function updateHeartbeat(userId) {
 }
 
 /**
- * Subscribe to presence updates for all users
+ * Subscribe to presence updates for all users on a specific canvas
+ * @param {string} canvasId - Canvas ID
  * @param {Function} callback - Called with array of online users on each update
  * @returns {Function} Unsubscribe function to stop listening
  */
-export function subscribeToPresence(callback) {
+export function subscribeToPresence(canvasId, callback) {
   try {
-    const presenceCollection = collection(db, PRESENCE_COLLECTION);
+    // Canvas-scoped presence: presence/{canvasId}/users
+    const presenceCollection = collection(db, 'presence', canvasId, 'users');
     
     const unsubscribe = onSnapshot(
       presenceCollection,

@@ -18,17 +18,11 @@ service cloud.firestore {
       let canvas = get(/databases/$(database)/documents/canvases/$(canvasId)).data;
       
       // Owner can always read
-      if (isOwner(canvas.ownerId)) {
-        return true;
-      }
-      
-      // Public canvases can be read by anyone
-      if (canvas.visibility == 'public') {
-        return true;
-      }
-      
-      // Check if user has explicit permission
-      return exists(/databases/$(database)/documents/canvases/$(canvasId)/permissions/$(request.auth.uid));
+      return isOwner(canvas.ownerId)
+        // Public canvases can be read by anyone
+        || canvas.visibility == 'public'
+        // Check if user has explicit permission
+        || exists(/databases/$(database)/documents/canvases/$(canvasId)/permissions/$(request.auth.uid));
     }
     
     function canEditCanvas(canvasId) {
@@ -91,10 +85,7 @@ service cloud.firestore {
       // Delete: Only owner
       allow delete: if isOwner(resource.data.ownerId);
       
-      // ───────────────────────────────────────
-      // PERMISSIONS SUBCOLLECTION
-      // ───────────────────────────────────────
-      
+      // Permissions Subcollection
       match /permissions/{userId} {
         // Read: Owner or the user themselves
         allow read: if isAuthenticated() && (
@@ -120,6 +111,30 @@ service cloud.firestore {
     }
     
     // ═══════════════════════════════════════
+    // CURSORS COLLECTION (Firestore-based)
+    // ═══════════════════════════════════════
+    
+    match /cursors/{canvasId}/users/{userId} {
+      // Anyone can read cursors for a canvas they can access
+      allow read: if isAuthenticated() && canReadCanvas(canvasId);
+      
+      // Users can write their own cursor position
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // ═══════════════════════════════════════
+    // PRESENCE COLLECTION (Firestore-based)
+    // ═══════════════════════════════════════
+    
+    match /presence/{canvasId}/users/{userId} {
+      // Anyone can read presence for a canvas they can access
+      allow read: if isAuthenticated() && canReadCanvas(canvasId);
+      
+      // Users can write their own presence
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // ═══════════════════════════════════════
     // SHARE LINKS COLLECTION (Optional)
     // ═══════════════════════════════════════
     
@@ -127,9 +142,9 @@ service cloud.firestore {
       // Anyone can read share links (to validate)
       allow read: if true;
       
-      // Only authenticated users can create share links (for their own canvases)
+      // Only authenticated users can create share links
       allow write: if isAuthenticated() 
-        && request.auth.uid == request.resource.data.createdBy;
+        && request.resource.data.createdBy == request.auth.uid;
     }
     
     // ═══════════════════════════════════════
@@ -143,18 +158,10 @@ service cloud.firestore {
         || canReadCanvas(resource.data.canvasId)
       );
       
-      // Write: Typically done by server/admin, not client
-      // For now, allow authenticated users to write their own activities
+      // Write: Users can write their own activities
       allow write: if isAuthenticated() 
         && request.resource.data.userId == request.auth.uid;
     }
-    
-    // ═══════════════════════════════════════
-    // CURSORS (Realtime Database)
-    // Note: This is for Firestore, cursors use Realtime Database
-    // ═══════════════════════════════════════
-    
-    // Cursors are handled by Realtime Database rules (separate file)
   }
 }
 
