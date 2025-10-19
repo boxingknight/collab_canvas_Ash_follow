@@ -20,6 +20,13 @@ CollabCanvas is a production-ready collaborative design canvas with integrated A
 - **Marquee Selection**: Drag-to-select multiple shapes
 - **Layer Management**: Right-click context menu with fractional zIndex
 - **Transformations**: Move, resize, rotate all shape types
+- **🆕 Properties Panel (PR #25)**: Figma-style inspector with comprehensive editing
+  - **Position & Size**: Edit X, Y, W, H, Rotation with validated inputs
+  - **Color Picker**: Hex input, 16 presets, recent colors (localStorage)
+  - **9 Visual Alignment Tools**: Left, Center, Right, Top, Middle, Bottom, Distribute H/V, Center on Canvas
+  - **Layer Controls**: Forward, Backward, To Front, To Back buttons
+  - **Text Formatting**: Font size (12-96px), Bold, Text alignment (L/C/R)
+  - **Shape-Specific**: Circle radius, line endpoints, text typography
 - **🆕 Copy/Paste (PR #24)**: Cmd/Ctrl+C/V to duplicate shapes with smart offset
 - **🆕 Undo/Redo (PR #24)**: Cmd/Ctrl+Z/Shift+Z for complete operation history (50 operations)
 - **Keyboard Shortcuts**: Arrow keys for nudging, hotkeys for tools, duplicate (Cmd+D)
@@ -328,6 +335,7 @@ See [`FIREBASE_HOSTING_SETUP.md`](FIREBASE_HOSTING_SETUP.md) for detailed instru
 - [x] Layer management (context menu)
 - [x] AI Service Integration (28 functions)
 - [x] AI Chat Interface (natural language)
+- [x] **🆕 Properties Panel (PR #25)**: Figma-style inspector with 9 visual alignment tools
 - [x] **🆕 Copy/Paste (PR #24)**: Full clipboard support with keyboard shortcuts
 - [x] **🆕 Undo/Redo (PR #24)**: Complete history management (50 operations)
 - [x] **Enhanced Context Menu**: Works on both shapes and empty canvas

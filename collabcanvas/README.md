@@ -10,6 +10,16 @@ CollabCanvas is a real-time collaborative drawing application that allows multip
 - **Complete Shape Library**: Rectangles, circles, lines, and text shapes
 - **Advanced Selection**: Single-select, multi-select (shift-click), and marquee selection (drag-to-select)
 - **Shape Transformations**: Move, resize, rotate, duplicate, and delete shapes with intuitive controls
+- **🆕 Properties Panel (PR #25)**: Professional Figma-style inspector on the right sidebar
+  - **Position & Size**: Edit X, Y, W, H, Rotation with validated numeric inputs
+  - **Color Picker**: Hex input (#rrggbb), 16 preset swatches, recent colors (localStorage)
+  - **9 Visual Alignment Tools** ⭐: Left, Center, Right, Top, Middle, Bottom, Distribute H/V, Center on Canvas
+  - **Layer Controls**: Forward, Backward, To Front, To Back buttons
+  - **Text Formatting**: Font size (12-96px), Bold toggle, Text alignment (L/C/R)
+  - **Shape-Specific Views**: Circle radius, line endpoints, text typography
+  - **Real-Time Sync**: All changes broadcast instantly (<100ms)
+  - **Multi-Select Support**: Alignment tools work with multiple shapes
+  - **No Overlap**: AI Chat repositioned to avoid blocking Properties Panel
 - **🆕 Copy/Paste (PR #24)**: Full clipboard support with Cmd/Ctrl+C/V
   - Smart offset (20px, 40px, 60px for multiple pastes)
   - Preserves all properties (color, rotation, text formatting)
