@@ -3,6 +3,7 @@ import useAuth from './hooks/useAuth';
 import Landing from './pages/Landing/Landing';
 import Login from './components/Auth/Login';
 import SignUp from './components/Auth/SignUp';
+import Dashboard from './pages/Dashboard/Dashboard';
 import Canvas from './components/Canvas/Canvas';
 import AppLayout from './components/Layout/AppLayout';
 import './App.css';
@@ -83,15 +84,13 @@ function App() {
           path="/dashboard" 
           element={
             <ProtectedRoute>
-              <AppLayout user={user} onLogout={logout}>
-                <div>Dashboard - Coming Soon</div>
-              </AppLayout>
+              <Dashboard />
             </ProtectedRoute>
           } 
         />
         
         <Route 
-          path="/canvas" 
+          path="/canvas/:canvasId" 
           element={
             <ProtectedRoute>
               <AppLayout user={user} onLogout={logout}>
