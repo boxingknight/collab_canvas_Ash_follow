@@ -23,6 +23,7 @@ function Dashboard() {
     error,
     currentView,
     createCanvas,
+    updateCanvas,
     deleteCanvas,
     restoreCanvas,
     toggleStar,
@@ -55,6 +56,16 @@ function Dashboard() {
     const term = e.target.value;
     setSearchTerm(term);
     search(term);
+  }
+
+  // Handle rename canvas
+  async function handleRenameCanvas(canvasId, newName) {
+    try {
+      await updateCanvas(canvasId, { name: newName });
+    } catch (err) {
+      console.error('Error renaming canvas:', err);
+      alert('Failed to rename canvas. Please try again.');
+    }
   }
 
   // Calculate canvas counts for sidebar
@@ -197,6 +208,7 @@ function Dashboard() {
                   key={canvas.id}
                   canvas={canvas}
                   onDelete={currentView === 'trash' ? restoreCanvas : deleteCanvas}
+                  onRename={handleRenameCanvas}
                   onToggleStar={toggleStar}
                 />
               ))}

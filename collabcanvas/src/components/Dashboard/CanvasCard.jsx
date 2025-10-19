@@ -4,11 +4,15 @@
  * Displays a single canvas as a card with thumbnail, name, and actions
  */
 
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 
 function CanvasCard({ canvas, onDelete, onRename, onToggleStar }) {
   const navigate = useNavigate();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedName, setEditedName] = useState(canvas.name);
+  const inputRef = useRef(null);
 
   // Format last edited time
   function formatTime(timestamp) {
@@ -49,6 +53,45 @@ function CanvasCard({ canvas, onDelete, onRename, onToggleStar }) {
     onToggleStar(canvas.id);
   }
 
+  // Start editing
+  function handleStartEdit(e) {
+    e.stopPropagation();
+    setIsEditing(true);
+    setEditedName(canvas.name);
+  }
+
+  // Save edit
+  function handleSaveEdit() {
+    const trimmedName = editedName.trim();
+    if (trimmedName && trimmedName !== canvas.name) {
+      onRename(canvas.id, trimmedName);
+    }
+    setIsEditing(false);
+  }
+
+  // Cancel edit
+  function handleCancelEdit() {
+    setIsEditing(false);
+    setEditedName(canvas.name);
+  }
+
+  // Handle key press in input
+  function handleKeyDown(e) {
+    if (e.key === 'Enter') {
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
+  }
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
   return (
     <div className="canvas-card" onClick={handleClick}>
       {/* Thumbnail */}
@@ -78,7 +121,27 @@ function CanvasCard({ canvas, onDelete, onRename, onToggleStar }) {
 
       {/* Info */}
       <div className="canvas-card-info">
-        <h3 className="canvas-card-name">{canvas.name}</h3>
+        {isEditing ? (
+          <input
+            ref={inputRef}
+            type="text"
+            className="canvas-card-name-input"
+            value={editedName}
+            onChange={(e) => setEditedName(e.target.value)}
+            onBlur={handleSaveEdit}
+            onKeyDown={handleKeyDown}
+            onClick={(e) => e.stopPropagation()}
+            maxLength={50}
+          />
+        ) : (
+          <h3 
+            className="canvas-card-name" 
+            onDoubleClick={handleStartEdit}
+            title="Double-click to rename"
+          >
+            {canvas.name}
+          </h3>
+        )}
         <p className="canvas-card-time">
           Edited {formatTime(canvas.lastEditedAt || canvas.updatedAt)}
         </p>
@@ -90,6 +153,16 @@ function CanvasCard({ canvas, onDelete, onRename, onToggleStar }) {
 
       {/* Actions (hover) */}
       <div className="canvas-card-actions">
+        <button 
+          className="canvas-action-btn"
+          onClick={handleStartEdit}
+          title="Rename"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" strokeWidth="2" strokeLinecap="round"/>
+            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
         <button 
           className="canvas-action-btn"
           onClick={handleDelete}

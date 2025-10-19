@@ -317,6 +317,27 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: default;
+}
+
+.canvas-card-name-input {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+  padding: 0.25rem 0.5rem;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: #fff;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.canvas-card-name-input:focus {
+  outline: none;
+  border-color: #646cff;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .canvas-card-time {
