@@ -1,0 +1,160 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ═══════════════════════════════════════
+    // HELPER FUNCTIONS
+    // ═══════════════════════════════════════
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(ownerId) {
+      return isAuthenticated() && request.auth.uid == ownerId;
+    }
+    
+    function canReadCanvas(canvasId) {
+      let canvas = get(/databases/$(database)/documents/canvases/$(canvasId)).data;
+      
+      // Owner can always read
+      if (isOwner(canvas.ownerId)) {
+        return true;
+      }
+      
+      // Public canvases can be read by anyone
+      if (canvas.visibility == 'public') {
+        return true;
+      }
+      
+      // Check if user has explicit permission
+      return exists(/databases/$(database)/documents/canvases/$(canvasId)/permissions/$(request.auth.uid));
+    }
+    
+    function canEditCanvas(canvasId) {
+      let canvas = get(/databases/$(database)/documents/canvases/$(canvasId)).data;
+      
+      // Owner can always edit
+      if (isOwner(canvas.ownerId)) {
+        return true;
+      }
+      
+      // Check if user has editor permission
+      if (exists(/databases/$(database)/documents/canvases/$(canvasId)/permissions/$(request.auth.uid))) {
+        let permission = get(/databases/$(database)/documents/canvases/$(canvasId)/permissions/$(request.auth.uid)).data;
+        return permission.role == 'editor';
+      }
+      
+      return false;
+    }
+    
+    // ═══════════════════════════════════════
+    // USERS COLLECTION
+    // ═══════════════════════════════════════
+    
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId);
+    }
+    
+    // ═══════════════════════════════════════
+    // WORKSPACES COLLECTION
+    // ═══════════════════════════════════════
+    
+    match /workspaces/{workspaceId} {
+      // Anyone can read their own workspaces
+      allow read: if isAuthenticated() && isOwner(resource.data.ownerId);
+      
+      // Anyone can create a workspace (must set themselves as owner)
+      allow create: if isAuthenticated() 
+        && request.resource.data.ownerId == request.auth.uid;
+      
+      // Only owner can update or delete workspace
+      allow update, delete: if isOwner(resource.data.ownerId);
+    }
+    
+    // ═══════════════════════════════════════
+    // CANVASES COLLECTION
+    // ═══════════════════════════════════════
+    
+    match /canvases/{canvasId} {
+      // Read: Owner, shared users, or public
+      allow read: if isAuthenticated() && canReadCanvas(canvasId);
+      
+      // Create: Any authenticated user (must set themselves as owner)
+      allow create: if isAuthenticated() 
+        && request.resource.data.ownerId == request.auth.uid;
+      
+      // Update: Owner or users with editor permission
+      allow update: if isAuthenticated() && canEditCanvas(canvasId);
+      
+      // Delete: Only owner
+      allow delete: if isOwner(resource.data.ownerId);
+      
+      // ───────────────────────────────────────
+      // PERMISSIONS SUBCOLLECTION
+      // ───────────────────────────────────────
+      
+      match /permissions/{userId} {
+        // Read: Owner or the user themselves
+        allow read: if isAuthenticated() && (
+          isOwner(get(/databases/$(database)/documents/canvases/$(canvasId)).data.ownerId)
+          || request.auth.uid == userId
+        );
+        
+        // Write: Only canvas owner
+        allow write: if isOwner(get(/databases/$(database)/documents/canvases/$(canvasId)).data.ownerId);
+      }
+    }
+    
+    // ═══════════════════════════════════════
+    // SHAPES COLLECTION
+    // ═══════════════════════════════════════
+    
+    match /shapes/{shapeId} {
+      // Read: If user can read the canvas
+      allow read: if isAuthenticated() && canReadCanvas(resource.data.canvasId);
+      
+      // Write: If user can edit the canvas
+      allow write: if isAuthenticated() && canEditCanvas(resource.data.canvasId);
+    }
+    
+    // ═══════════════════════════════════════
+    // SHARE LINKS COLLECTION (Optional)
+    // ═══════════════════════════════════════
+    
+    match /shareLinks/{token} {
+      // Anyone can read share links (to validate)
+      allow read: if true;
+      
+      // Only authenticated users can create share links (for their own canvases)
+      allow write: if isAuthenticated() 
+        && request.auth.uid == request.resource.data.createdBy;
+    }
+    
+    // ═══════════════════════════════════════
+    // ACTIVITY LOG COLLECTION (Optional)
+    // ═══════════════════════════════════════
+    
+    match /activityLog/{logId} {
+      // Read: User who performed action or anyone who can read the canvas
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId
+        || canReadCanvas(resource.data.canvasId)
+      );
+      
+      // Write: Typically done by server/admin, not client
+      // For now, allow authenticated users to write their own activities
+      allow write: if isAuthenticated() 
+        && request.resource.data.userId == request.auth.uid;
+    }
+    
+    // ═══════════════════════════════════════
+    // CURSORS (Realtime Database)
+    // Note: This is for Firestore, cursors use Realtime Database
+    // ═══════════════════════════════════════
+    
+    // Cursors are handled by Realtime Database rules (separate file)
+  }
+}
+
