@@ -6,6 +6,7 @@ import SignUp from './components/Auth/SignUp';
 import Dashboard from './pages/Dashboard/Dashboard';
 import Canvas from './components/Canvas/Canvas';
 import AppLayout from './components/Layout/AppLayout';
+import ShareLinkAccess from './pages/ShareLinkAccess/ShareLinkAccess';
 import './App.css';
 
 /**
@@ -78,6 +79,9 @@ function App() {
             </PublicRoute>
           } 
         />
+        
+        {/* Share Link Access (handles own auth redirect) */}
+        <Route path="/share/:linkId" element={<ShareLinkAccess />} />
 
         {/* Protected Routes */}
         <Route 

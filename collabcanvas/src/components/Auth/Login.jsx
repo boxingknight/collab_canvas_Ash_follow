@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
 
 function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnUrl = searchParams.get('returnUrl');
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState('');
@@ -28,7 +31,8 @@ function Login() {
     try {
       setIsSubmitting(true);
       await login(email, password);
-      // User will be redirected automatically by App.jsx
+      // Redirect to returnUrl if exists, otherwise dashboard
+      navigate(returnUrl ? decodeURIComponent(returnUrl) : '/dashboard');
     } catch (err) {
       setLocalError(getErrorMessage(err.code || err.message));
     } finally {
@@ -41,7 +45,8 @@ function Login() {
     try {
       setIsSubmitting(true);
       await loginWithGoogle();
-      // User will be redirected automatically by App.jsx
+      // Redirect to returnUrl if exists, otherwise dashboard
+      navigate(returnUrl ? decodeURIComponent(returnUrl) : '/dashboard');
     } catch (err) {
       setLocalError(getErrorMessage(err.code || err.message));
     } finally {
