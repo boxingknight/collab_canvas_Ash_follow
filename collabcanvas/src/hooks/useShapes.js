@@ -33,17 +33,24 @@ function useShapes(canvasId, user) {
 
   // Subscribe to Firestore shapes on mount (canvas-scoped)
   useEffect(() => {
+    console.log('🔧 useShapes effect running, user:', !!user, 'canvasId:', canvasId);
+    
     if (!user || !canvasId) {
+      console.log('⚠️ Skipping subscription - user or canvasId missing');
       setShapes([]);
       setIsLoading(false);
       return;
     }
 
+    console.log('✅ Starting subscription for canvasId:', canvasId);
+    
     // Clean up any stale locks on mount
     cleanupStaleLocks();
 
     // Subscribe only to shapes for this canvas
     const unsubscribe = subscribeToShapes(canvasId, (updatedShapes) => {
+      console.log('🔄 useShapes callback fired with', updatedShapes.length, 'shapes');
+      
       // Merge incoming shapes with local optimistic updates
       // If a shape has a pending update less than 500ms old, keep the local version
       const now = Date.now();
@@ -72,6 +79,7 @@ function useShapes(canvasId, user) {
     }, 30000);
 
     return () => {
+      console.log('🧹 useShapes cleanup running for canvasId:', canvasId);
       unsubscribe();
       clearInterval(cleanupInterval);
     };
