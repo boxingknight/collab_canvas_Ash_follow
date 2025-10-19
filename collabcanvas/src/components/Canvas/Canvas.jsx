@@ -24,6 +24,14 @@ function Canvas() {
   // Get canvasId from URL route params
   const { canvasId } = useParams();
   
+  // Debug: Log canvasId to verify it's being passed correctly
+  useEffect(() => {
+    console.log('🎨 Canvas loaded with canvasId:', canvasId);
+    if (!canvasId) {
+      console.error('❌ ERROR: canvasId is undefined! Check route params.');
+    }
+  }, [canvasId]);
+  
   const stageRef = useRef(null);
   const staticLayerRef = useRef(null); // For caching static grid/background
   const { user } = useAuth();
