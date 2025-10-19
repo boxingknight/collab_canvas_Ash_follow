@@ -76,15 +76,15 @@ export function getShapeBounds(shape) {
       return calculateRotatedBounds(shape, rotation);
       
     case 'circle':
+      // Circles are stored like rectangles (x,y = top-left, width/height = diameter)
       // Circles look the same when rotated (optimization)
-      const radius = shape.radius || (shape.width / 2);
       return {
-        x: shape.x - radius,
-        y: shape.y - radius,
-        width: radius * 2,
-        height: radius * 2,
-        centerX: shape.x,
-        centerY: shape.y
+        x: shape.x,
+        y: shape.y,
+        width: shape.width,
+        height: shape.height,
+        centerX: shape.x + shape.width / 2,
+        centerY: shape.y + shape.height / 2
       };
       
     case 'line':
@@ -412,9 +412,10 @@ export function calculateCenterPosition(shape) {
       };
       
     case 'circle':
+      // Circles stored as top-left like rectangles
       return {
-        x: Math.round(canvasCenterX),
-        y: Math.round(canvasCenterY)
+        x: Math.round(canvasCenterX - bounds.width / 2),
+        y: Math.round(canvasCenterY - bounds.height / 2)
       };
       
     case 'line':
