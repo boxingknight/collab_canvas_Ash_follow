@@ -10,11 +10,28 @@ CollabCanvas is a real-time collaborative drawing application that allows multip
 - **Complete Shape Library**: Rectangles, circles, lines, and text shapes
 - **Advanced Selection**: Single-select, multi-select (shift-click), and marquee selection (drag-to-select)
 - **Shape Transformations**: Move, resize, rotate, duplicate, and delete shapes with intuitive controls
+- **🆕 Copy/Paste (PR #24)**: Full clipboard support with Cmd/Ctrl+C/V
+  - Smart offset (20px, 40px, 60px for multiple pastes)
+  - Preserves all properties (color, rotation, text formatting)
+  - Boundary clamping (keeps shapes visible)
+  - Multi-select support (paste groups of shapes)
+  - Clipboard limit (10 shapes for memory management)
+- **🆕 Undo/Redo (PR #24)**: Complete operation history with Cmd/Ctrl+Z/Shift+Z
+  - Tracks CREATE and DELETE operations
+  - History limit (50 operations)
+  - Conflict resolution (handles multi-user scenarios)
+  - Real-time sync across all users
+  - Future support for MOVE, RESIZE, MODIFY operations
 - **Layer Management**: Professional right-click context menu for precise z-index control
   - Bring to Front/Forward, Send to Back/Backward operations
   - Fractional zIndex (Figma approach) - zero conflicts guaranteed
   - Visual stack navigation - one click = one visual layer
   - Unlimited depth (negative zIndex supported)
+- **Enhanced Context Menu**: Right-click anywhere (shapes or canvas) for quick access
+  - Copy/Paste operations (enabled/disabled based on state)
+  - Undo/Redo operations (enabled/disabled based on history)
+  - All shape operations (when shape selected)
+  - Smart state awareness (dim unavailable options)
 - **Duplicate Shapes**: Cmd/Ctrl+D to duplicate selected shapes with 20px offset (preserves all properties)
 - **Text Editing**: Double-click to edit text inline with auto-resize and formatting
 - **Line Tools**: Draggable endpoint anchors for precise line positioning
@@ -223,6 +240,15 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 | `L` | Draw Mode + Line tool |
 | `T` | Draw Mode + Text tool |
 | `Esc` | Return to Pan Mode + Deselect all shapes |
+
+#### Editing Shortcuts (🆕 PR #24)
+| Key | Action |
+|-----|--------|
+| `⌘/Ctrl+C` | Copy selected shapes to clipboard |
+| `⌘/Ctrl+V` | Paste shapes from clipboard (with smart offset) |
+| `⌘/Ctrl+Z` | Undo last operation |
+| `⌘/Ctrl+Shift+Z` | Redo last undone operation |
+| `⌘/Ctrl+D` | Duplicate selected shapes |
 
 #### Selection Shortcuts
 | Key | Action |

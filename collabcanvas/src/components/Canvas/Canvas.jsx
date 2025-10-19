@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useMemo } from 'react';
+import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { Stage, Layer, Line, Text, Rect, Circle } from 'react-konva';
 import useCanvas from '../../hooks/useCanvas';
 import useShapes from '../../hooks/useShapes';
@@ -6,6 +6,9 @@ import useCursors from '../../hooks/useCursors';
 import useAuth from '../../hooks/useAuth';
 import useSelection from '../../hooks/useSelection';
 import useKeyboard from '../../hooks/useKeyboard';
+import { useClipboard } from '../../hooks/useClipboard';
+import { useHistory } from '../../hooks/useHistory';
+import { createCreateOperation, createDeleteOperation, createMoveOperation, createModifyOperation } from '../../utils/historyOperations';
 import { setCurrentSelection as updateSelectionBridge, registerSetSelection } from '../../services/selectionBridge';
 import Shape from './Shape';
 import RemoteCursor from './RemoteCursor';
@@ -32,6 +35,46 @@ function Canvas() {
     isMultiSelect,
     selectedShapeId // For backward compatibility
   } = useSelection();
+  const { copy, paste, hasClipboard } = useClipboard();
+  
+  // Canvas API for history operations (undo/redo)
+  // Provides helper functions needed by restoreOperation
+  const canvasAPI = useMemo(() => ({
+    // Check if a shape exists
+    shapeExists: async (shapeId) => {
+      return shapes.some(s => s.id === shapeId);
+    },
+    
+    // Create a shape (for undo delete / redo create)
+    createShape: async (shapeData) => {
+      // Use addShape but with the original ID preserved
+      await addShape(shapeData, user?.uid);
+    },
+    
+    // Delete a shape (for undo create / redo delete)
+    deleteShape: async (shapeId) => {
+      await deleteShape(shapeId);
+    },
+    
+    // Update shape position (for undo/redo move)
+    updateShapePosition: async (shapeId, x, y) => {
+      await updateShapeImmediate(shapeId, { x, y });
+    },
+    
+    // Update shape size (for undo/redo resize)
+    updateShapeSize: async (shapeId, width, height) => {
+      await updateShapeImmediate(shapeId, { width, height });
+    },
+    
+    // Update shape properties (for undo/redo modify)
+    updateShapeProperties: async (shapeId, props) => {
+      await updateShapeImmediate(shapeId, props);
+    }
+  }), [shapes, addShape, deleteShape, updateShapeImmediate, user]);
+  
+  // History for undo/redo
+  const { recordOperation, undo, redo, canUndo, canRedo } = useHistory(canvasAPI);
+  
   const [stageSize, setStageSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [fps, setFps] = useState(60);
   const fpsCounterRef = useRef(null);
@@ -416,7 +459,7 @@ function Canvas() {
       // Only add line if it has meaningful length (>5px)
       if (length > 5) {
         try {
-          await addShape({
+          const createdShape = await addShape({
             x: newShape.x,
             y: newShape.y,
             endX: newShape.endX,
@@ -426,6 +469,11 @@ function Canvas() {
             type: 'line',
             rotation: 0
           });
+          
+          // Record CREATE operation for undo
+          if (createdShape && createdShape.id) {
+            recordOperation(createCreateOperation(createdShape, user.uid));
+          }
         } catch (error) {
           console.error('Failed to add line:', error.message);
           alert(`Failed to create line: ${error.message}`);
@@ -453,7 +501,12 @@ function Canvas() {
         }
         
         try {
-          await addShape(normalizedShape);
+          const createdShape = await addShape(normalizedShape);
+          
+          // Record CREATE operation for undo
+          if (createdShape && createdShape.id) {
+            recordOperation(createCreateOperation(createdShape, user.uid));
+          }
         } catch (error) {
           console.error('Failed to add shape:', error.message);
           alert(`Failed to create shape: ${error.message}`);
@@ -532,6 +585,32 @@ function Canvas() {
     });
   }
 
+  // Handle context menu on empty canvas (not on shapes)
+  function handleStageContextMenu(event) {
+    // Only handle if right-clicking on the stage itself (not on shapes)
+    const clickedOnEmpty = event.target === event.target.getStage();
+    
+    if (!clickedOnEmpty) {
+      return; // Let shape handler handle it
+    }
+    
+    event.evt.preventDefault(); // Prevent default browser context menu
+    
+    // Get the pointer position relative to the viewport
+    const stage = event.target.getStage();
+    const pointerPosition = stage.getPointerPosition();
+    
+    // Convert to screen coordinates
+    const container = stage.container();
+    const rect = container.getBoundingClientRect();
+    
+    setContextMenu({
+      visible: true,
+      x: rect.left + pointerPosition.x,
+      y: rect.top + pointerPosition.y
+    });
+  }
+
   // Close context menu
   function closeContextMenu() {
     setContextMenu({ visible: false, x: 0, y: 0 });
@@ -573,6 +652,12 @@ function Canvas() {
     });
     
     const lockedCount = selectionCount - shapesToDelete.length;
+    
+    // Record DELETE operations for undo (before deleting)
+    const shapeDataToRecord = shapesToDelete.map(id => shapes.find(s => s.id === id)).filter(Boolean);
+    shapeDataToRecord.forEach(shapeData => {
+      recordOperation(createDeleteOperation(shapeData, user.uid));
+    });
     
     // Delete all unlocked shapes
     await Promise.all(shapesToDelete.map(id => deleteShape(id)));
@@ -703,6 +788,96 @@ function Canvas() {
     selectAll(sortedShapes.map(s => s.id));
   }
 
+  // Handle copy from keyboard (Cmd/Ctrl+C)
+  function handleCopy() {
+    if (selectedShapeIds.length === 0) {
+      console.log('No shapes selected to copy');
+      return;
+    }
+
+    // Get selected shapes
+    const selectedShapes = shapes.filter(s => selectedShapeIds.includes(s.id));
+    
+    // Copy to clipboard
+    const result = copy(selectedShapes);
+    
+    if (result.success) {
+      console.log(result.message);
+      // Optional: Show toast notification
+      // showToast(result.message, 'success');
+    }
+  }
+
+  // Handle paste from keyboard (Cmd/Ctrl+V)
+  async function handlePaste() {
+    if (!hasClipboard()) {
+      console.log('Clipboard is empty');
+      // Optional: Show toast notification
+      // showToast('Clipboard is empty. Copy shapes first.', 'info');
+      return;
+    }
+
+    // Paste shapes
+    const result = paste();
+    
+    if (result.success && result.shapes.length > 0) {
+      // Create all pasted shapes
+      const newShapeIds = [];
+      
+      for (const shapeData of result.shapes) {
+        try {
+          const createdShape = await addShape(shapeData, user.uid);
+          if (createdShape && createdShape.id) {
+            newShapeIds.push(createdShape.id);
+            
+            // Record CREATE operation for undo
+            recordOperation(createCreateOperation(createdShape, user.uid));
+          }
+        } catch (error) {
+          console.error('Error pasting shape:', error);
+        }
+      }
+      
+      // Select newly pasted shapes
+      if (newShapeIds.length > 0) {
+        setSelection(newShapeIds);
+        console.log(result.message);
+        // Optional: Show toast notification
+        // showToast(result.message, 'success');
+      }
+    }
+  }
+
+  // Handle undo from keyboard (Cmd/Ctrl+Z)
+  async function handleUndo() {
+    if (!canUndo) {
+      console.log('Nothing to undo');
+      return;
+    }
+    
+    const success = await undo();
+    if (success) {
+      console.log('Undo successful');
+      // Optional: Show toast notification
+      // showToast('Undo', 'success');
+    }
+  }
+
+  // Handle redo from keyboard (Cmd/Ctrl+Shift+Z)
+  async function handleRedo() {
+    if (!canRedo) {
+      console.log('Nothing to redo');
+      return;
+    }
+    
+    const success = await redo();
+    if (success) {
+      console.log('Redo successful');
+      // Optional: Show toast notification
+      // showToast('Redo', 'success');
+    }
+  }
+
   // Integrate keyboard shortcuts
   const isTextEditing = editingTextId !== null;
   useKeyboard({
@@ -712,6 +887,10 @@ function Canvas() {
     onDeselect: handleDeselect,
     onNudge: handleNudge,
     onToolChange: handleToolChange,
+    onCopy: handleCopy,
+    onPaste: handlePaste,
+    onUndo: handleUndo,
+    onRedo: handleRedo,
     // Layer management operations
     onBringForward: () => {
       if (selectedShapeIds.length > 0) {
@@ -1241,6 +1420,7 @@ function Canvas() {
         onMouseMove={editingTextId ? undefined : handleMouseMove}
         onMouseUp={editingTextId ? undefined : handleMouseUp}
         onClick={editingTextId ? undefined : handleStageClick}
+        onContextMenu={editingTextId ? undefined : handleStageContextMenu}
         style={{ 
           cursor: isMarqueeActive ? 'crosshair'
                 : isDrawing ? 'crosshair' 
@@ -1791,6 +1971,13 @@ function Canvas() {
         onSendToBack={handleContextSendToBack}
         onDuplicate={handleDuplicate}
         onDelete={deleteSelectedShapes}
+        onCopy={handleCopy}
+        onPaste={handlePaste}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        hasClipboard={hasClipboard()}
+        canUndo={canUndo}
+        canRedo={canRedo}
       />
     </div>
   );

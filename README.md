@@ -20,7 +20,10 @@ CollabCanvas is a production-ready collaborative design canvas with integrated A
 - **Marquee Selection**: Drag-to-select multiple shapes
 - **Layer Management**: Right-click context menu with fractional zIndex
 - **Transformations**: Move, resize, rotate all shape types
-- **Keyboard Shortcuts**: Arrow keys for nudging, hotkeys for tools
+- **🆕 Copy/Paste (PR #24)**: Cmd/Ctrl+C/V to duplicate shapes with smart offset
+- **🆕 Undo/Redo (PR #24)**: Cmd/Ctrl+Z/Shift+Z for complete operation history (50 operations)
+- **Keyboard Shortcuts**: Arrow keys for nudging, hotkeys for tools, duplicate (Cmd+D)
+- **Context Menu**: Right-click anywhere for quick access to all operations
 - **60 FPS Performance**: Maintains smooth 60 FPS with 500+ shapes
 
 ### 🤖 AI Assistant (GPT-4 Turbo)
@@ -323,8 +326,11 @@ See [`FIREBASE_HOSTING_SETUP.md`](FIREBASE_HOSTING_SETUP.md) for detailed instru
 - [x] Rotation support
 - [x] Duplicate & keyboard shortcuts
 - [x] Layer management (context menu)
-- [x] AI Service Integration (18 functions)
+- [x] AI Service Integration (28 functions)
 - [x] AI Chat Interface (natural language)
+- [x] **🆕 Copy/Paste (PR #24)**: Full clipboard support with keyboard shortcuts
+- [x] **🆕 Undo/Redo (PR #24)**: Complete history management (50 operations)
+- [x] **Enhanced Context Menu**: Works on both shapes and empty canvas
 - [x] Batch creation (up to 1000 shapes)
 - [x] Multi-select manipulation via AI
 - [x] AI Selection Commands (5 functions)
