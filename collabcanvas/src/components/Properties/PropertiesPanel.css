@@ -438,6 +438,76 @@
   color: #a0a0a0;
 }
 
+/* Typography Controls */
+.typography-row {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.typography-row label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #a0a0a0;
+  text-transform: uppercase;
+}
+
+.typography-select {
+  width: 100%;
+  padding: 6px 8px;
+  background: #1a1a1a;
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+}
+
+.typography-select:hover {
+  border-color: #5a5a5a;
+}
+
+.typography-select:focus {
+  border-color: #5a9fd4;
+}
+
+.format-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.format-button {
+  flex: 1;
+  height: 32px;
+  background: #1a1a1a;
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.format-button:hover {
+  background: #3a3a3a;
+  border-color: #5a9fd4;
+}
+
+.format-button.active {
+  background: #5a9fd4;
+  border-color: #5a9fd4;
+  color: #fff;
+}
+
+.format-button:active {
+  transform: scale(0.95);
+}
+
 /* Responsive */
 @media (max-width: 1200px) {
   .properties-panel {

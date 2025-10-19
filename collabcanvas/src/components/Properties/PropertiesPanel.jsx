@@ -5,6 +5,7 @@ import PositionSize from './sections/PositionSize';
 import Appearance from './sections/Appearance';
 import AlignmentTools from './sections/AlignmentTools';
 import LayerControls from './sections/LayerControls';
+import Typography from './sections/Typography';
 import './PropertiesPanel.css';
 
 function PropertiesPanel({ selectedShapes = [], onUpdateShape, onLayerChange }) {
@@ -68,7 +69,11 @@ function PropertiesPanel({ selectedShapes = [], onUpdateShape, onLayerChange }) 
               onLayerChange={onLayerChange}
             />
 
-            {/* More sections will be added in subsequent phases */}
+            {/* Typography (Text only) */}
+            <Typography
+              shape={shape}
+              onUpdate={onUpdateShape}
+            />
           </>
         )}
 
