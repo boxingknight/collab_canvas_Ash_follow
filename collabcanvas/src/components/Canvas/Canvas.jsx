@@ -24,6 +24,12 @@ function Canvas() {
   // Get canvasId from URL route params
   const { canvasId } = useParams();
   
+  // Canvas name editing state (MUST be declared before useEffects that use them)
+  const [canvasName, setCanvasName] = useState('Untitled Canvas');
+  const [isEditingCanvasName, setIsEditingCanvasName] = useState(false);
+  const [editedCanvasName, setEditedCanvasName] = useState('');
+  const canvasNameInputRef = useRef(null);
+  
   // Debug: Log canvasId to verify it's being passed correctly
   useEffect(() => {
     console.log('🎨 Canvas loaded with canvasId:', canvasId);
@@ -157,12 +163,6 @@ function Canvas() {
   const [stageSize, setStageSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [fps, setFps] = useState(60);
   const fpsCounterRef = useRef(null);
-  
-  // Canvas name editing state
-  const [canvasName, setCanvasName] = useState('Untitled Canvas');
-  const [isEditingCanvasName, setIsEditingCanvasName] = useState(false);
-  const [editedCanvasName, setEditedCanvasName] = useState('');
-  const canvasNameInputRef = useRef(null);
   
   // Sort shapes by zIndex for proper rendering order
   // Shapes with higher zIndex render on top (appear in front)
