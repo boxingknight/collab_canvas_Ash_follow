@@ -13,6 +13,7 @@ import { setCurrentSelection as updateSelectionBridge, registerSetSelection } fr
 import Shape from './Shape';
 import RemoteCursor from './RemoteCursor';
 import ContextMenu from './ContextMenu';
+import PropertiesPanel from '../Properties/PropertiesPanel';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, SHAPE_COLORS, SHAPE_TYPES, DEFAULT_STROKE_WIDTH, DEFAULT_FONT_SIZE, DEFAULT_FONT_WEIGHT, DEFAULT_TEXT, MIN_TEXT_WIDTH, MIN_TEXT_HEIGHT } from '../../utils/constants';
 import { createFPSCounter, getRandomColor } from '../../utils/helpers';
 
@@ -1402,9 +1403,16 @@ function Canvas() {
     );
   }
 
+  // Get selected shapes for properties panel
+  const selectedShapes = useMemo(() => {
+    return shapes.filter(s => selectedShapeIds.includes(s.id));
+  }, [shapes, selectedShapeIds]);
+
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <Stage
+    <div style={{ display: 'flex', width: '100%', height: '100%' }}>
+      {/* Canvas Container */}
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+        <Stage
         ref={stageRef}
         width={stageSize.width}
         height={stageSize.height}
@@ -1978,6 +1986,13 @@ function Canvas() {
         hasClipboard={hasClipboard()}
         canUndo={canUndo}
         canRedo={canRedo}
+      />
+      </div>
+
+      {/* Properties Panel */}
+      <PropertiesPanel
+        selectedShapes={selectedShapes}
+        onUpdateShape={updateShapeImmediate}
       />
     </div>
   );
