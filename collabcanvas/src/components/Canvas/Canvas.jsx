@@ -32,6 +32,67 @@ function Canvas() {
     }
   }, [canvasId]);
   
+  // Fetch canvas document to get canvas name
+  useEffect(() => {
+    if (!canvasId) return;
+    
+    async function fetchCanvasName() {
+      try {
+        const { getCanvas } = await import('../../services/canvases');
+        const canvas = await getCanvas(canvasId);
+        if (canvas) {
+          setCanvasName(canvas.name || 'Untitled Canvas');
+        }
+      } catch (error) {
+        console.error('Error fetching canvas name:', error);
+      }
+    }
+    
+    fetchCanvasName();
+  }, [canvasId]);
+  
+  // Handle canvas name editing
+  function handleStartEditCanvasName() {
+    setIsEditingCanvasName(true);
+    setEditedCanvasName(canvasName);
+  }
+  
+  async function handleSaveCanvasName() {
+    const trimmedName = editedCanvasName.trim();
+    if (trimmedName && trimmedName !== canvasName) {
+      try {
+        const { updateCanvas } = await import('../../services/canvases');
+        await updateCanvas(canvasId, { name: trimmedName }, user?.uid);
+        setCanvasName(trimmedName);
+      } catch (error) {
+        console.error('Error updating canvas name:', error);
+        alert('Failed to update canvas name');
+      }
+    }
+    setIsEditingCanvasName(false);
+  }
+  
+  function handleCancelEditCanvasName() {
+    setIsEditingCanvasName(false);
+    setEditedCanvasName(canvasName);
+  }
+  
+  function handleCanvasNameKeyDown(e) {
+    if (e.key === 'Enter') {
+      handleSaveCanvasName();
+    } else if (e.key === 'Escape') {
+      handleCancelEditCanvasName();
+    }
+  }
+  
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditingCanvasName && canvasNameInputRef.current) {
+      canvasNameInputRef.current.focus();
+      canvasNameInputRef.current.select();
+    }
+  }, [isEditingCanvasName]);
+  
   const stageRef = useRef(null);
   const staticLayerRef = useRef(null); // For caching static grid/background
   const { user } = useAuth();
@@ -96,6 +157,12 @@ function Canvas() {
   const [stageSize, setStageSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [fps, setFps] = useState(60);
   const fpsCounterRef = useRef(null);
+  
+  // Canvas name editing state
+  const [canvasName, setCanvasName] = useState('Untitled Canvas');
+  const [isEditingCanvasName, setIsEditingCanvasName] = useState(false);
+  const [editedCanvasName, setEditedCanvasName] = useState('');
+  const canvasNameInputRef = useRef(null);
   
   // Sort shapes by zIndex for proper rendering order
   // Shapes with higher zIndex render on top (appear in front)
@@ -1666,6 +1733,76 @@ function Canvas() {
         </Layer>
       </Stage>
 
+      {/* Canvas Name */}
+      <div style={{
+        position: 'absolute',
+        top: '10px',
+        left: '10px',
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px'
+      }}>
+        {isEditingCanvasName ? (
+          <input
+            ref={canvasNameInputRef}
+            type="text"
+            value={editedCanvasName}
+            onChange={(e) => setEditedCanvasName(e.target.value)}
+            onBlur={handleSaveCanvasName}
+            onKeyDown={handleCanvasNameKeyDown}
+            maxLength={50}
+            style={{
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '6px',
+              padding: '8px 12px',
+              color: '#fff',
+              fontSize: '16px',
+              fontWeight: 600,
+              width: '250px',
+              outline: 'none'
+            }}
+          />
+        ) : (
+          <>
+            <span 
+              style={{
+                background: 'rgba(0, 0, 0, 0.7)',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                color: '#fff',
+                fontSize: '16px',
+                fontWeight: 600,
+                cursor: 'default',
+                border: '1px solid rgba(255, 255, 255, 0.1)'
+              }}
+              title="Canvas name"
+            >
+              {canvasName}
+            </span>
+            <button
+              onClick={handleStartEditCanvasName}
+              style={{
+                background: 'rgba(0, 0, 0, 0.7)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '6px',
+                padding: '8px 12px',
+                color: '#fff',
+                cursor: 'pointer',
+                fontSize: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title="Rename canvas"
+            >
+              ✏️
+            </button>
+          </>
+        )}
+      </div>
+
       {/* Online Users (Canvas-scoped) */}
       <div style={{
         position: 'absolute',
@@ -1679,7 +1816,7 @@ function Canvas() {
       {/* Mode Toggle */}
       <div style={{
         position: 'absolute',
-        top: '10px',
+        top: '60px',
         left: '10px',
         display: 'flex',
         gap: '8px',
