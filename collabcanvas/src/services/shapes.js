@@ -272,10 +272,12 @@ export function subscribeToShapes(canvasId, callback) {
     const unsubscribe = onSnapshot(
       shapesQuery,
       (snapshot) => {
+        console.log('📡 ✅ SNAPSHOT CALLBACK FIRED! Docs:', snapshot.docs.length);
         const shapes = [];
         
         snapshot.forEach((doc) => {
           const shapeData = doc.data();
+          console.log('📡 Shape doc:', doc.id, 'canvasId:', shapeData.canvasId);
           shapes.push({
             id: doc.id,
             ...shapeData
@@ -296,7 +298,11 @@ export function subscribeToShapes(canvasId, callback) {
         callback(shapes);
       }, 
       (error) => {
-        console.error('❌ Firestore subscription error:', error.message);
+        console.error('❌❌❌ FIRESTORE SUBSCRIPTION ERROR:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        console.error('Full error:', JSON.stringify(error, null, 2));
+        alert(`Firestore subscription failed: ${error.message}`);
         callback([]);
       }
     );
