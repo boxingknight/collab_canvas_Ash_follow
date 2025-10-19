@@ -398,6 +398,46 @@
   font-size: 13px;
 }
 
+/* Layer Controls */
+.layer-controls-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.layer-button {
+  padding: 8px;
+  background: #1a1a1a;
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.layer-button:hover {
+  background: #3a3a3a;
+  border-color: #5a9fd4;
+}
+
+.layer-button:active {
+  transform: scale(0.95);
+}
+
+.layer-button span:first-child {
+  font-size: 18px;
+}
+
+.layer-button-label {
+  font-size: 10px;
+  color: #a0a0a0;
+}
+
 /* Responsive */
 @media (max-width: 1200px) {
   .properties-panel {

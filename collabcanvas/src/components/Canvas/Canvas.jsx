@@ -1993,6 +1993,24 @@ function Canvas() {
       <PropertiesPanel
         selectedShapes={selectedShapes}
         onUpdateShape={updateShapeImmediate}
+        onLayerChange={(operation, shapeId) => {
+          switch (operation) {
+            case 'forward':
+              bringForward(shapeId);
+              break;
+            case 'backward':
+              sendBackward(shapeId);
+              break;
+            case 'front':
+              bringToFront(shapeId);
+              break;
+            case 'back':
+              sendToBack(shapeId);
+              break;
+            default:
+              console.warn('Unknown layer operation:', operation);
+          }
+        }}
       />
     </div>
   );

@@ -4,9 +4,10 @@ import NoSelection from './sections/NoSelection';
 import PositionSize from './sections/PositionSize';
 import Appearance from './sections/Appearance';
 import AlignmentTools from './sections/AlignmentTools';
+import LayerControls from './sections/LayerControls';
 import './PropertiesPanel.css';
 
-function PropertiesPanel({ selectedShapes = [], onUpdateShape }) {
+function PropertiesPanel({ selectedShapes = [], onUpdateShape, onLayerChange }) {
   // Determine what to show
   const selectionCount = selectedShapes.length;
   const shape = selectionCount === 1 ? selectedShapes[0] : null;
@@ -59,6 +60,12 @@ function PropertiesPanel({ selectedShapes = [], onUpdateShape }) {
             {/* Alignment Tools */}
             <AlignmentTools
               selectedShapeIds={selectedShapes.map(s => s.id)}
+            />
+
+            {/* Layer Controls */}
+            <LayerControls
+              selectedShapeIds={selectedShapes.map(s => s.id)}
+              onLayerChange={onLayerChange}
             />
 
             {/* More sections will be added in subsequent phases */}
