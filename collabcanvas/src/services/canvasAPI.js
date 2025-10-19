@@ -3244,11 +3244,14 @@ export const canvasAPI = {
         return { success: false, message: 'No valid shapes found' };
       }
 
-      // Find leftmost X
-      const leftmostX = Math.min(...selectedShapes.map(s => {
-        const bounds = getShapeBounds(s);
-        return bounds.x;
-      }));
+      // Single shape: align to canvas left edge (x = 0)
+      // Multiple shapes: align to leftmost shape in selection
+      const leftmostX = selectedShapes.length === 1 
+        ? 0  // Canvas left edge
+        : Math.min(...selectedShapes.map(s => {
+            const bounds = getShapeBounds(s);
+            return bounds.x;
+          }));
 
       // Update all shapes to align left
       const batch = writeBatch(db);
@@ -3284,11 +3287,17 @@ export const canvasAPI = {
         return { success: false, message: 'No valid shapes found' };
       }
 
-      // Calculate center of bounding box of all selected shapes
-      const allBounds = selectedShapes.map(s => getShapeBounds(s));
-      const minX = Math.min(...allBounds.map(b => b.x));
-      const maxX = Math.max(...allBounds.map(b => b.x + b.width));
-      const centerX = (minX + maxX) / 2;
+      // Single shape: center horizontally on canvas
+      // Multiple shapes: align to horizontal center of bounding box
+      let centerX;
+      if (selectedShapes.length === 1) {
+        centerX = CANVAS_CONFIG.width / 2;  // Canvas horizontal center
+      } else {
+        const allBounds = selectedShapes.map(s => getShapeBounds(s));
+        const minX = Math.min(...allBounds.map(b => b.x));
+        const maxX = Math.max(...allBounds.map(b => b.x + b.width));
+        centerX = (minX + maxX) / 2;
+      }
 
       // Update all shapes to align to this center
       const batch = writeBatch(db);
@@ -3325,11 +3334,14 @@ export const canvasAPI = {
         return { success: false, message: 'No valid shapes found' };
       }
 
-      // Find rightmost edge
-      const rightmostX = Math.max(...selectedShapes.map(s => {
-        const bounds = getShapeBounds(s);
-        return bounds.x + bounds.width;
-      }));
+      // Single shape: align to canvas right edge
+      // Multiple shapes: align to rightmost shape in selection
+      const rightmostX = selectedShapes.length === 1
+        ? CANVAS_CONFIG.width  // Canvas right edge
+        : Math.max(...selectedShapes.map(s => {
+            const bounds = getShapeBounds(s);
+            return bounds.x + bounds.width;
+          }));
 
       // Update all shapes to align right
       const batch = writeBatch(db);
@@ -3365,11 +3377,14 @@ export const canvasAPI = {
         return { success: false, message: 'No valid shapes found' };
       }
 
-      // Find topmost Y
-      const topmostY = Math.min(...selectedShapes.map(s => {
-        const bounds = getShapeBounds(s);
-        return bounds.y;
-      }));
+      // Single shape: align to canvas top edge (y = 0)
+      // Multiple shapes: align to topmost shape in selection
+      const topmostY = selectedShapes.length === 1
+        ? 0  // Canvas top edge
+        : Math.min(...selectedShapes.map(s => {
+            const bounds = getShapeBounds(s);
+            return bounds.y;
+          }));
 
       // Update all shapes to align top
       const batch = writeBatch(db);
@@ -3405,11 +3420,17 @@ export const canvasAPI = {
         return { success: false, message: 'No valid shapes found' };
       }
 
-      // Calculate vertical center of bounding box
-      const allBounds = selectedShapes.map(s => getShapeBounds(s));
-      const minY = Math.min(...allBounds.map(b => b.y));
-      const maxY = Math.max(...allBounds.map(b => b.y + b.height));
-      const centerY = (minY + maxY) / 2;
+      // Single shape: center vertically on canvas
+      // Multiple shapes: align to vertical center of bounding box
+      let centerY;
+      if (selectedShapes.length === 1) {
+        centerY = CANVAS_CONFIG.height / 2;  // Canvas vertical center
+      } else {
+        const allBounds = selectedShapes.map(s => getShapeBounds(s));
+        const minY = Math.min(...allBounds.map(b => b.y));
+        const maxY = Math.max(...allBounds.map(b => b.y + b.height));
+        centerY = (minY + maxY) / 2;
+      }
 
       // Update all shapes to align to this center
       const batch = writeBatch(db);
@@ -3446,11 +3467,14 @@ export const canvasAPI = {
         return { success: false, message: 'No valid shapes found' };
       }
 
-      // Find bottommost edge
-      const bottommostY = Math.max(...selectedShapes.map(s => {
-        const bounds = getShapeBounds(s);
-        return bounds.y + bounds.height;
-      }));
+      // Single shape: align to canvas bottom edge
+      // Multiple shapes: align to bottommost shape in selection
+      const bottommostY = selectedShapes.length === 1
+        ? CANVAS_CONFIG.height  // Canvas bottom edge
+        : Math.max(...selectedShapes.map(s => {
+            const bounds = getShapeBounds(s);
+            return bounds.y + bounds.height;
+          }));
 
       // Update all shapes to align bottom
       const batch = writeBatch(db);
