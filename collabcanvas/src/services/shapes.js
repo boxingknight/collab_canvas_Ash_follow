@@ -257,12 +257,16 @@ export async function deleteShape(shapeId) {
  * @param {Function} callback - Called with array of shapes on each update
  * @returns {Function} Unsubscribe function to stop listening
  */
-export function subscribeToShapes(callback) {
+export function subscribeToShapes(canvasId, callback) {
   try {
-    const shapesCollection = collection(db, SHAPES_COLLECTION);
+    // Query shapes filtered by canvasId
+    const shapesQuery = query(
+      collection(db, SHAPES_COLLECTION),
+      where('canvasId', '==', canvasId)
+    );
     
     const unsubscribe = onSnapshot(
-      shapesCollection,
+      shapesQuery,
       (snapshot) => {
         const shapes = [];
         

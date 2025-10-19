@@ -14,11 +14,12 @@ import { db } from '../services/firebase';
 import { debounce } from '../utils/helpers';
 
 /**
- * Custom hook to manage shape state with Firestore persistence
+ * Custom hook to manage shape state with Firestore persistence (canvas-scoped)
+ * @param {string} canvasId - Canvas ID to filter shapes
  * @param {Object} user - Current user object from useAuth
  * @returns {Object} Shape state and methods
  */
-function useShapes(user) {
+function useShapes(canvasId, user) {
   const [shapes, setShapes] = useState([]);
   const [selectedShapeId, setSelectedShapeId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,9 +31,9 @@ function useShapes(user) {
   // Key: shapeId, Value: timestamp of when the update was made
   const pendingUpdatesRef = useRef(new Map());
 
-  // Subscribe to Firestore shapes on mount
+  // Subscribe to Firestore shapes on mount (canvas-scoped)
   useEffect(() => {
-    if (!user) {
+    if (!user || !canvasId) {
       setShapes([]);
       setIsLoading(false);
       return;
@@ -41,7 +42,8 @@ function useShapes(user) {
     // Clean up any stale locks on mount
     cleanupStaleLocks();
 
-    const unsubscribe = subscribeToShapes((updatedShapes) => {
+    // Subscribe only to shapes for this canvas
+    const unsubscribe = subscribeToShapes(canvasId, (updatedShapes) => {
       // Merge incoming shapes with local optimistic updates
       // If a shape has a pending update less than 500ms old, keep the local version
       const now = Date.now();
@@ -73,25 +75,31 @@ function useShapes(user) {
       unsubscribe();
       clearInterval(cleanupInterval);
     };
-  }, [user]);
+  }, [user, canvasId]);
 
   /**
-   * Add a new shape (local + Firestore)
+   * Add a new shape (local + Firestore) with canvasId
    * @param {Object} shape - Shape object without ID
    */
   const addShape = useCallback(async (shape) => {
-    if (!user) {
-      console.error('Cannot add shape: user not authenticated');
+    if (!user || !canvasId) {
+      console.error('Cannot add shape: user not authenticated or canvasId missing');
       return null;
     }
 
     try {
+      // Add canvasId to the shape
+      const shapeWithCanvas = {
+        ...shape,
+        canvasId
+      };
+      
       // Add to Firestore (real-time listener will update local state)
-      const firestoreId = await addShapeToFirestore(shape, user.uid);
+      const firestoreId = await addShapeToFirestore(shapeWithCanvas, user.uid);
       
       // Return shape with Firestore ID for immediate UI feedback if needed
       return {
-        ...shape,
+        ...shapeWithCanvas,
         id: firestoreId,
         createdBy: user.uid
       };
@@ -99,7 +107,7 @@ function useShapes(user) {
       console.error('Failed to add shape:', error.message);
       return null;
     }
-  }, [user]);
+  }, [user, canvasId]);
 
   /**
    * Add multiple shapes at once using batch writes (more efficient for bulk operations)
@@ -107,21 +115,27 @@ function useShapes(user) {
    * @returns {Promise<Array<string>>} Array of created shape IDs
    */
   const addShapesBatch = useCallback(async (shapesArray) => {
-    if (!user) {
-      console.error('Cannot add shapes: user not authenticated');
+    if (!user || !canvasId) {
+      console.error('Cannot add shapes: user not authenticated or canvasId missing');
       return [];
     }
 
     try {
-      console.log(`Adding ${shapesArray.length} shapes in batch...`);
-      const firestoreIds = await addShapesBatchToFirestore(shapesArray, user.uid);
+      // Add canvasId to each shape
+      const shapesWithCanvas = shapesArray.map(shape => ({
+        ...shape,
+        canvasId
+      }));
+      
+      console.log(`Adding ${shapesWithCanvas.length} shapes in batch to canvas ${canvasId}...`);
+      const firestoreIds = await addShapesBatchToFirestore(shapesWithCanvas, user.uid);
       console.log(`Successfully added ${firestoreIds.length} shapes`);
       return firestoreIds;
     } catch (error) {
       console.error('Failed to add shapes in batch:', error.message);
       return [];
     }
-  }, [user]);
+  }, [user, canvasId]);
 
   /**
    * Update an existing shape (local + Firestore) with debouncing

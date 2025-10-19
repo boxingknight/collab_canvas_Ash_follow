@@ -1,8 +1,10 @@
 import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import { Stage, Layer, Line, Text, Rect, Circle } from 'react-konva';
 import useCanvas from '../../hooks/useCanvas';
 import useShapes from '../../hooks/useShapes';
 import useCursors from '../../hooks/useCursors';
+import usePresence from '../../hooks/usePresence';
 import useAuth from '../../hooks/useAuth';
 import useSelection from '../../hooks/useSelection';
 import useKeyboard from '../../hooks/useKeyboard';
@@ -14,16 +16,23 @@ import Shape from './Shape';
 import RemoteCursor from './RemoteCursor';
 import ContextMenu from './ContextMenu';
 import PropertiesPanel from '../Properties/PropertiesPanel';
+import UserList from '../Presence/UserList';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, SHAPE_COLORS, SHAPE_TYPES, DEFAULT_STROKE_WIDTH, DEFAULT_FONT_SIZE, DEFAULT_FONT_WEIGHT, DEFAULT_TEXT, MIN_TEXT_WIDTH, MIN_TEXT_HEIGHT } from '../../utils/constants';
 import { createFPSCounter, getRandomColor } from '../../utils/helpers';
 
 function Canvas() {
+  // Get canvasId from URL route params
+  const { canvasId } = useParams();
+  
   const stageRef = useRef(null);
   const staticLayerRef = useRef(null); // For caching static grid/background
   const { user } = useAuth();
   const { position, scale, updatePosition, updateScale } = useCanvas();
-  const { shapes, isLoading, addShape, addShapesBatch, updateShape, updateShapeImmediate, deleteShape, lockShape, unlockShape, duplicateShapes, bringForward, sendBackward, bringToFront, sendToBack } = useShapes(user);
-  const { remoteCursors, updateMyCursor } = useCursors(user);
+  
+  // Pass canvasId to hooks for canvas-scoped data
+  const { shapes, isLoading, addShape, addShapesBatch, updateShape, updateShapeImmediate, deleteShape, lockShape, unlockShape, duplicateShapes, bringForward, sendBackward, bringToFront, sendToBack } = useShapes(canvasId, user);
+  const { remoteCursors, updateMyCursor } = useCursors(canvasId, user);
+  const { onlineUsers } = usePresence(canvasId, user);
   const { 
     selectedShapeIds, 
     toggleSelection, 
@@ -1643,6 +1652,16 @@ function Canvas() {
           ))}
         </Layer>
       </Stage>
+
+      {/* Online Users (Canvas-scoped) */}
+      <div style={{
+        position: 'absolute',
+        top: '10px',
+        right: '10px',
+        zIndex: 1000
+      }}>
+        <UserList users={onlineUsers || []} currentUser={user} />
+      </div>
 
       {/* Mode Toggle */}
       <div style={{
