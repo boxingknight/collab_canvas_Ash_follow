@@ -1944,6 +1944,13 @@ function Canvas() {
         onSendToBack={handleContextSendToBack}
         onDuplicate={handleDuplicate}
         onDelete={deleteSelectedShapes}
+        onCopy={handleCopy}
+        onPaste={handlePaste}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        hasClipboard={hasClipboard()}
+        canUndo={canUndo}
+        canRedo={canRedo}
       />
     </div>
   );

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 
 /**
  * Context Menu Component for Canvas
- * Shows layer operations and other actions on right-click
+ * Shows layer operations, copy/paste, undo/redo, and other actions on right-click
  */
 function ContextMenu({ 
   x, 
@@ -15,7 +15,14 @@ function ContextMenu({
   onSendToBack,
   onDuplicate,
   onDelete,
-  hasSelection
+  onCopy,
+  onPaste,
+  onUndo,
+  onRedo,
+  hasSelection,
+  hasClipboard,
+  canUndo,
+  canRedo
 }) {
   const menuRef = useRef(null);
 
@@ -44,48 +51,134 @@ function ContextMenu({
     };
   }, [visible, onClose]);
 
-  if (!visible || !hasSelection) return null;
+  if (!visible) return null;
 
-  const menuItems = [
-    { 
+  // Build menu items dynamically based on context
+  const menuItems = [];
+  
+  // Copy/Paste section (always visible)
+  if (hasSelection) {
+    menuItems.push({ 
+      label: 'Copy', 
+      action: onCopy,
+      icon: '📄',
+      shortcut: '⌘C'
+    });
+  } else {
+    menuItems.push({ 
+      label: 'Copy', 
+      action: null,
+      icon: '📄',
+      shortcut: '⌘C',
+      disabled: true
+    });
+  }
+  
+  if (hasClipboard) {
+    menuItems.push({ 
+      label: 'Paste', 
+      action: onPaste,
+      icon: '📋',
+      shortcut: '⌘V'
+    });
+  } else {
+    menuItems.push({ 
+      label: 'Paste', 
+      action: null,
+      icon: '📋',
+      shortcut: '⌘V',
+      disabled: true
+    });
+  }
+  
+  // Undo/Redo section
+  menuItems.push({ type: 'separator' });
+  
+  if (canUndo) {
+    menuItems.push({ 
+      label: 'Undo', 
+      action: onUndo,
+      icon: '↩️',
+      shortcut: '⌘Z'
+    });
+  } else {
+    menuItems.push({ 
+      label: 'Undo', 
+      action: null,
+      icon: '↩️',
+      shortcut: '⌘Z',
+      disabled: true
+    });
+  }
+  
+  if (canRedo) {
+    menuItems.push({ 
+      label: 'Redo', 
+      action: onRedo,
+      icon: '↪️',
+      shortcut: '⌘⇧Z'
+    });
+  } else {
+    menuItems.push({ 
+      label: 'Redo', 
+      action: null,
+      icon: '↪️',
+      shortcut: '⌘⇧Z',
+      disabled: true
+    });
+  }
+  
+  // Selection-specific actions (only show if something is selected)
+  if (hasSelection) {
+    menuItems.push({ type: 'separator' });
+    
+    menuItems.push({ 
+      label: 'Duplicate', 
+      action: onDuplicate,
+      icon: '📑',
+      shortcut: '⌘D'
+    });
+    
+    menuItems.push({ type: 'separator' });
+    
+    menuItems.push({ 
       label: 'Bring to Front', 
       action: onBringToFront,
       icon: '⬆️',
-      shortcut: 'Ctrl+Shift+]'
-    },
-    { 
+      shortcut: '⌘⇧]'
+    });
+    
+    menuItems.push({ 
       label: 'Bring Forward', 
       action: onBringForward,
       icon: '↗️',
-      shortcut: 'Ctrl+]'
-    },
-    { 
+      shortcut: '⌘]'
+    });
+    
+    menuItems.push({ 
       label: 'Send Backward', 
       action: onSendBackward,
       icon: '↘️',
-      shortcut: 'Ctrl+['
-    },
-    { 
+      shortcut: '⌘['
+    });
+    
+    menuItems.push({ 
       label: 'Send to Back', 
       action: onSendToBack,
       icon: '⬇️',
-      shortcut: 'Ctrl+Shift+['
-    },
-    { type: 'separator' },
-    { 
-      label: 'Duplicate', 
-      action: onDuplicate,
-      icon: '📋',
-      shortcut: 'Ctrl+D'
-    },
-    { 
+      shortcut: '⌘⇧['
+    });
+    
+    menuItems.push({ type: 'separator' });
+    
+    menuItems.push({ 
       label: 'Delete', 
       action: onDelete,
       icon: '🗑️',
       shortcut: 'Del',
       danger: true
-    }
-  ];
+    });
+  }
 
   function handleMenuItemClick(action) {
     if (action) {
@@ -116,8 +209,9 @@ function ContextMenu({
         return (
           <button
             key={item.label}
-            className={`context-menu-item ${item.danger ? 'danger' : ''}`}
+            className={`context-menu-item ${item.danger ? 'danger' : ''} ${item.disabled ? 'disabled' : ''}`}
             onClick={() => handleMenuItemClick(item.action)}
+            disabled={item.disabled}
           >
             <span className="context-menu-icon">{item.icon}</span>
             <span className="context-menu-label">{item.label}</span>
