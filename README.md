@@ -27,6 +27,14 @@ CollabCanvas is a production-ready collaborative design canvas with integrated A
   - **Layer Controls**: Forward, Backward, To Front, To Back buttons
   - **Text Formatting**: Font size (12-96px), Bold, Text alignment (L/C/R)
   - **Shape-Specific**: Circle radius, line endpoints, text typography
+- **🆕 Multi-Select Editing (PR #26)**: Complete Figma-style batch editing ⭐
+  - **Mixed Value Detection**: Shows "Mixed" when properties differ across selection
+  - **Batch Position/Size**: Edit X, Y, W, H, Rotation for all selected shapes at once
+  - **Batch Color**: Gradient indicator for mixed colors, one-click color change for all
+  - **Batch Typography**: Font size, bold, italic, underline for multiple text shapes
+  - **Grouped Undo/Redo**: Single undo reverts entire batch operation (BATCH_MODIFY)
+  - **Smart Filtering**: Typography only affects text shapes in mixed selections
+  - **Professional UX**: Italic "Mixed" placeholders, gradient swatches, format button states
 - **🆕 Copy/Paste (PR #24)**: Cmd/Ctrl+C/V to duplicate shapes with smart offset
 - **🆕 Undo/Redo (PR #24)**: Cmd/Ctrl+Z/Shift+Z for complete operation history (50 operations)
 - **Keyboard Shortcuts**: Arrow keys for nudging, hotkeys for tools, duplicate (Cmd+D)

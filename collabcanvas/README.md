@@ -20,6 +20,21 @@ CollabCanvas is a real-time collaborative drawing application that allows multip
   - **Real-Time Sync**: All changes broadcast instantly (<100ms)
   - **Multi-Select Support**: Alignment tools work with multiple shapes
   - **No Overlap**: AI Chat repositioned to avoid blocking Properties Panel
+- **🆕 Multi-Select Editing (PR #26)**: Complete Figma-style batch property editing ⭐⭐
+  - **Mixed Value Detection**: Intelligent comparison shows "Mixed" when values differ
+  - **Batch Position/Size Editing**: Update X, Y, W, H, Rotation for all selected shapes simultaneously
+  - **Batch Color Editing**: Rainbow gradient indicator for mixed colors, instant color updates
+  - **Batch Typography Editing**: Font size, bold, italic, underline for multiple text shapes
+  - **Smart Shape Filtering**: Typography only affects text shapes in mixed selections
+  - **Grouped Undo/Redo**: BATCH_MODIFY operation type - one undo reverts entire batch
+  - **Professional UX Patterns**: 
+    - Italic "Mixed" placeholders in number inputs
+    - Gradient color swatches for mixed colors
+    - Semi-transparent format buttons for mixed states
+    - Empty input until user types (prevents accidental changes)
+  - **Firestore Batch Writes**: Atomic updates ensure all-or-nothing consistency
+  - **Performance**: <1s for 10 shapes, <3s for 50 shapes
+  - **Real-Time Sync**: Batch metadata coordinates updates across users
 - **🆕 Copy/Paste (PR #24)**: Full clipboard support with Cmd/Ctrl+C/V
   - Smart offset (20px, 40px, 60px for multiple pastes)
   - Preserves all properties (color, rotation, text formatting)
