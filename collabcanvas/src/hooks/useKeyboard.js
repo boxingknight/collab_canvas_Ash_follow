@@ -17,6 +17,8 @@ import { useEffect, useMemo } from 'react';
  * @param {Function} handlers.onSendToBack - Called when Cmd/Ctrl+Shift+[ is pressed
  * @param {Function} handlers.onCopy - Called when Cmd/Ctrl+C is pressed
  * @param {Function} handlers.onPaste - Called when Cmd/Ctrl+V is pressed
+ * @param {Function} handlers.onUndo - Called when Cmd/Ctrl+Z is pressed
+ * @param {Function} handlers.onRedo - Called when Cmd/Ctrl+Shift+Z is pressed
  * @param {boolean} isTextEditing - If true, most shortcuts are disabled (text input mode)
  * @returns {Object} Platform information (isMac, modKey)
  */
@@ -33,6 +35,8 @@ export default function useKeyboard({
   onSendToBack,
   onCopy,
   onPaste,
+  onUndo,
+  onRedo,
   isTextEditing = false
 }) {
   // Platform detection - do once on mount
@@ -75,6 +79,20 @@ export default function useKeyboard({
 
       // ========== MODIFIER KEY SHORTCUTS ==========
       if (e[modKey]) {
+        // Cmd/Ctrl+Z: Undo OR Cmd/Ctrl+Shift+Z: Redo
+        if (e.key === 'z' || e.key === 'Z') {
+          e.preventDefault();
+          e.stopPropagation();
+          if (e.shiftKey && onRedo) {
+            // Redo (Cmd/Ctrl+Shift+Z)
+            onRedo();
+          } else if (!e.shiftKey && onUndo) {
+            // Undo (Cmd/Ctrl+Z)
+            onUndo();
+          }
+          return;
+        }
+
         // Cmd/Ctrl+C: Copy
         if (e.key === 'c' || e.key === 'C') {
           e.preventDefault();
@@ -218,7 +236,9 @@ export default function useKeyboard({
     onBringToFront,
     onSendToBack,
     onCopy,
-    onPaste
+    onPaste,
+    onUndo,
+    onRedo
   ]);
 
   return platformInfo;

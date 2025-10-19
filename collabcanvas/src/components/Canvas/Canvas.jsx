@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useMemo } from 'react';
+import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { Stage, Layer, Line, Text, Rect, Circle } from 'react-konva';
 import useCanvas from '../../hooks/useCanvas';
 import useShapes from '../../hooks/useShapes';
@@ -7,6 +7,8 @@ import useAuth from '../../hooks/useAuth';
 import useSelection from '../../hooks/useSelection';
 import useKeyboard from '../../hooks/useKeyboard';
 import { useClipboard } from '../../hooks/useClipboard';
+import { useHistory } from '../../hooks/useHistory';
+import { createCreateOperation, createDeleteOperation, createMoveOperation, createModifyOperation } from '../../utils/historyOperations';
 import { setCurrentSelection as updateSelectionBridge, registerSetSelection } from '../../services/selectionBridge';
 import Shape from './Shape';
 import RemoteCursor from './RemoteCursor';
@@ -34,6 +36,45 @@ function Canvas() {
     selectedShapeId // For backward compatibility
   } = useSelection();
   const { copy, paste, hasClipboard } = useClipboard();
+  
+  // Canvas API for history operations (undo/redo)
+  // Provides helper functions needed by restoreOperation
+  const canvasAPI = useMemo(() => ({
+    // Check if a shape exists
+    shapeExists: async (shapeId) => {
+      return shapes.some(s => s.id === shapeId);
+    },
+    
+    // Create a shape (for undo delete / redo create)
+    createShape: async (shapeData) => {
+      // Use addShape but with the original ID preserved
+      await addShape(shapeData, user?.uid);
+    },
+    
+    // Delete a shape (for undo create / redo delete)
+    deleteShape: async (shapeId) => {
+      await deleteShape(shapeId);
+    },
+    
+    // Update shape position (for undo/redo move)
+    updateShapePosition: async (shapeId, x, y) => {
+      await updateShapeImmediate(shapeId, { x, y });
+    },
+    
+    // Update shape size (for undo/redo resize)
+    updateShapeSize: async (shapeId, width, height) => {
+      await updateShapeImmediate(shapeId, { width, height });
+    },
+    
+    // Update shape properties (for undo/redo modify)
+    updateShapeProperties: async (shapeId, props) => {
+      await updateShapeImmediate(shapeId, props);
+    }
+  }), [shapes, addShape, deleteShape, updateShapeImmediate, user]);
+  
+  // History for undo/redo
+  const { recordOperation, undo, redo, canUndo, canRedo } = useHistory(canvasAPI);
+  
   const [stageSize, setStageSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [fps, setFps] = useState(60);
   const fpsCounterRef = useRef(null);
@@ -418,7 +459,7 @@ function Canvas() {
       // Only add line if it has meaningful length (>5px)
       if (length > 5) {
         try {
-          await addShape({
+          const createdShape = await addShape({
             x: newShape.x,
             y: newShape.y,
             endX: newShape.endX,
@@ -428,6 +469,11 @@ function Canvas() {
             type: 'line',
             rotation: 0
           });
+          
+          // Record CREATE operation for undo
+          if (createdShape && createdShape.id) {
+            recordOperation(createCreateOperation(createdShape, user.uid));
+          }
         } catch (error) {
           console.error('Failed to add line:', error.message);
           alert(`Failed to create line: ${error.message}`);
@@ -455,7 +501,12 @@ function Canvas() {
         }
         
         try {
-          await addShape(normalizedShape);
+          const createdShape = await addShape(normalizedShape);
+          
+          // Record CREATE operation for undo
+          if (createdShape && createdShape.id) {
+            recordOperation(createCreateOperation(createdShape, user.uid));
+          }
         } catch (error) {
           console.error('Failed to add shape:', error.message);
           alert(`Failed to create shape: ${error.message}`);
@@ -575,6 +626,12 @@ function Canvas() {
     });
     
     const lockedCount = selectionCount - shapesToDelete.length;
+    
+    // Record DELETE operations for undo (before deleting)
+    const shapeDataToRecord = shapesToDelete.map(id => shapes.find(s => s.id === id)).filter(Boolean);
+    shapeDataToRecord.forEach(shapeData => {
+      recordOperation(createDeleteOperation(shapeData, user.uid));
+    });
     
     // Delete all unlocked shapes
     await Promise.all(shapesToDelete.map(id => deleteShape(id)));
@@ -743,8 +800,13 @@ function Canvas() {
       
       for (const shapeData of result.shapes) {
         try {
-          const newShapeId = await addShape(shapeData, user.uid);
-          newShapeIds.push(newShapeId);
+          const createdShape = await addShape(shapeData, user.uid);
+          if (createdShape && createdShape.id) {
+            newShapeIds.push(createdShape.id);
+            
+            // Record CREATE operation for undo
+            recordOperation(createCreateOperation(createdShape, user.uid));
+          }
         } catch (error) {
           console.error('Error pasting shape:', error);
         }
@@ -760,6 +822,36 @@ function Canvas() {
     }
   }
 
+  // Handle undo from keyboard (Cmd/Ctrl+Z)
+  async function handleUndo() {
+    if (!canUndo) {
+      console.log('Nothing to undo');
+      return;
+    }
+    
+    const success = await undo();
+    if (success) {
+      console.log('Undo successful');
+      // Optional: Show toast notification
+      // showToast('Undo', 'success');
+    }
+  }
+
+  // Handle redo from keyboard (Cmd/Ctrl+Shift+Z)
+  async function handleRedo() {
+    if (!canRedo) {
+      console.log('Nothing to redo');
+      return;
+    }
+    
+    const success = await redo();
+    if (success) {
+      console.log('Redo successful');
+      // Optional: Show toast notification
+      // showToast('Redo', 'success');
+    }
+  }
+
   // Integrate keyboard shortcuts
   const isTextEditing = editingTextId !== null;
   useKeyboard({
@@ -771,6 +863,8 @@ function Canvas() {
     onToolChange: handleToolChange,
     onCopy: handleCopy,
     onPaste: handlePaste,
+    onUndo: handleUndo,
+    onRedo: handleRedo,
     // Layer management operations
     onBringForward: () => {
       if (selectedShapeIds.length > 0) {
