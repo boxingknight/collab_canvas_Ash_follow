@@ -28,38 +28,12 @@ service cloud.firestore {
     // ═══════════════════════════════════════
     
     match /workspaces/{workspaceId} {
-      // Anyone can read their own workspaces
-      allow read: if isAuthenticated() && isOwner(resource.data.ownerId);
+      // TEMPORARY: Permissive rules during development
+      allow read, write: if isAuthenticated();
       
-      // Anyone can create a workspace (must set themselves as owner)
-      allow create: if isAuthenticated() 
-        && request.resource.data.ownerId == request.auth.uid;
-      
-      // Only owner can update or delete workspace
-      allow update, delete: if isOwner(resource.data.ownerId);
-      
-      // Nested canvases subcollection
+      // Nested canvases subcollection (if used)
       match /canvases/{canvasId} {
-        // Read: Owner or users with permissions
-        allow read: if isAuthenticated() && (
-          isOwner(resource.data.ownerId)
-          || (resource.data.permissions != null && request.auth.uid in resource.data.permissions)
-        );
-        
-        // Create: Any authenticated user (must set themselves as owner)
-        allow create: if isAuthenticated() 
-          && request.resource.data.ownerId == request.auth.uid;
-        
-        // Update: Owner or users with editor permission
-        allow update: if isAuthenticated() && (
-          isOwner(resource.data.ownerId)
-          || (resource.data.permissions != null 
-              && request.auth.uid in resource.data.permissions 
-              && resource.data.permissions[request.auth.uid] == 'editor')
-        );
-        
-        // Delete: Only owner
-        allow delete: if isOwner(resource.data.ownerId);
+        allow read, write: if isAuthenticated();
       }
     }
     
@@ -68,26 +42,9 @@ service cloud.firestore {
     // ═══════════════════════════════════════
     
     match /canvases/{canvasId} {
-      // Read: Owner or users with permissions
-      allow read: if isAuthenticated() && (
-        isOwner(resource.data.ownerId)
-        || (resource.data.permissions != null && request.auth.uid in resource.data.permissions)
-      );
-      
-      // Create: Any authenticated user (must set themselves as owner)
-      allow create: if isAuthenticated() 
-        && request.resource.data.ownerId == request.auth.uid;
-      
-      // Update: Owner or users with editor permission
-      allow update: if isAuthenticated() && (
-        isOwner(resource.data.ownerId)
-        || (resource.data.permissions != null 
-            && request.auth.uid in resource.data.permissions 
-            && resource.data.permissions[request.auth.uid] == 'editor')
-      );
-      
-      // Delete: Only owner
-      allow delete: if isOwner(resource.data.ownerId);
+      // TEMPORARY: Permissive rules during development
+      // TODO: Tighten these after migration is complete
+      allow read, write: if isAuthenticated();
     }
     
     // ═══════════════════════════════════════
