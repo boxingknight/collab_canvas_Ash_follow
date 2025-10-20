@@ -65,6 +65,40 @@ CollabCanvas is a real-time collaborative drawing application that allows multip
 - **Multiplayer Cursors**: See other users' cursor positions in real-time with names
 - **User Presence**: View list of currently online collaborators with avatars
 
+### 🏢 Commercial Features (PR #27.1 - 92% Complete) ⭐⭐⭐
+- **🆕 Multi-Tenant Architecture**: Complete workspace/canvas isolation with proper data scoping
+  - Users collection with profiles and settings
+  - Workspaces collection (future: team collaboration)
+  - Canvases collection with metadata (name, description, tags, starred, trash)
+  - Shapes scoped per canvas (true multi-tenancy)
+- **🆕 Professional Landing Page**: Modern dark-themed landing with hero, features, pricing, footer
+  - Gradient title animations
+  - Feature cards with icons
+  - Pricing tiers (Free, Pro, Team)
+  - Responsive design (mobile-first)
+- **🆕 Canvas Dashboard**: Full CRUD interface for canvas management
+  - Grid layout (1-4 columns, responsive)
+  - Search functionality (name, description, tags)
+  - Sidebar navigation (All, Starred, Trash)
+  - Inline canvas rename (double-click)
+  - Star/unstar canvases
+  - Soft delete to trash with restore
+  - Empty states for all views
+- **🆕 Share Links with Permissions**: Generate shareable canvas links
+  - Viewer role (read-only access)
+  - Editor role (full editing access)
+  - ShareDialog component (copy link, manage permissions, delete links)
+  - ShareLinkAccess page (validation and access granting flow)
+  - Access count tracking
+  - Real-time Firestore sync
+- **🆕 Canvas-Scoped Realtime Data**: All collaboration features now canvas-specific
+  - Cursors: `cursors/{canvasId}/users/{userId}`
+  - Presence: `presence/{canvasId}/users/{userId}`
+  - Shapes: `shapes` collection with `canvasId` field
+  - True isolation between canvases
+- **Status**: Parts 1-6 complete (92%), Part 7 remaining (testing & final deployment)
+- **Production URL**: https://collabcanvas-2ba10.web.app
+
 ### AI Assistant (COMPLETE! 🤖)
 - **Natural Language Interaction**: Full chat interface with GPT-4 Turbo integration
 - **28 AI-Callable Functions + Multi-Tool Calling**: Complete canvas control via voice-like commands
@@ -575,7 +609,20 @@ npm run lint
 
 ### Recent Updates
 
-#### PR #22.5: Multi-Tool Calling (Latest - October 2025) ✅ COMPLETE 🚀
+#### PR #27.1: Commercial Transformation (Latest - October 2025) ✅ Parts 1-6 COMPLETE 🏢
+- ✅ **Multi-Tenant Architecture**: Users, workspaces, canvases, shapes with proper data isolation
+- ✅ **Professional Landing Page**: Hero section, features, pricing, footer (dark theme)
+- ✅ **Canvas Dashboard**: Grid view, search, CRUD operations, inline rename
+- ✅ **Canvas-Scoped Data**: Shapes, cursors, presence isolated per canvas (true multi-tenancy)
+- ✅ **Share Links with Permissions**: Generate shareable links with viewer/editor roles
+- ✅ **Critical Bug Fixes**: 7 major bugs resolved (canvasId in batch ops, Firestore rules, auth loading)
+- ✅ **Deployed to Production**: https://collabcanvas-2ba10.web.app
+- **Status**: 92% complete (Parts 1-6 done, Part 7 testing/deployment remaining)
+- **Impact**: Transforms single-canvas demo into commercial-grade multi-tenant application
+- **Time**: ~38 hours total (Parts 1-6)
+- **Documentation**: 4 comprehensive guides in PR_PARTY/PR27_*.md
+
+#### PR #22.5: Multi-Tool Calling (October 2025) ✅ COMPLETE 🚀
 - ✅ **Game-Changing Capability**: AI can execute multiple functions in a single response!
 - ✅ **Natural Chaining**: "rotate 12 degrees and change color to blue" → BOTH execute
 - ✅ **Complex Workflows**: "create 3 circles and arrange them horizontally" → 4 functions

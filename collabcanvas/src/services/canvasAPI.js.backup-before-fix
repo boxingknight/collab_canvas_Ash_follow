@@ -829,7 +829,8 @@ async function createLoginForm(x, y, options = {}, userId = null, canvasId = nul
       width: layout.WIDTH,
       height: layout.INPUT_HEIGHT,
       color: colors.background,
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(usernameInputId);
@@ -841,7 +842,8 @@ async function createLoginForm(x, y, options = {}, userId = null, canvasId = nul
       width: layout.WIDTH,
       height: layout.INPUT_HEIGHT,
       color: colors.background,
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(passwordInputId);
@@ -855,7 +857,8 @@ async function createLoginForm(x, y, options = {}, userId = null, canvasId = nul
         width: 20,
         height: 20,
         color: colors.background,
-        rotation: 0,
+        rotation: 0
+      ,
       canvasId
     }, userId);
       shapeIds.push(checkboxId);
@@ -869,7 +872,8 @@ async function createLoginForm(x, y, options = {}, userId = null, canvasId = nul
       width: layout.BUTTON_WIDTH,
       height: layout.BUTTON_HEIGHT,
       color: colors.primary,
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(buttonBgId);
@@ -888,7 +892,8 @@ async function createLoginForm(x, y, options = {}, userId = null, canvasId = nul
       fontSize: 24,
       fontWeight: 'bold',
       color: colors.text,
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(formTitleId);
@@ -904,7 +909,8 @@ async function createLoginForm(x, y, options = {}, userId = null, canvasId = nul
       fontSize: 14,
       fontWeight: 'normal',
       color: colors.textLight,
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(usernameLabelId);
@@ -920,7 +926,8 @@ async function createLoginForm(x, y, options = {}, userId = null, canvasId = nul
       fontSize: 14,
       fontWeight: 'normal',
       color: colors.textLight,
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(passwordLabelId);
@@ -937,7 +944,8 @@ async function createLoginForm(x, y, options = {}, userId = null, canvasId = nul
         fontSize: 14,
         fontWeight: 'normal',
         color: colors.text,
-        rotation: 0,
+        rotation: 0
+      ,
       canvasId
     }, userId);
       shapeIds.push(rememberMeTextId);
@@ -955,7 +963,8 @@ async function createLoginForm(x, y, options = {}, userId = null, canvasId = nul
       fontSize: 16,
       fontWeight: 'bold',
       color: colors.buttonText,
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(buttonTextId);
@@ -1096,7 +1105,8 @@ async function createNavigationBar(x, y, menuItems = [], options = {}, userId = 
       width: totalWidth,
       height: height,
       color: bgColor,
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(barId);
@@ -1128,7 +1138,8 @@ async function createNavigationBar(x, y, menuItems = [], options = {}, userId = 
         color: itemColor,
         align: 'center',            // ← Figma/Canva pattern: Center-aligned nav text
         verticalAlign: 'middle',    // ← Vertical centering
-        rotation: 0,
+        rotation: 0
+      ,
       canvasId
     }, userId);
       shapeIds.push(itemTextId);
@@ -1266,7 +1277,8 @@ async function createCardLayout(x, y, title = '', description = '', options = {}
       width: width,
       height: height,
       color: backgroundColor || colors.background,
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(cardBgId);
@@ -1283,7 +1295,8 @@ async function createCardLayout(x, y, title = '', description = '', options = {}
         width: width - (layout.PADDING * 2),
         height: imageHeight,
         color: colors.border,
-        rotation: 0,
+        rotation: 0
+      ,
       canvasId
     }, userId);
       shapeIds.push(imageId);
@@ -1300,7 +1313,8 @@ async function createCardLayout(x, y, title = '', description = '', options = {}
         color: colors.textLight,
         align: 'center',
         verticalAlign: 'middle',
-        rotation: 0,
+        rotation: 0
+      ,
       canvasId
     }, userId);
       shapeIds.push(imageTextId);
@@ -1320,7 +1334,8 @@ async function createCardLayout(x, y, title = '', description = '', options = {}
       color: colors.text,
       align: 'center',
       verticalAlign: 'middle',
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(titleId);
@@ -1342,7 +1357,8 @@ async function createCardLayout(x, y, title = '', description = '', options = {}
       color: colors.textLight,
       align: 'left',
       verticalAlign: 'top',
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(descriptionId);
@@ -1511,7 +1527,8 @@ async function createButtonGroup(x, y, buttons = [], options = {}, userId = null
         width: buttonWidth,
         height: buttonHeight,
         color: buttonColor,
-        rotation: 0,
+        rotation: 0
+      ,
       canvasId
     }, userId);
       shapeIds.push(buttonBgId);
@@ -1528,7 +1545,8 @@ async function createButtonGroup(x, y, buttons = [], options = {}, userId = null
         color: colors.buttonText,
         align: 'center',
         verticalAlign: 'middle',
-        rotation: 0,
+        rotation: 0
+      ,
       canvasId
     }, userId);
       shapeIds.push(labelId);
@@ -1681,7 +1699,8 @@ async function createLandingPage(x, y, options = {}, userId = null, canvasId = n
       color: colors.buttonText,
       align: 'left',
       verticalAlign: 'middle',
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(brandId);
@@ -1702,7 +1721,8 @@ async function createLandingPage(x, y, options = {}, userId = null, canvasId = n
         color: colors.buttonText,
         align: 'center',
         verticalAlign: 'middle',
-        rotation: 0,
+        rotation: 0
+      ,
       canvasId
     }, userId);
       shapeIds.push(menuItemId);
@@ -1720,7 +1740,8 @@ async function createLandingPage(x, y, options = {}, userId = null, canvasId = n
       width: layout.WIDTH,
       height: layout.HERO_HEIGHT,
       color: colors.background,
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(heroBgId);
@@ -1737,7 +1758,8 @@ async function createLandingPage(x, y, options = {}, userId = null, canvasId = n
       color: colors.text,
       align: 'center',
       verticalAlign: 'middle',
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(headlineId);
@@ -1754,7 +1776,8 @@ async function createLandingPage(x, y, options = {}, userId = null, canvasId = n
       color: colors.textLight,
       align: 'center',
       verticalAlign: 'middle',
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(subheadlineId);
@@ -1768,7 +1791,8 @@ async function createLandingPage(x, y, options = {}, userId = null, canvasId = n
       width: 150,
       height: 50,
       color: colors.primary,
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(ctaBgId);
@@ -1784,7 +1808,8 @@ async function createLandingPage(x, y, options = {}, userId = null, canvasId = n
       color: colors.buttonText,
       align: 'center',
       verticalAlign: 'middle',
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(ctaTextId);
@@ -1802,7 +1827,8 @@ async function createLandingPage(x, y, options = {}, userId = null, canvasId = n
       width: layout.WIDTH,
       height: emailSectionHeight,
       color: '#f9fafb',
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(emailBgId);
@@ -1819,7 +1845,8 @@ async function createLandingPage(x, y, options = {}, userId = null, canvasId = n
       color: colors.text,
       align: 'center',
       verticalAlign: 'middle',
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(emailTitleId);
@@ -1833,7 +1860,8 @@ async function createLandingPage(x, y, options = {}, userId = null, canvasId = n
       width: 300,
       height: 45,
       color: '#ffffff',
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(emailInputId);
@@ -1849,7 +1877,8 @@ async function createLandingPage(x, y, options = {}, userId = null, canvasId = n
       color: colors.textLight,
       align: 'center',
       verticalAlign: 'middle',
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(emailPlaceholderId);
@@ -1862,7 +1891,8 @@ async function createLandingPage(x, y, options = {}, userId = null, canvasId = n
       width: 100,
       height: 45,
       color: colors.primary,
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(subscribeBtnId);
@@ -1878,7 +1908,8 @@ async function createLandingPage(x, y, options = {}, userId = null, canvasId = n
       color: colors.buttonText,
       align: 'center',
       verticalAlign: 'middle',
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(subscribeTxtId);
@@ -1905,7 +1936,8 @@ async function createLandingPage(x, y, options = {}, userId = null, canvasId = n
         width: layout.FEATURE_CARD_WIDTH,
         height: layout.FEATURE_CARD_HEIGHT,
         color: colors.background,
-        rotation: 0,
+        rotation: 0
+      ,
       canvasId
     }, userId);
       shapeIds.push(cardBgId);
@@ -1922,7 +1954,8 @@ async function createLandingPage(x, y, options = {}, userId = null, canvasId = n
         color: colors.text,
         align: 'center',
         verticalAlign: 'middle',
-        rotation: 0,
+        rotation: 0
+      ,
       canvasId
     }, userId);
       shapeIds.push(cardTitleId);
@@ -1939,7 +1972,8 @@ async function createLandingPage(x, y, options = {}, userId = null, canvasId = n
         color: colors.textLight,
         align: 'center',
         verticalAlign: 'top',
-        rotation: 0,
+        rotation: 0
+      ,
       canvasId
     }, userId);
       shapeIds.push(cardDescId);
@@ -1957,7 +1991,8 @@ async function createLandingPage(x, y, options = {}, userId = null, canvasId = n
       width: layout.WIDTH,
       height: layout.FOOTER_HEIGHT,
       color: '#1a1a1a',
-      rotation: 0,
+      rotation: 0
+    ,
       canvasId
     }, userId);
     shapeIds.push(footerBgId);

@@ -228,16 +228,23 @@ collabcanvas/
 
 ### PR Documentation
 All Pull Requests documented in [`/PR_PARTY/`](PR_PARTY/):
-- **PR #23**: [Complex Operations](PR_PARTY/PR23_COMPLEX_OPERATIONS.md) | [Planning](PR_PARTY/PR23_PLANNING_COMPLETE.md) | [Testing Guide](PR_PARTY/PR23_TESTING_GUIDE.md) ✅ **LATEST** 🎨
+- **PR #27.1**: [Commercial Transformation](PR_PARTY/PR27_COMMERCIAL_TRANSFORMATION.md) | [README](PR_PARTY/PR27_README.md) | [Implementation Checklist](PR_PARTY/PR27_IMPLEMENTATION_CHECKLIST.md) ✅ **LATEST** 🏢
+  - **Parts 1-6 COMPLETE**: Multi-tenant architecture, landing page, dashboard, canvas-scoped data, share links deployed
+  - **Production**: https://collabcanvas-2ba10.web.app
+  - **Progress**: 92% complete (only Part 7 remaining - final testing & deployment)
+- **PR #26**: [Multi-Select Editing](PR_PARTY/PR26_MULTI_SELECT_EDITING.md) | [Complete Summary](PR_PARTY/PR26_COMPLETE_SUMMARY.md) ✅ 🎨
+- **PR #25**: [Properties Panel](PR_PARTY/PR25_PROPERTIES_PANEL.md) ✅ 🎨
+- **PR #24**: [Copy/Paste & Undo/Redo](PR_PARTY/PR24_ESSENTIAL_FEATURES.md) | [Complete Summary](PR_PARTY/PR24_COMPLETE_SUMMARY.md) ✅ 📋
+- **PR #23**: [Complex Operations](PR_PARTY/PR23_COMPLEX_OPERATIONS.md) | [Planning](PR_PARTY/PR23_PLANNING_COMPLETE.md) | [Testing Guide](PR_PARTY/PR23_TESTING_GUIDE.md) ✅ 🎨
 - **PR #22.5**: [Multi-Tool Calling](PR_PARTY/PR22.5_MULTI_TOOL_CALLING.md) | [Implementation Complete](PR_PARTY/PR22.5_IMPLEMENTATION_COMPLETE.md) ✅ 🚀
 - **PR #22**: [AI Layout Commands](PR_PARTY/PR22_LAYOUT_COMMANDS.md) | [Bug Analysis](PR_PARTY/PR22_BUG_ANALYSIS.md) | [Complete Summary](PR_PARTY/PR22_COMPLETE_SUMMARY.md) ✅
 - **PR #21**: [AI Selection Commands](PR_PARTY/PR21_SELECTION_COMMANDS.md) ✅
-- **PR #19**: [Complete Summary](PR_PARTY/PR19_COMPLETE_SUMMARY.md) | [Bug Analysis](PR_PARTY/PR19_ALL_BUGS_SUMMARY.md)
-- **PR #18**: [AI Service Integration](PR_PARTY/archive/PR18_AI_SERVICE_INTEGRATION.md)
-- **PR #17**: [Layer Management](PR_PARTY/PR17_LAYER_MANAGEMENT.md)
-- **PR #16**: [Duplicate & Shortcuts](PR_PARTY/PR16_DUPLICATE_SHORTCUTS.md)
-- **PR #15**: [Rotation Support](PR_PARTY/PR15_ROTATION_SUPPORT.md)
-- **PR #13**: [Multi-Select](PR_PARTY/PR13_MULTI_SELECT.md)
+- **PR #19**: [Complete Summary](PR_PARTY/PR19_COMPLETE_SUMMARY.md) | [Bug Analysis](PR_PARTY/PR19_ALL_BUGS_SUMMARY.md) ✅
+- **PR #18**: [AI Service Integration](PR_PARTY/archive/PR18_AI_SERVICE_INTEGRATION.md) ✅
+- **PR #17**: [Layer Management](PR_PARTY/PR17_LAYER_MANAGEMENT.md) ✅
+- **PR #16**: [Duplicate & Shortcuts](PR_PARTY/PR16_DUPLICATE_SHORTCUTS.md) ✅
+- **PR #15**: [Rotation Support](PR_PARTY/PR15_ROTATION_SUPPORT.md) ✅
+- **PR #13**: [Multi-Select](PR_PARTY/PR13_MULTI_SELECT.md) ✅
 - **Earlier PRs**: Lines, Text, and more (see PR_PARTY folder)
 
 ---
@@ -358,9 +365,12 @@ See [`FIREBASE_HOSTING_SETUP.md`](FIREBASE_HOSTING_SETUP.md) for detailed instru
 
 ## 🐛 Known Issues
 
-**None!** All known bugs have been resolved.
+**None!** All known bugs have been resolved, including the recent critical landing page bug.
 
-See [`PR_PARTY/PR19_ALL_BUGS_SUMMARY.md`](PR_PARTY/PR19_ALL_BUGS_SUMMARY.md) for complete bug analysis.
+### Recently Fixed (Latest)
+- **Landing Page Self-Destruction Bug** (Oct 20, 2025) - Fixed missing `canvasId` in footer text shape that caused complete cleanup. See [`BUG_REPORT_LANDING_PAGE.md`](BUG_REPORT_LANDING_PAGE.md) and [`BUG_FIX_SUMMARY.md`](BUG_FIX_SUMMARY.md).
+
+See [`PR_PARTY/PR19_ALL_BUGS_SUMMARY.md`](PR_PARTY/PR19_ALL_BUGS_SUMMARY.md) and [`memory-bank/bugTracking.md`](memory-bank/bugTracking.md) for complete bug analysis.
 
 ---
 
@@ -385,13 +395,15 @@ See [`SECURITY_VERIFICATION.md`](SECURITY_VERIFICATION.md) for details.
 
 ## 📈 Project Stats
 
-- **Total PRs**: 23 comprehensive features
-- **Code**: 15,000+ lines
-- **Documentation**: 300+ pages
-- **Development Time**: 7 days
-- **Bugs Fixed**: 29+ (all documented)
-- **Performance**: 60 FPS maintained
+- **Total PRs**: 27+ comprehensive features (including PR #27.1 Commercial Transformation)
+- **Code**: 20,000+ lines
+- **Documentation**: 400+ pages
+- **Development Time**: 10+ days (MVP + post-MVP + commercial foundation)
+- **Bugs Fixed**: 35+ (all documented)
+- **Performance**: 60 FPS maintained with 1000+ shapes
 - **AI Functions**: 28 fully functional + Multi-Tool Calling + 5 Complex Operations (100% complete)
+- **Architecture**: Multi-tenant with workspace/canvas isolation
+- **Deployment**: Production-ready on Firebase Hosting
 
 ---
 
