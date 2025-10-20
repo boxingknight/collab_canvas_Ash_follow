@@ -1035,9 +1035,10 @@ export const functionRegistry = {
  * Execute an AI function call
  * @param {string} functionName - Name of function to execute
  * @param {Object} parameters - Function parameters
+ * @param {string|null} canvasId - Current canvas ID (required for shape creation)
  * @returns {Promise<Object>} Result with success status
  */
-export async function executeAIFunction(functionName, parameters) {
+export async function executeAIFunction(functionName, parameters, canvasId = null) {
   // Validate function exists
   if (!functionRegistry[functionName]) {
     return {
@@ -1064,7 +1065,8 @@ export async function executeAIFunction(functionName, parameters) {
           parameters.width,
           parameters.height,
           parameters.color,
-          parameters.userId
+          parameters.userId,
+          canvasId
         );
         break;
       
@@ -1074,7 +1076,8 @@ export async function executeAIFunction(functionName, parameters) {
           parameters.y,
           parameters.radius,
           parameters.color,
-          parameters.userId
+          parameters.userId,
+          canvasId
         );
         break;
       
@@ -1086,7 +1089,8 @@ export async function executeAIFunction(functionName, parameters) {
           parameters.y2,
           parameters.strokeWidth,
           parameters.color,
-          parameters.userId
+          parameters.userId,
+          canvasId
         );
         break;
       
@@ -1098,21 +1102,24 @@ export async function executeAIFunction(functionName, parameters) {
           parameters.fontSize,
           parameters.fontWeight,
           parameters.color,
-          parameters.userId
+          parameters.userId,
+          canvasId
         );
         break;
       
       case 'createShapesBatch':
         result = await functionRegistry[functionName](
           parameters.shapes,
-          parameters.userId
+          parameters.userId,
+          canvasId
         );
         break;
       
       case 'generateShapes':
         result = await functionRegistry[functionName](
           parameters,
-          parameters.userId
+          parameters.userId,
+          canvasId
         );
         break;
       
@@ -1248,7 +1255,8 @@ export async function executeAIFunction(functionName, parameters) {
           parameters.x !== undefined ? parameters.x : 2500, // Default to center
           parameters.y !== undefined ? parameters.y : 2500, // Default to center
           parameters.options || {},
-          parameters.userId
+          parameters.userId,
+          canvasId
         );
         break;
 
@@ -1258,7 +1266,8 @@ export async function executeAIFunction(functionName, parameters) {
           parameters.y !== undefined ? parameters.y : 100, // Default to top
           parameters.menuItems || ['Home', 'About', 'Services', 'Contact'], // Default menu items
           parameters.options || {},
-          parameters.userId
+          parameters.userId,
+          canvasId
         );
         break;
 
@@ -1269,7 +1278,8 @@ export async function executeAIFunction(functionName, parameters) {
           parameters.title || 'Card Title', // Default title
           parameters.description || 'Card description with details', // Default description
           parameters.options || {},
-          parameters.userId
+          parameters.userId,
+          canvasId
         );
         break;
 
@@ -1279,7 +1289,8 @@ export async function executeAIFunction(functionName, parameters) {
           parameters.y !== undefined ? parameters.y : 2500, // Default to center
           parameters.buttons || [{label: 'Button 1'}, {label: 'Button 2'}, {label: 'Button 3'}], // Default buttons
           parameters.options || {},
-          parameters.userId
+          parameters.userId,
+          canvasId
         );
         break;
 
@@ -1288,7 +1299,8 @@ export async function executeAIFunction(functionName, parameters) {
           parameters.x !== undefined ? parameters.x : 1000, // Default to center-left (landing pages are wide)
           parameters.y !== undefined ? parameters.y : 500, // Default to middle
           parameters.options || {},
-          parameters.userId
+          parameters.userId,
+          canvasId
         );
         break;
       

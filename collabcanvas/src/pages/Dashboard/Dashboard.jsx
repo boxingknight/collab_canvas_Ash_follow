@@ -174,10 +174,7 @@ function Dashboard() {
                 onClick={handleCreateCanvas}
                 disabled={isCreating}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path d="M12 5v14M5 12h14" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                {isCreating ? 'Creating...' : 'New Canvas'}
+                {isCreating ? 'Creating...' : '+New Canvas'}
               </button>
             )}
           </div>
@@ -209,7 +206,7 @@ function Dashboard() {
                   onClick={handleCreateCanvas}
                   disabled={isCreating}
                 >
-                  Create Canvas
+                  +New Canvas
                 </button>
               )}
             </div>

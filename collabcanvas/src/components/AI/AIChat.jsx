@@ -17,8 +17,10 @@ import AICommandInput from './AICommandInput';
  * - Loading and error feedback
  * - Keyboard shortcuts (Cmd+K, /)
  * - Real-time sync via Canvas API
+ * 
+ * @param {string|null} canvasId - Current canvas ID (null if not on a canvas)
  */
-export default function AIChat() {
+export default function AIChat({ canvasId }) {
   const {
     messages,
     isProcessing,
@@ -27,7 +29,7 @@ export default function AIChat() {
     toggleExpanded,
     sendCommand,
     clearHistory
-  } = useAI();
+  } = useAI(canvasId);
   
   const chatRef = useRef(null);
   const inputFocusedRef = useRef(false);

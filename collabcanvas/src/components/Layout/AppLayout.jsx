@@ -146,7 +146,7 @@ function AppLayout({ children, user, onLogout }) {
       <main className="app-main">
         {children}
       </main>
-      <AIChat />
+      <AIChat canvasId={canvasId} />
       
       {/* Share Dialog */}
       {showShareDialog && canvasId && user && (

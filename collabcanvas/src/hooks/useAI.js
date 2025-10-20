@@ -10,9 +10,10 @@ import { sendMessage } from '../services/ai';
  * - Error handling
  * - Panel expand/collapse state
  * 
+ * @param {string|null} canvasId - Current canvas ID (required for creating shapes)
  * @returns {Object} AI state and control methods
  */
-export function useAI() {
+export function useAI(canvasId) {
   const [messages, setMessages] = useState([]);
   const [aiMessageHistory, setAIMessageHistory] = useState([]); // For AI service (role + content only)
   const [isProcessing, setIsProcessing] = useState(false);
@@ -51,10 +52,10 @@ export function useAI() {
       };
       setMessages(prev => [...prev, userMessage]);
       
-      // Send to AI service with message history
+      // Send to AI service with message history and canvasId
       // AI service will automatically call Canvas API functions
       // which will update Firestore and sync to all users
-      const response = await sendMessage(aiMessageHistory, text);
+      const response = await sendMessage(aiMessageHistory, text, canvasId);
       
       // Check if the response was successful
       if (response.success === false) {

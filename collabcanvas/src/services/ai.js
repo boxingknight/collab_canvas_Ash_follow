@@ -181,6 +181,7 @@ RESPONSE STYLE:
  * Send a message to the AI and execute any function calls
  * @param {Array} messageHistory - Previous messages in conversation
  * @param {string} userMessage - New message from user
+ * @param {string|null} canvasId - Current canvas ID (required for creating shapes)
  * @returns {Promise<Object>} Response with success status and message
  */
 /**
@@ -201,7 +202,7 @@ function shouldStopOnError(functionName) {
   return criticalFunctions.includes(functionName);
 }
 
-export async function sendMessage(messageHistory, userMessage) {
+export async function sendMessage(messageHistory, userMessage, canvasId = null) {
   try {
     // Build messages array
     const messages = [
@@ -261,8 +262,8 @@ export async function sendMessage(messageHistory, userMessage) {
         
         console.log(`[AI] Executing function ${i + 1}/${toolCalls.length}:`, functionName);
         
-        // Execute the function
-        const functionResult = await executeAIFunction(functionName, functionArgs);
+        // Execute the function with canvasId
+        const functionResult = await executeAIFunction(functionName, functionArgs, canvasId);
         
         results.push({
           functionName,
