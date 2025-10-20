@@ -84,13 +84,20 @@ service cloud.firestore {
     // SHARE LINKS COLLECTION
     // ═══════════════════════════════════════
     
-    match /shareLinks/{token} {
-      // Anyone can read share links (to validate)
+    match /shareLinks/{linkId} {
+      // Anyone can read share links (for validation when accessing)
       allow read: if true;
       
-      // Only authenticated users can create share links
-      allow write: if isAuthenticated() 
+      // Create: Only authenticated users, must set themselves as creator
+      allow create: if isAuthenticated() 
         && request.resource.data.createdBy == request.auth.uid;
+      
+      // Update: Creator can update (for accessCount), or any authenticated user (for granting access)
+      allow update: if isAuthenticated();
+      
+      // Delete: Only creator can delete their own links
+      allow delete: if isAuthenticated() 
+        && resource.data.createdBy == request.auth.uid;
     }
     
     // ═══════════════════════════════════════

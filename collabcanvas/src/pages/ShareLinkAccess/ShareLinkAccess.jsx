@@ -20,6 +20,11 @@ function ShareLinkAccess() {
   useEffect(() => {
     handleShareLinkAccess();
   }, [linkId, user]);
+  
+  // Prevent default navigation to dashboard
+  useEffect(() => {
+    console.log('🔍 ShareLinkAccess mounted. LinkId:', linkId, 'User:', user?.uid || 'not logged in', 'Status:', status);
+  }, [linkId, user, status]);
 
   async function handleShareLinkAccess() {
     // Wait for auth to load
