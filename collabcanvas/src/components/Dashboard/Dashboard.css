@@ -209,9 +209,15 @@
 
 .dashboard-main-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center; /* Center content by default */
   align-items: center;
   margin-bottom: 2rem;
+  gap: 1rem; /* Add gap between items */
+}
+
+/* When header has both title and button, space them apart */
+.dashboard-main-header:has(.view-title) {
+  justify-content: space-between;
 }
 
 .view-title {
