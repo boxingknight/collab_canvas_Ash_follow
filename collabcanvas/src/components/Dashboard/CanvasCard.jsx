@@ -8,7 +8,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 
-function CanvasCard({ canvas, onDelete, onRename, onToggleStar }) {
+function CanvasCard({ canvas, onDelete, onRename, onToggleStar, onShare }) {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(canvas.name);
@@ -51,6 +51,14 @@ function CanvasCard({ canvas, onDelete, onRename, onToggleStar }) {
   function handleToggleStar(e) {
     e.stopPropagation();
     onToggleStar(canvas.id);
+  }
+
+  // Handle share
+  function handleShare(e) {
+    e.stopPropagation();
+    if (onShare) {
+      onShare(canvas.id);
+    }
   }
 
   // Start editing
@@ -161,6 +169,18 @@ function CanvasCard({ canvas, onDelete, onRename, onToggleStar }) {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" strokeWidth="2" strokeLinecap="round"/>
             <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+        <button 
+          className="canvas-action-btn"
+          onClick={handleShare}
+          title="Share"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="18" cy="5" r="3" strokeWidth="2"/>
+            <circle cx="6" cy="12" r="3" strokeWidth="2"/>
+            <circle cx="18" cy="19" r="3" strokeWidth="2"/>
+            <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" strokeWidth="2"/>
           </svg>
         </button>
         <button 

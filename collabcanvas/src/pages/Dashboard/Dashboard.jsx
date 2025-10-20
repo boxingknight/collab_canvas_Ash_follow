@@ -11,6 +11,7 @@ import useAuth from '../../hooks/useAuth';
 import useCanvases from '../../hooks/useCanvases';
 import Sidebar from '../../components/Dashboard/Sidebar';
 import CanvasCard from '../../components/Dashboard/CanvasCard';
+import ShareDialog from '../../components/Canvas/ShareDialog';
 import '../../components/Dashboard/Dashboard.css';
 
 function Dashboard() {
@@ -33,6 +34,7 @@ function Dashboard() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [shareDialogCanvasId, setShareDialogCanvasId] = useState(null);
 
   // Handle create canvas
   async function handleCreateCanvas() {
@@ -66,6 +68,16 @@ function Dashboard() {
       console.error('Error renaming canvas:', err);
       alert('Failed to rename canvas. Please try again.');
     }
+  }
+
+  // Handle share canvas
+  function handleShareCanvas(canvasId) {
+    setShareDialogCanvasId(canvasId);
+  }
+
+  // Close share dialog
+  function handleCloseShareDialog() {
+    setShareDialogCanvasId(null);
   }
 
   // Calculate canvas counts for sidebar
@@ -210,12 +222,22 @@ function Dashboard() {
                   onDelete={currentView === 'trash' ? restoreCanvas : deleteCanvas}
                   onRename={handleRenameCanvas}
                   onToggleStar={toggleStar}
+                  onShare={handleShareCanvas}
                 />
               ))}
             </div>
           )}
         </main>
       </div>
+
+      {/* Share Dialog */}
+      {shareDialogCanvasId && user && (
+        <ShareDialog
+          canvasId={shareDialogCanvasId}
+          userId={user.uid}
+          onClose={handleCloseShareDialog}
+        />
+      )}
     </div>
   );
 }
