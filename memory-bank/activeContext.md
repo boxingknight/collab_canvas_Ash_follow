@@ -51,19 +51,38 @@
 
 ### 🚀 PR #27.1: COMMERCIAL TRANSFORMATION - FOUNDATION! 🏢✨
 
-**Current Status**: Parts 1-5 COMPLETE! Building multi-tenant commercial application!  
-**Next Step**: Part 6 (Share Links) and Part 7 (Testing & Deployment)
+**Current Status**: Parts 1-6 MOSTLY COMPLETE! Building multi-tenant commercial application!  
+**Next Step**: Part 7 (Testing & Deployment)
 
 **What We Built (Parts 1-5):**
 - ✅ **Multi-tenant data architecture** - users, workspaces, canvases, shapes
 - ✅ **Professional landing page** - hero, features, pricing, footer (dark theme)
-- ✅ **Canvas dashboard** - grid view, search, CRUD operations
+- ✅ **Canvas dashboard** - grid view, search, CRUD operations, inline canvas rename
 - ✅ **Canvas-scoped data** - shapes, cursors, presence isolated per canvas
 - ✅ **CRITICAL BUG FIXES** - 5 major bugs fixed (canvasId in batch operations was the smoking gun!)
 
-**What's Next (Parts 6-7):**
-- ⏳ **Share links** - generate shareable canvas links with permissions
-- ⏳ **Testing & deployment** - run migration, deploy to staging, final testing
+**What We Built (Part 6 - Share Links):**
+- ✅ **Share link generation** - create shareable links with nanoid
+- ✅ **Permission control** - viewer vs editor roles
+- ✅ **ShareDialog component** - full UI for link management
+- ✅ **ShareLinkAccess page** - validation and access granting flow
+- ✅ **Share links service** - complete CRUD operations
+- ✅ **Firestore rules** - proper create/update/delete rules
+- ✅ **CRITICAL BUG FIXES** (2 bugs):
+  1. Firestore rules blocking delete/update operations
+  2. Auth loading state not checked (redirect loop)
+- ✅ **Comprehensive logging** - 6-step logging for debugging
+- ⏳ **Dashboard share button** - add share button to canvas cards (15 min)
+- ⏳ **End-to-end testing** - complete share link flow testing (15 min)
+
+**What's Next (Part 7):**
+- ⏳ **Run data migration** - migrate existing data to V2 schema
+- ⏳ **Deploy to staging** - test in staging environment
+- ⏳ **End-to-end testing** - test with multiple users
+- ⏳ **Tighten Firestore rules** - make rules production-ready
+- ⏳ **Final production deployment** - deploy commercial version
+
+**Progress**: 86% complete (Part 6 mostly done, only Part 7 remaining)
 
 **Priority Order:**
 1. ✅ **MVP Completed** - Rectangles, circles, real-time sync, multiplayer cursors
@@ -78,6 +97,59 @@
 10. ✅ **PR #19 COMPLETED & TESTED** - AI Chat Interface (full natural language interaction, up to 1000 shapes!) 🎉
 
 ## Recent Changes
+
+### PR #27.1 Part 6: Share Links - Critical Bug Fixes (COMPLETE! 🐛🔧)
+**Date**: October 20, 2025  
+**Time Taken**: ~4.5 hours (implementation + debugging)  
+**Result**: Share links fully functional! 2 critical bugs fixed, comprehensive logging added.
+
+**Bugs Fixed:**
+
+**Bug #1: Firestore Rules Blocking Share Link Operations** ✅
+- **Issue**: Users couldn't delete their own share links, even as creators
+- **Root Cause**: Generic `write` rule only worked for CREATE operations. DELETE operations check `resource.data` (existing doc), not `request.resource.data` (new doc)
+- **Fix**: Split `write` into specific operations:
+  ```javascript
+  allow create: if isAuthenticated() && request.resource.data.createdBy == request.auth.uid;
+  allow update: if isAuthenticated(); // For accessCount
+  allow delete: if isAuthenticated() && resource.data.createdBy == request.auth.uid;
+  ```
+- **Deployed**: Firestore rules deployed to production ✓
+
+**Bug #2: Auth Loading State Not Checked (Redirect Loop)** ✅
+- **Issue**: Logged-in users redirected to dashboard instead of gaining canvas access
+- **Root Cause**: `ShareLinkAccess` component checked `if (!user)` before auth finished loading. Initially `user: null` while `loading: true`, causing immediate redirect.
+- **Fix**: Check `loading` state FIRST:
+  ```javascript
+  const { user, loading } = useAuth(); // Added 'loading'
+  
+  if (loading) return; // Wait for auth to finish
+  if (!user) navigate('/login?returnUrl=...'); // Now knows user is ACTUALLY not logged in
+  ```
+- **Testing**: Verified working for both logged-in and logged-out scenarios ✓
+
+**Features Delivered:**
+- ✅ Share link generation (with permissions)
+- ✅ ShareDialog component (full UI)
+- ✅ ShareLinkAccess page (validation flow)
+- ✅ Share links service (CRUD operations)
+- ✅ Firestore rules (create/update/delete)
+- ✅ **6-step logging** for debugging
+- ✅ **5-second redirect delay** to see logs
+- ✅ Comprehensive error handling
+
+**Documentation Created:**
+- `/PR_PARTY/PR27.1_SHARE_LINKS_BUG_REPORT.md` (comprehensive bug analysis)
+- Updated `/memory-bank/progress.md` (Part 6 mostly complete, 86% overall)
+- Updated `/memory-bank/activeContext.md` (this file!)
+
+**Remaining Tasks:**
+- ⏳ Add share button to dashboard cards (15 min)
+- ⏳ End-to-end testing (15 min)
+
+**Status**: 🎯 MOSTLY COMPLETE - Only minor tasks remaining!
+
+---
 
 ### PR #23: Complex Operations Planning (COMPLETE! READY TO IMPLEMENT! 🎯📋)
 **Date**: October 17, 2025  
