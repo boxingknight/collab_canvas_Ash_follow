@@ -29,11 +29,13 @@ function ShareLinkAccess() {
   async function handleShareLinkAccess() {
     // Wait for auth to load
     if (user === undefined) {
+      console.log('⏳ ShareLinkAccess: Waiting for auth to load...');
       return; // Still loading
     }
 
     // Require authentication
     if (!user) {
+      console.log('🔐 ShareLinkAccess: User not authenticated, redirecting to login');
       // Redirect to login with return URL
       const returnUrl = encodeURIComponent(`/share/${linkId}`);
       navigate(`/login?returnUrl=${returnUrl}`);
@@ -44,21 +46,42 @@ function ShareLinkAccess() {
     try {
       setStatus('validating');
       
-      console.log('📋 ShareLinkAccess: Processing link:', linkId, 'for user:', user.uid);
+      console.log('═══════════════════════════════════════════════');
+      console.log('📋 SHARE LINK ACCESS - START');
+      console.log('═══════════════════════════════════════════════');
+      console.log('  Link ID:', linkId);
+      console.log('  User ID:', user.uid);
+      console.log('  User Email:', user.email);
+      console.log('═══════════════════════════════════════════════');
+      
       const { canvasId, permission } = await grantAccessFromShareLink(linkId, user.uid);
-      console.log('✅ ShareLinkAccess: Access granted! Canvas:', canvasId, 'Permission:', permission);
+      
+      console.log('═══════════════════════════════════════════════');
+      console.log('✅ SHARE LINK ACCESS - SUCCESS!');
+      console.log('═══════════════════════════════════════════════');
+      console.log('  Canvas ID:', canvasId);
+      console.log('  Permission:', permission);
+      console.log('  Redirecting in 5 seconds...');
+      console.log('═══════════════════════════════════════════════');
       
       setStatus('success');
       
-      // Redirect to canvas after a brief delay
+      // Redirect to canvas after 5 seconds (long delay to see logs)
       setTimeout(() => {
-        console.log('🔀 ShareLinkAccess: Redirecting to canvas:', canvasId);
+        console.log('🔀 Redirecting NOW to /canvas/' + canvasId);
         navigate(`/canvas/${canvasId}`);
-      }, 1500);
+      }, 5000);
       
     } catch (error) {
-      console.error('❌ ShareLinkAccess error:', error);
-      console.error('Error details:', { linkId, userId: user?.uid, message: error.message });
+      console.log('═══════════════════════════════════════════════');
+      console.error('❌ SHARE LINK ACCESS - FAILED!');
+      console.log('═══════════════════════════════════════════════');
+      console.error('  Link ID:', linkId);
+      console.error('  User ID:', user?.uid);
+      console.error('  User Email:', user?.email);
+      console.error('  Error:', error.message);
+      console.error('  Stack:', error.stack);
+      console.log('═══════════════════════════════════════════════');
       setStatus('error');
       setErrorMessage(error.message || 'Failed to access shared canvas');
     }
@@ -104,7 +127,7 @@ function ShareLinkAccess() {
               Access Granted!
             </h2>
             <p style={{ color: 'rgba(255, 255, 255, 0.7)', margin: 0 }}>
-              Redirecting to canvas...
+              Redirecting in 5 seconds... (Check console for logs)
             </p>
           </>
         )}

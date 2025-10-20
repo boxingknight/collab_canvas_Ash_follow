@@ -158,40 +158,51 @@ export async function getCanvasShareLinks(canvasId) {
  */
 export async function grantAccessFromShareLink(linkId, userId) {
   try {
-    console.log('🔗 Granting access from share link:', linkId, 'to user:', userId);
+    console.log('🔗 [STEP 1/6] Starting grant access - LinkId:', linkId, 'UserId:', userId);
     
     // Validate the share link
+    console.log('🔗 [STEP 2/6] Validating share link...');
     const validation = await validateShareLink(linkId);
     if (!validation.valid) {
-      console.error('❌ Share link validation failed:', validation.reason);
+      console.error('❌ [STEP 2/6 FAILED] Share link validation failed:', validation.reason);
       throw new Error(validation.reason);
     }
 
     const { shareLink } = validation;
     const { canvasId, permission } = shareLink;
     
-    console.log('✅ Share link valid. Canvas:', canvasId, 'Permission:', permission);
+    console.log('✅ [STEP 2/6 SUCCESS] Share link valid');
+    console.log('   → Canvas ID:', canvasId);
+    console.log('   → Permission:', permission);
+    console.log('   → Created by:', shareLink.createdBy);
 
     // Get current canvas to check if it exists
+    console.log('🔗 [STEP 3/6] Fetching canvas data...');
     const { getCanvas } = await import('./canvases');
     const canvas = await getCanvas(canvasId);
     if (!canvas) {
-      console.error('❌ Canvas not found:', canvasId);
+      console.error('❌ [STEP 3/6 FAILED] Canvas not found:', canvasId);
       throw new Error('Canvas not found');
     }
     
-    console.log('✅ Canvas found. Current permissions:', canvas.permissions);
+    console.log('✅ [STEP 3/6 SUCCESS] Canvas found');
+    console.log('   → Canvas name:', canvas.name);
+    console.log('   → Canvas owner:', canvas.ownerId);
+    console.log('   → Current permissions:', JSON.stringify(canvas.permissions || {}, null, 2));
 
     // Check if user already has access
+    console.log('🔗 [STEP 4/6] Checking existing access...');
     if (canvas.permissions && canvas.permissions[userId]) {
       console.log('ℹ️ User already has access:', canvas.permissions[userId]);
       // Update if new permission is higher (editor > viewer)
       if (canvas.permissions[userId] === 'viewer' && permission === 'editor') {
         console.log('⬆️ Upgrading permission from viewer to editor');
       } else {
-        // User already has access, just return
+        console.log('✅ [STEP 4/6] User already has sufficient access - returning early');
         return { canvasId, permission: canvas.permissions[userId] };
       }
+    } else {
+      console.log('✅ [STEP 4/6] User does not have access yet - granting new access');
     }
 
     // Add user to permissions map - DIRECT Firestore update
@@ -200,7 +211,9 @@ export async function grantAccessFromShareLink(linkId, userId) {
       [userId]: permission // 'viewer' or 'editor'
     };
     
-    console.log('💾 Updating canvas permissions:', updatedPermissions);
+    console.log('🔗 [STEP 5/6] Updating canvas permissions...');
+    console.log('   → Old permissions:', JSON.stringify(canvas.permissions || {}, null, 2));
+    console.log('   → New permissions:', JSON.stringify(updatedPermissions, null, 2));
 
     // Direct Firestore update (bypass canvases service to avoid auth checks)
     const canvasRef = doc(db, 'canvases', canvasId);
@@ -209,19 +222,30 @@ export async function grantAccessFromShareLink(linkId, userId) {
       updatedAt: serverTimestamp()
     });
     
-    console.log('✅ Canvas permissions updated successfully');
+    console.log('✅ [STEP 5/6 SUCCESS] Canvas permissions updated successfully');
 
     // Increment access count
+    console.log('🔗 [STEP 6/6] Incrementing share link access count...');
     const linkRef = doc(db, SHARE_LINKS_COLLECTION, linkId);
     await updateDoc(linkRef, {
       accessCount: (shareLink.accessCount || 0) + 1
     });
     
-    console.log('✅ Access count incremented. Granting access complete!');
+    console.log('✅ [STEP 6/6 SUCCESS] Access count incremented');
+    console.log('🎉 ========================================');
+    console.log('🎉 ACCESS GRANTED SUCCESSFULLY!');
+    console.log('🎉 Canvas:', canvasId);
+    console.log('🎉 Permission:', permission);
+    console.log('🎉 User:', userId);
+    console.log('🎉 ========================================');
 
     return { canvasId, permission };
   } catch (error) {
-    console.error('❌ Error granting access from share link:', error);
+    console.error('💥 ========================================');
+    console.error('💥 ERROR GRANTING ACCESS');
+    console.error('💥 Error:', error.message);
+    console.error('💥 Stack:', error.stack);
+    console.error('💥 ========================================');
     throw new Error(`Failed to grant access: ${error.message}`);
   }
 }
