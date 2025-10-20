@@ -13,34 +13,37 @@ import { grantAccessFromShareLink } from '../../services/shareLinks';
 function ShareLinkAccess() {
   const { linkId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading } = useAuth(); // FIXED: Now checking loading state!
   const [status, setStatus] = useState('validating'); // 'validating', 'success', 'error'
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     handleShareLinkAccess();
-  }, [linkId, user]);
+  }, [linkId, user, loading]); // FIXED: Added loading to dependencies
   
   // Prevent default navigation to dashboard
   useEffect(() => {
-    console.log('🔍 ShareLinkAccess mounted. LinkId:', linkId, 'User:', user?.uid || 'not logged in', 'Status:', status);
-  }, [linkId, user, status]);
+    console.log('🔍 ShareLinkAccess mounted. LinkId:', linkId, 'Loading:', loading, 'User:', user?.uid || 'not logged in', 'Status:', status);
+  }, [linkId, user, loading, status]);
 
   async function handleShareLinkAccess() {
     // Wait for auth to load
-    if (user === undefined) {
-      console.log('⏳ ShareLinkAccess: Waiting for auth to load...');
-      return; // Still loading
+    if (loading) {
+      console.log('⏳ ShareLinkAccess: Waiting for auth to load... loading:', loading);
+      return; // Still loading, don't do anything yet
     }
 
     // Require authentication
     if (!user) {
-      console.log('🔐 ShareLinkAccess: User not authenticated, redirecting to login');
+      console.log('🔐 ShareLinkAccess: User not authenticated (loading complete, user is null)');
+      console.log('   Redirecting to login with returnUrl...');
       // Redirect to login with return URL
       const returnUrl = encodeURIComponent(`/share/${linkId}`);
       navigate(`/login?returnUrl=${returnUrl}`);
       return;
     }
+
+    console.log('✅ ShareLinkAccess: User is authenticated!', user.uid, user.email);
 
     // Validate and grant access
     try {
